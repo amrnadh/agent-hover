@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=demo",
-    "dev:demo": "npm run dev --workspace=demo",
+    "dev:demo": "npm run dev --workspace=demo -- --force",
     "build": "npm run build --workspaces --if-present",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
