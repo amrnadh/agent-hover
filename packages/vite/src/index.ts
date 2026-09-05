@@ -592,15 +592,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- Helpers ---
       async function resolveComponent(info) {
-                  if (rect.top < 30) {
-            label.style.top = '4px';
-            label.style.borderRadius = '0 0 6px 6px';
-            label.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.2)';
-          } else {
-            label.style.top = '-28px';
-            label.style.borderRadius = '6px 6px 0 0';
-            label.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-          }
           if (info.source) {
           return { file: info.source.fileName, line: info.source.lineNumber };
         }
