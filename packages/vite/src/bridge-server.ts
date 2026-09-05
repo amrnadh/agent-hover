@@ -270,7 +270,7 @@ export class BridgeServer {
     // Open in editor
     this.app.post('/api/open-editor', (req, res) => {
       try {
-        const { file, line, editor } = req.body;
+        console.log("OPEN-EDITOR REQ:", req.body); const { file, line, editor } = req.body;
         if (!file) {
           res.status(400).json({ error: 'Missing file' });
           return;
@@ -281,8 +281,9 @@ export class BridgeServer {
           cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}"`;
         } else if (editor === 'windsurf') {
           cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}"`;
-        } else if (editor === 'antigravity') {
-          cmd = `agy "${this.projectRoot}" "${file}"`;
+                } else if (editor === 'antigravity') {
+          // Try agy CLI first, fallback to macOS open command if missing
+          cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open -a "Antigravity" "${this.projectRoot}" "${file}"`;
         } else if (editor === 'webstorm') {
           cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
         } else {
