@@ -7,7 +7,7 @@ export interface ComponentPointerOptions {
   /** Whether to automatically open in editor on Alt+Shift+Click. Default: true */
   openInEditor?: boolean;
   /** Editor to open files in. Default: 'vscode' */
-  editor?: 'vscode' | 'cursor' | 'webstorm' | 'zed' | 'windsurf' | 'antigravity';
+  editor?: 'auto' | 'vscode' | 'cursor' | 'webstorm' | 'zed' | 'windsurf' | 'antigravity';
 }
 
 function generateOverlayBootstrap(port: number, editor: string): string {
@@ -686,7 +686,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
 export default function componentPointer(options?: ComponentPointerOptions): Plugin {
   const port = options?.port ?? 9850;
-  const editor = options?.editor ?? 'antigravity';
+  const editor = options?.editor ?? 'auto';
   let projectRoot: string;
   let bridgeServer: BridgeServer | null = null;
   

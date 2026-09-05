@@ -276,15 +276,34 @@ export class BridgeServer {
           return;
         }
 
+        let actualEditor = editor;
+        if (editor === 'auto') {
+          const tp = process.env.TERM_PROGRAM || '';
+          const envKeys = Object.keys(process.env).join(',');
+          if (envKeys.toLowerCase().includes('cursor')) {
+            actualEditor = 'cursor';
+          } else if (tp === 'windsurf' || envKeys.toLowerCase().includes('windsurf')) {
+            actualEditor = 'windsurf';
+          } else if (tp === 'antigravity' || envKeys.toLowerCase().includes('antigravity') || process.env.AGY_IDE) {
+            actualEditor = 'antigravity';
+          } else if (tp === 'vscode' || envKeys.toLowerCase().includes('vscode')) {
+            actualEditor = 'vscode';
+          } else {
+            // Default fallback if we can't detect
+            actualEditor = 'antigravity';
+          }
+          console.log('[agent-hover] Auto-detected editor:', actualEditor);
+        }
+
         let cmd = '';
-        if (editor === 'cursor') {
+        if (actualEditor === 'cursor') {
           cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}"`;
-        } else if (editor === 'windsurf') {
+        } else if (actualEditor === 'windsurf') {
           cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}"`;
-                } else if (editor === 'antigravity') {
+        } else if (actualEditor === 'antigravity') {
           // Try agy CLI first, fallback to macOS open command if missing
           cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open -a "Antigravity" "${this.projectRoot}" "${file}"`;
-        } else if (editor === 'webstorm') {
+        } else if (actualEditor === 'webstorm') {
           cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
         } else {
           // Default to vscode
