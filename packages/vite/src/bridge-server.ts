@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
+import { exec } from 'child_process';
 import {
   ContextBuilder,
   RelationshipResolver,
@@ -262,6 +263,43 @@ export class BridgeServer {
             ? error.message
             : 'Failed to generate task context';
         console.error('[agent-hover] Task error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Open in editor
+    this.app.post('/api/open-editor', (req, res) => {
+      try {
+        const { file, line, editor } = req.body;
+        if (!file) {
+          res.status(400).json({ error: 'Missing file' });
+          return;
+        }
+
+        let cmd = '';
+        if (editor === 'cursor') {
+          cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+        } else if (editor === 'windsurf') {
+          cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+        } else if (editor === 'antigravity') {
+          cmd = `agy "${this.projectRoot}" "${file}"`;
+        } else if (editor === 'webstorm') {
+          cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
+        } else {
+          // Default to vscode
+          cmd = `code "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+        }
+
+        exec(cmd, (error) => {
+          if (error) {
+            console.error('[agent-hover] Failed to open editor:', error);
+            res.status(500).json({ error: error.message });
+          } else {
+            res.json({ success: true });
+          }
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to open editor';
         res.status(500).json({ error: message });
       }
     });
