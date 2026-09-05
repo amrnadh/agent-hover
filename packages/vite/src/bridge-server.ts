@@ -302,7 +302,7 @@ export class BridgeServer {
           cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}"`;
         } else if (actualEditor === 'antigravity') {
           // Try agy CLI first, fallback to macOS open command if missing
-          cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open -a "Antigravity" "${this.projectRoot}" "${file}"`;
+          cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open "antigravity://file${file}:${line || 1}"`;
         } else if (actualEditor === 'webstorm') {
           cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
         } else {
