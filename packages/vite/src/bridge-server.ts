@@ -297,9 +297,9 @@ export class BridgeServer {
 
         let cmd = '';
         if (actualEditor === 'cursor') {
-          cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+          cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "cursor://file${file}:${line || 1}"`;
         } else if (actualEditor === 'windsurf') {
-          cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+          cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "windsurf://file${file}:${line || 1}"`;
         } else if (actualEditor === 'antigravity') {
           // Try agy CLI first, fallback to macOS open command if missing
           cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open "antigravity-ide://file${file}:${line || 1}"`;
@@ -307,7 +307,7 @@ export class BridgeServer {
           cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
         } else {
           // Default to vscode
-          cmd = `code "${this.projectRoot}" --goto "${file}:${line || 1}"`;
+          cmd = `code "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "vscode://file${file}:${line || 1}"`;
         }
 
         exec(cmd, (error) => {
