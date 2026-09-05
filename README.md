@@ -1,20 +1,20 @@
-# Component Pointer
+# Agent Hover
 
 > Point at your UI. Your agent understands it.
 
-Component Pointer is a Vite plugin that turns your running React app into a navigable map of your codebase. Hover over any component to see its source, props, and relationships — then send precisely the context your AI agent needs to make the change correctly on the first try.
+Agent Hover is a Vite plugin that turns your running React app into a navigable map of your codebase. Hover over any component to see its source, props, and relationships — then send precisely the context your AI agent needs to make the change correctly on the first try.
 
 ## Quick Start
 
 ```bash
-npm install -D @component-pointer/vite
+npm install -D @agent-hover/vite
 ```
 
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import componentPointer from '@component-pointer/vite';
+import componentPointer from '@agent-hover/vite';
 
 export default defineConfig({
   plugins: [react(), componentPointer()],
@@ -35,10 +35,10 @@ Then run your dev server and hold `Alt` to enter pointer mode.
 
 | Package | Description |
 |---------|-------------|
-| `@component-pointer/core` | Context intelligence engine (AST parsing, relationships, token estimation) |
-| `@component-pointer/vite` | Vite plugin + local bridge server |
-| `@component-pointer/overlay` | Browser overlay UI (Shadow DOM) |
-| `@component-pointer/mcp` | MCP server for AI agent integration |
+| `@agent-hover/core` | Context intelligence engine (AST parsing, relationships, token estimation) |
+| `@agent-hover/vite` | Vite plugin + local bridge server |
+| `@agent-hover/overlay` | Browser overlay UI (Shadow DOM) |
+| `@agent-hover/mcp` | MCP server for AI agent integration |
 
 ## MCP Setup
 
@@ -47,9 +47,9 @@ Then run your dev server and hold `Alt` to enter pointer mode.
 ```json
 {
   "mcpServers": {
-    "component-pointer": {
+    "agent-hover": {
       "command": "npx",
-      "args": ["-y", "@component-pointer/mcp"]
+      "args": ["-y", "@agent-hover/mcp"]
     }
   }
 }
@@ -62,9 +62,9 @@ Add to `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "component-pointer": {
+    "agent-hover": {
       "command": "npx",
-      "args": ["-y", "@component-pointer/mcp"]
+      "args": ["-y", "@agent-hover/mcp"]
     }
   }
 }

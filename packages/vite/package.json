@@ -1,5 +1,5 @@
 {
-  "name": "@component-pointer/vite",
+  "name": "@agent-hover/vite",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,7 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
-    "@component-pointer/core": "*",
+    "@agent-hover/core": "*",
     "ws": "^8.18.0",
     "express": "^4.21.0",
     "cors": "^2.8.5"

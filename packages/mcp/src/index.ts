@@ -2,7 +2,7 @@
 
 /**
  * @file index.ts
- * @description Component Pointer MCP (Model Context Protocol) Server.
+ * @description Agent Hover MCP (Model Context Protocol) Server.
  * Enables AI coding agents to query rich React component context,
  * inspect pinned component relationships, and generate task-focused context
  * by communicating with the Vite plugin bridge server.
@@ -15,7 +15,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-/** Default port for the Component Pointer bridge server */
+/** Default port for the Agent Hover bridge server */
 const DEFAULT_BRIDGE_PORT = 9850;
 
 /**
@@ -73,8 +73,8 @@ function handleBridgeError(error: unknown) {
         {
           type: "text" as const,
           text:
-            `Error: Could not connect to the Component Pointer bridge server at ${bridgeBaseUrl}.\n\n` +
-            `Please make sure your Vite dev server is running with the Component Pointer plugin enabled:\n` +
+            `Error: Could not connect to the Agent Hover bridge server at ${bridgeBaseUrl}.\n\n` +
+            `Please make sure your Vite dev server is running with the Agent Hover plugin enabled:\n` +
             `  npm run dev\n\n` +
             `If your dev server is running on a different port, set the COMPONENT_POINTER_PORT environment variable (current: ${bridgePort}).`,
         },
@@ -88,7 +88,7 @@ function handleBridgeError(error: unknown) {
     content: [
       {
         type: "text" as const,
-        text: `Error from Component Pointer bridge: ${message}`,
+        text: `Error from Agent Hover bridge: ${message}`,
       },
     ],
     isError: true,
@@ -176,11 +176,11 @@ async function getFromBridge(endpoint: string): Promise<string> {
 }
 
 /**
- * Initialize the Component Pointer MCP server instance.
+ * Initialize the Agent Hover MCP server instance.
  */
 const server = new Server(
   {
-    name: "component-pointer",
+    name: "agent-hover",
     version: "0.1.0",
   },
   {
@@ -385,12 +385,12 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(
-    `Component Pointer MCP server running on stdio (bridge port: ${bridgePort})`
+    `Agent Hover MCP server running on stdio (bridge port: ${bridgePort})`
   );
 }
 
 // Start the server, logging any unhandled startup errors to stderr
 main().catch((error) => {
-  console.error("Fatal error starting Component Pointer MCP server:", error);
+  console.error("Fatal error starting Agent Hover MCP server:", error);
   process.exit(1);
 });

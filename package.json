@@ -1,5 +1,5 @@
 {
-  "name": "component-pointer",
+  "name": "agent-hover",
   "version": "0.1.0",
   "private": true,
   "description": "Point at your UI. Your agent understands it.",
@@ -11,15 +11,15 @@
     "dev": "npm run dev --workspace=demo",
     "dev:demo": "npm run dev --workspace=demo",
     "build": "npm run build --workspaces --if-present",
-    "build:core": "npm run build --workspace=@component-pointer/core",
-    "build:vite": "npm run build --workspace=@component-pointer/vite",
-    "build:overlay": "npm run build --workspace=@component-pointer/overlay",
-    "build:mcp": "npm run build --workspace=@component-pointer/mcp",
+    "build:core": "npm run build --workspace=@agent-hover/core",
+    "build:vite": "npm run build --workspace=@agent-hover/vite",
+    "build:overlay": "npm run build --workspace=@agent-hover/overlay",
+    "build:mcp": "npm run build --workspace=@agent-hover/mcp",
     "test": "npm run test --workspaces --if-present",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
   },
   "keywords": [
-    "component-pointer",
+    "agent-hover",
     "vite-plugin",
     "react",
     "ai-agent",

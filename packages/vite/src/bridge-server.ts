@@ -8,13 +8,13 @@ import {
   formatContextMarkdown,
   formatPinSetMarkdown,
   formatTaskContext,
-} from '@component-pointer/core';
+} from '@agent-hover/core';
 import type {
   PinEntry,
   PinSet,
   ComponentContext,
   ContextLevel,
-} from '@component-pointer/core';
+} from '@agent-hover/core';
 
 export class BridgeServer {
   private app: express.Express;
@@ -147,7 +147,7 @@ export class BridgeServer {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to resolve';
-        console.error('[component-pointer] Resolve error:', message);
+        console.error('[agent-hover] Resolve error:', message);
         res.status(500).json({ error: message });
       }
     });
@@ -170,7 +170,7 @@ export class BridgeServer {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to fetch context';
-        console.error('[component-pointer] Context error:', message);
+        console.error('[agent-hover] Context error:', message);
         res.status(500).json({ error: message });
       }
     });
@@ -211,7 +211,7 @@ export class BridgeServer {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to manage pins';
-        console.error('[component-pointer] Pin error:', message);
+        console.error('[agent-hover] Pin error:', message);
         res.status(500).json({ error: message });
       }
     });
@@ -261,7 +261,7 @@ export class BridgeServer {
           error instanceof Error
             ? error.message
             : 'Failed to generate task context';
-        console.error('[component-pointer] Task error:', message);
+        console.error('[agent-hover] Task error:', message);
         res.status(500).json({ error: message });
       }
     });
@@ -288,7 +288,7 @@ export class BridgeServer {
             );
           }
         } catch (error) {
-          console.error('[component-pointer] WS error:', error);
+          console.error('[agent-hover] WS error:', error);
         }
       });
 
@@ -307,16 +307,16 @@ export class BridgeServer {
 
     this.httpServer.listen(this.port, () => {
       console.log(
-        `[component-pointer] Bridge server running on http://localhost:${this.port}`
+        `[agent-hover] Bridge server running on http://localhost:${this.port}`
       );
       console.log(
-        `[component-pointer] Project root: ${this.projectRoot}`
+        `[agent-hover] Project root: ${this.projectRoot}`
       );
     });
   }
 
   public stop() {
-    console.log('[component-pointer] Stopping bridge server...');
+    console.log('[agent-hover] Stopping bridge server...');
     this.clients.forEach((client) => client.close());
     this.wss?.close();
     this.httpServer?.close();

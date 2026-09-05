@@ -34,7 +34,7 @@ export function App() {
               </svg>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-white">Component Pointer</span>
+              <span className="font-bold tracking-tight text-white">Agent Hover</span>
               <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
                 Demo
               </span>
@@ -94,7 +94,7 @@ export function App() {
       {/* Subtle Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
         <p>
-          Component Pointer Demo App • Test component discovery, AST inspection, and prop extraction.
+          Agent Hover Demo App • Test component discovery, AST inspection, and prop extraction.
         </p>
       </footer>
     </div>

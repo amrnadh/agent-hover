@@ -17,10 +17,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let ws;
       try {
         ws = new WebSocket('ws://localhost:${port}');
-        ws.onopen = () => console.log('[component-pointer] ✓ Connected to bridge');
-        ws.onerror = () => console.warn('[component-pointer] WebSocket connection failed');
+        ws.onopen = () => console.log('[agent-hover] ✓ Connected to bridge');
+        ws.onerror = () => console.warn('[agent-hover] WebSocket connection failed');
       } catch(e) {
-        console.warn('[component-pointer] Could not connect WebSocket');
+        console.warn('[agent-hover] Could not connect WebSocket');
       }
 
       let isPointerMode = false;
@@ -29,7 +29,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- Shadow DOM UI ---
       const container = document.createElement('div');
-      container.id = 'component-pointer-root';
+      container.id = 'agent-hover-root';
       const shadow = container.attachShadow({ mode: 'open' });
 
       shadow.innerHTML = \`
@@ -352,7 +352,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           e.preventDefault();
           isPointerMode = true;
           status.style.display = 'block';
-          console.log('[component-pointer] Pointer mode ON (hover over components)');
+          console.log('[agent-hover] Pointer mode ON (hover over components)');
         }
         if (e.key === 'Escape') {
           panel.style.display = 'none';
@@ -375,7 +375,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (!el || el === currentElement) return;
 
         // Don't highlight our own overlay
-        if (el.closest && el.closest('#component-pointer-root')) return;
+        if (el.closest && el.closest('#agent-hover-root')) return;
         currentElement = el;
 
         const info = getComponentInfo(el);
@@ -513,7 +513,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const data = await res.json();
           if (data.resolved) return { file: data.file, line: data.line };
         } catch(e) {
-          console.error('[component-pointer] Resolve failed:', e);
+          console.error('[agent-hover] Resolve failed:', e);
         }
         return null;
       }
@@ -562,7 +562,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             });
           }
         } catch(e) {
-          console.error('[component-pointer] Pin refresh failed:', e);
+          console.error('[agent-hover] Pin refresh failed:', e);
         }
       }
 
@@ -576,7 +576,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       refreshPins();
-      console.log('[component-pointer] ✓ Overlay initialized. Hold ⌥ Option to enter pointer mode.');
+      console.log('[agent-hover] ✓ Overlay initialized. Hold ⌥ Option to enter pointer mode.');
     })();
   `;
 }
@@ -588,7 +588,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
   let bridgeServer: BridgeServer | null = null;
   
   return {
-    name: 'component-pointer',
+    name: 'agent-hover',
     apply: 'serve', // only in dev mode
     
     configResolved(config) {

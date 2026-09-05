@@ -1,11 +1,11 @@
 {
-  "name": "@component-pointer/mcp",
+  "name": "@agent-hover/mcp",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "component-pointer-mcp": "dist/index.js"
+    "agent-hover-mcp": "dist/index.js"
   },
   "exports": {
     ".": {

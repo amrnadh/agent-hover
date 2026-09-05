@@ -1,5 +1,5 @@
 {
-  "name": "component-pointer-demo",
+  "name": "agent-hover-demo",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@component-pointer/vite": "*",
+    "@agent-hover/vite": "*",
     "@vitejs/plugin-react": "^4.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
