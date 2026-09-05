@@ -46,17 +46,43 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           * { box-sizing: border-box; }
           :host { all: initial; }
 
-          /* Glassmorphism Variables */
+          
           :host {
-            --bg-glass: rgba(15, 23, 42, 0.75);
-            --bg-glass-solid: rgba(15, 23, 42, 0.95);
-            --border-glass: rgba(255, 255, 255, 0.1);
-            --blur: blur(12px);
             --primary: #6366f1;
             --primary-hover: #4f46e5;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --blur: blur(12px);
           }
+          
+          /* Dark Mode (Default / Prefer Dark) */
+          @media (prefers-color-scheme: dark) {
+            :host {
+              --bg-glass: rgba(15, 23, 42, 0.75);
+              --bg-glass-solid: rgba(15, 23, 42, 0.95);
+              --bg-glass-panel: rgba(15, 23, 42, 0.4);
+              --border-glass: rgba(255, 255, 255, 0.1);
+              --text: #f8fafc;
+              --text-muted: #94a3b8;
+              --code-bg: rgba(0,0,0,0.3);
+              --pin-bg: rgba(0, 0, 0, 0.2);
+              --hover-bg: rgba(255,255,255,0.05);
+            }
+          }
+
+          /* Light Mode */
+          @media (prefers-color-scheme: light) {
+            :host {
+              --bg-glass: rgba(255, 255, 255, 0.85);
+              --bg-glass-solid: rgba(255, 255, 255, 0.98);
+              --bg-glass-panel: rgba(255, 255, 255, 0.6);
+              --border-glass: rgba(0, 0, 0, 0.1);
+              --text: #0f172a;
+              --text-muted: #64748b;
+              --code-bg: rgba(0,0,0,0.03);
+              --pin-bg: rgba(0, 0, 0, 0.02);
+              --hover-bg: rgba(0,0,0,0.04);
+            }
+          }
+
 
           /* Floating Toggle Button */
           #cp-fab {
@@ -86,7 +112,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           #cp-fab.active {
             background: var(--primary);
             border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            animation: pulse 2s infinite;
           }
           #cp-fab svg {
             transition: transform 0.3s ease;
@@ -103,7 +129,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             background: rgba(99, 102, 241, 0.1);
             border-radius: 6px;
             display: none;
-            transition: all 0.1s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           }
           #cp-label {
             position: absolute;
@@ -139,13 +165,21 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             border: 1px solid var(--border-glass);
             overflow: hidden;
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: springUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
           }
           
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+          
+          @keyframes pulse {
+            0% { box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 0 rgba(99, 102, 241, 0); }
           }
+          @keyframes springUp {
+            0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+            60% { opacity: 1; transform: translateY(-5px) scale(1.02); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+          }
+
 
           #cp-panel-header {
             padding: 16px 20px;
@@ -153,7 +187,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(15, 23, 42, 0.4);
+            background: var(--bg-glass-panel);
           }
           #cp-panel-header h3 {
             margin: 0;
@@ -185,7 +219,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             margin-bottom: 8px;
           }
           .cp-code {
-            background: rgba(0,0,0,0.3);
+            background: var(--code-bg);
             border: 1px solid var(--border-glass);
             border-radius: 8px;
             padding: 12px;
@@ -204,7 +238,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             border-bottom: 1px solid var(--border-glass); font-weight: 500;
           }
           .cp-props-table td {
-            padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 6px 8px; border-bottom: 1px solid var(--border-glass);
             font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
           }
 
@@ -214,7 +248,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
           .cp-badge-purple { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
           .cp-badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-          .cp-badge-gray { background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
+          .cp-badge-gray { background: var(--hover-bg); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
 
           .cp-btn {
             background: var(--primary); color: white; border: none;
@@ -224,17 +258,18 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             transition: all 0.2s ease;
           }
           .cp-btn:hover { background: var(--primary-hover); }
+          .cp-btn:active { transform: scale(0.94); }
           .cp-btn-ghost { background: transparent; border: 1px solid var(--border-glass); color: var(--text); }
-          .cp-btn-ghost:hover { background: rgba(255,255,255,0.1); }
+          .cp-btn-ghost:hover { background: var(--hover-bg); }
           .cp-btn-icon { padding: 6px; border-radius: 6px; }
 
           .cp-actions {
             display: flex; gap: 8px; padding: 16px 20px;
-            background: rgba(15, 23, 42, 0.6); border-top: 1px solid var(--border-glass);
+            background: var(--bg-glass-panel); border-top: 1px solid var(--border-glass);
           }
 
           #cp-pin-bar {
-            padding: 16px 20px; background: rgba(0, 0, 0, 0.2);
+            padding: 16px 20px; background: var(--pin-bg);
             border-top: 1px solid var(--border-glass); font-size: 12px;
           }
           #cp-pin-bar h4 { margin: 0 0 10px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -242,7 +277,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             display: flex; justify-content: space-between; align-items: center;
             padding: 6px 8px; margin: 0 -8px; border-radius: 6px; color: #e2e8f0;
           }
-          .cp-pin-item:hover { background: rgba(255,255,255,0.05); }
+          .cp-pin-item:hover { background: var(--hover-bg); }
           .cp-pin-remove { background: none; border: none; color: #f87171; cursor: pointer; padding: 4px; opacity: 0.7; }
           .cp-pin-remove:hover { opacity: 1; }
         </style>
@@ -309,10 +344,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       };
 
-      shadow.getElementById('cp-editor-btn').onclick = async () => {
+            shadow.getElementById('cp-editor-btn').onclick = async () => {
         if (lastCopiedContext && lastCopiedContext.source) {
           try {
-            await fetch(BRIDGE + '/api/open-editor', {
+            const btn = shadow.getElementById('cp-editor-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '...';
+            const res = await fetch(BRIDGE + '/api/open-editor', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -321,8 +359,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 editor: '${editor}'
               })
             });
+            const data = await res.json();
+            if (!res.ok || data.error) {
+              alert('Failed to open editor: ' + (data.error || res.statusText));
+            }
+            btn.innerHTML = originalContent;
           } catch(e) {
             console.error('[agent-hover] Failed to open editor:', e);
+            alert('Failed to connect to agent-hover bridge server.');
+            shadow.getElementById('cp-editor-btn').innerHTML = ICONS.code + ' Open';
           }
         }
       };
@@ -431,6 +476,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
 
+                    if (rect.top < 30) {
+            label.style.top = '4px';
+            label.style.borderRadius = '0 0 6px 6px';
+            label.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.2)';
+          } else {
+            label.style.top = '-28px';
+            label.style.borderRadius = '6px 6px 0 0';
+            label.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+          }
           if (info.source) {
             label.textContent = info.name + ' — ' + info.source.fileName.split('/').pop() + ':' + info.source.lineNumber;
           } else {
@@ -538,7 +592,16 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- Helpers ---
       async function resolveComponent(info) {
-        if (info.source) {
+                  if (rect.top < 30) {
+            label.style.top = '4px';
+            label.style.borderRadius = '0 0 6px 6px';
+            label.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.2)';
+          } else {
+            label.style.top = '-28px';
+            label.style.borderRadius = '6px 6px 0 0';
+            label.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+          }
+          if (info.source) {
           return { file: info.source.fileName, line: info.source.lineNumber };
         }
         try {
@@ -632,7 +695,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
 export default function componentPointer(options?: ComponentPointerOptions): Plugin {
   const port = options?.port ?? 9850;
-  const editor = options?.editor ?? 'vscode';
+  const editor = options?.editor ?? 'antigravity';
   let projectRoot: string;
   let bridgeServer: BridgeServer | null = null;
   
