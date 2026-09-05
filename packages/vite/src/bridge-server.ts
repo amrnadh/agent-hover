@@ -73,6 +73,85 @@ export class BridgeServer {
       res.json({ status: 'ok', version: '0.1.0' });
     });
 
+    // Resolve component name to file + line
+    this.app.post('/api/resolve', async (req, res) => {
+      try {
+        const { componentName } = req.body;
+        if (!componentName) {
+          res.status(400).json({ error: 'Missing componentName' });
+          return;
+        }
+
+        // Search for files matching the component name
+        const fg = await import('fast-glob');
+        const files = await fg.default(
+          `**/${componentName}.{tsx,jsx,ts,js}`,
+          {
+            cwd: this.projectRoot,
+            ignore: ['node_modules/**', 'dist/**'],
+          }
+        );
+
+        if (files.length > 0) {
+          // Found by filename match — find the component declaration line
+          const filePath = files[0];
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          const content = await fs.readFile(
+            path.join(this.projectRoot, filePath),
+            'utf-8'
+          );
+          const lines = content.split('\n');
+          let line = 1;
+          for (let i = 0; i < lines.length; i++) {
+            const l = lines[i];
+            if (
+              l.includes(`function ${componentName}`) ||
+              l.includes(`const ${componentName}`) ||
+              l.includes(`class ${componentName}`)
+            ) {
+              line = i + 1;
+              break;
+            }
+          }
+          res.json({ file: filePath, line, resolved: true });
+          return;
+        }
+
+        // Fallback: scan all files for the component name as a function/const declaration
+        const allFiles = await fg.default('**/*.{tsx,jsx}', {
+          cwd: this.projectRoot,
+          ignore: ['node_modules/**', 'dist/**'],
+        });
+        const fs = await import('fs/promises');
+        const path = await import('path');
+
+        for (const file of allFiles) {
+          const content = await fs.readFile(
+            path.join(this.projectRoot, file),
+            'utf-8'
+          );
+          const lines = content.split('\n');
+          for (let i = 0; i < lines.length; i++) {
+            if (
+              lines[i].includes(`function ${componentName}`) ||
+              lines[i].includes(`const ${componentName}`)
+            ) {
+              res.json({ file, line: i + 1, resolved: true });
+              return;
+            }
+          }
+        }
+
+        res.json({ file: null, line: null, resolved: false });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to resolve';
+        console.error('[component-pointer] Resolve error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
     // Get component context
     this.app.post('/api/context', async (req, res) => {
       try {
