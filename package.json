@@ -1,0 +1,32 @@
+{
+  "name": "component-pointer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Point at your UI. Your agent understands it.",
+  "workspaces": [
+    "packages/*",
+    "demo"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=demo",
+    "dev:demo": "npm run dev --workspace=demo",
+    "build": "npm run build --workspaces --if-present",
+    "build:core": "npm run build --workspace=@component-pointer/core",
+    "build:vite": "npm run build --workspace=@component-pointer/vite",
+    "build:overlay": "npm run build --workspace=@component-pointer/overlay",
+    "build:mcp": "npm run build --workspace=@component-pointer/mcp",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
+  },
+  "keywords": [
+    "component-pointer",
+    "vite-plugin",
+    "react",
+    "ai-agent",
+    "mcp",
+    "devtools",
+    "vibe-coding"
+  ],
+  "author": "",
+  "license": "MIT"
+}
