@@ -26,6 +26,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let isPointerMode = false;
       let currentElement = null;
       let currentComponentInfo = null;
+      let frozenEntries = [];
 
       // --- Icons ---
       const ICONS = {
@@ -33,7 +34,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         copy: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
         pin: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>',
         code: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-        x: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>'
+        x: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>',
+        lock: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
       };
 
       // --- Shadow DOM UI ---
@@ -302,7 +304,19 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           <div id="cp-pin-bar">
             <h4>Pinned (<span id="cp-pin-count">0</span>)</h4>
             <div id="cp-pin-list"></div>
-            <button class="cp-btn" id="cp-gen-task" style="width:100%; margin-top:12px;">Generate Task Context</button>
+            
+            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
+                <span>Context Level:</span>
+                <select id="cp-context-level" style="background: var(--bg-glass-panel); color: var(--text); border: 1px solid var(--border-glass); border-radius: 4px; padding: 2px 4px; font-size: 11px;">
+                  <option value="minimal">Minimal (Name + Props)</option>
+                  <option value="standard" selected>Standard (+ Source + Imports)</option>
+                  <option value="full">Full (+ Relations + Styles)</option>
+                </select>
+              </div>
+              <div id="cp-token-savings" style="font-size: 11px; color: #34d399; font-weight: 500; display: none;"></div>
+              <button class="cp-btn" id="cp-gen-task" style="width:100%;">Generate Task Context</button>
+            </div>
           </div>
         </div>
       \`;
@@ -390,11 +404,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       shadow.getElementById('cp-gen-task').onclick = async () => {
         const instruction = prompt('Describe the task for your AI agent:');
         if (!instruction) return;
+        const level = shadow.getElementById('cp-context-level').value || 'standard';
         try {
           const res = await fetch(BRIDGE + '/api/task', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ instruction, level: 'standard' })
+            body: JSON.stringify({ instruction, level })
           });
           const data = await res.json();
           await navigator.clipboard.writeText(data.context || JSON.stringify(data, null, 2));
@@ -476,7 +491,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
 
-                    if (rect.top < 30) {
+          const isFrozen = frozenEntries.some(f => (info.source && f.file === info.source.fileName) || f.component === info.name);
+          highlight.style.border = isFrozen ? '2px solid rgba(239, 68, 68, 0.8)' : '2px solid rgba(99, 102, 241, 0.8)';
+          highlight.style.backgroundColor = isFrozen ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)';
+          highlight.style.boxShadow = isFrozen ? '0 0 15px rgba(239, 68, 68, 0.3)' : '0 0 15px rgba(99, 102, 241, 0.3)';
+
+          if (rect.top < 30) {
             label.style.top = '4px';
             label.style.borderRadius = '0 0 6px 6px';
             label.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.2)';
@@ -485,16 +505,34 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             label.style.borderRadius = '6px 6px 0 0';
             label.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
           }
+          
+          const lockHtml = isFrozen ? '<span style="color:#ef4444; margin-right:4px;">' + ICONS.lock + '</span>' : '';
+          
           if (info.source) {
-            label.textContent = info.name + ' — ' + info.source.fileName.split('/').pop() + ':' + info.source.lineNumber;
+            label.innerHTML = lockHtml + info.name + ' — ' + info.source.fileName.split('/').pop() + ':' + info.source.lineNumber;
           } else {
-            label.textContent = info.name;
+            label.innerHTML = lockHtml + info.name;
           }
+          
+          label.style.backgroundColor = isFrozen ? '#ef4444' : '#6366f1';
         } else {
           highlight.style.display = 'none';
           currentComponentInfo = null;
         }
       });
+
+      function extractComputedStyles(el) {
+        const s = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return {
+          width: s.width, height: s.height, padding: s.padding, margin: s.margin, border: s.border,
+          display: s.display, position: s.position, flexDirection: s.flexDirection,
+          alignItems: s.alignItems, justifyContent: s.justifyContent, gridTemplateColumns: s.gridTemplateColumns,
+          gap: s.gap, zIndex: s.zIndex, overflow: s.overflow, opacity: s.opacity, visibility: s.visibility,
+          fontSize: s.fontSize, lineHeight: s.lineHeight, color: s.color, backgroundColor: s.backgroundColor,
+          boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+        };
+      }
 
       // --- Click to inspect ---
       window.addEventListener('click', async (e) => {
@@ -509,6 +547,20 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (!currentComponentInfo) return;
         const info = currentComponentInfo;
 
+        if (e.ctrlKey || e.metaKey) {
+          const resolved = await resolveComponent(info);
+          if (resolved) {
+            const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === info.name);
+            await fetch(BRIDGE + '/api/freeze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: info.name, line: resolved.line })
+            });
+            refreshState();
+          }
+          return;
+        }
+
         if (e.shiftKey) {
           const resolved = await resolveComponent(info);
           if (resolved) {
@@ -517,10 +569,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
             });
-            refreshPins();
+            refreshState();
           }
           return;
         }
+
+        // Send computed styles to the server when component is inspected
+        const computedStyles = extractComputedStyles(currentElement);
 
         panel.style.display = 'flex';
         panelTitle.textContent = info.name;
@@ -532,6 +587,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             panelContent.innerHTML = '<p style="color:#f87171;">Could not find source file for ' + info.name + '</p>';
             return;
           }
+
+          // Cache styles on backend
+          fetch(BRIDGE + '/api/computed-styles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: resolved.file + ':' + info.name, styles: computedStyles })
+          }).catch(e => console.error(e));
 
           const res = await fetch(BRIDGE + '/api/context', {
             method: 'POST',
@@ -576,6 +638,31 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             });
             html += '</div>';
           }
+
+          // Computed Styles Box Model Mini View
+          html += '<div class="cp-section">';
+          html += '<div class="cp-section-title">Computed Box Model</div>';
+          html += '<div style="background:var(--code-bg); border:1px solid var(--border-glass); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; color:#cbd5e1; text-align:center;">';
+          html += '<div style="margin-bottom:4px; color:#94a3b8;">margin: ' + computedStyles.margin + '</div>';
+          html += '<div style="border:1px dashed #64748b; padding:8px; margin:4px; display:inline-block; border-radius:4px;">';
+          html += '<div style="margin-bottom:4px; color:#94a3b8;">border: ' + computedStyles.border + '</div>';
+          html += '<div style="border:1px solid #475569; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.05); border-radius:2px;">';
+          html += '<div style="margin-bottom:4px; color:#94a3b8;">padding: ' + computedStyles.padding + '</div>';
+          html += '<div style="background:rgba(99, 102, 241, 0.2); border:1px solid rgba(99,102,241,0.5); padding:8px; display:inline-block; color:#fff; border-radius:2px;">';
+          html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
+          html += '</div></div></div></div>';
+          
+          html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:11px; font-family:monospace;">';
+          html += '<div><span style="color:#94a3b8">display:</span> ' + computedStyles.display + '</div>';
+          html += '<div><span style="color:#94a3b8">position:</span> ' + computedStyles.position + '</div>';
+          if (computedStyles.display.includes('flex')) {
+            html += '<div><span style="color:#94a3b8">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
+            html += '<div><span style="color:#94a3b8">gap:</span> ' + computedStyles.gap + '</div>';
+          }
+          html += '<div><span style="color:#94a3b8">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
+          html += '</div>';
+          
+          html += '</div>';
 
           if (ctx.source && ctx.source.code) {
             html += '<div class="cp-section">';
@@ -632,20 +719,25 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return text;
       }
 
-      async function refreshPins() {
+      async function refreshState() {
         try {
-          const res = await fetch(BRIDGE + '/api/pins');
-          const data = await res.json();
-          shadow.getElementById('cp-pin-count').textContent = data.pins ? data.pins.length : 0;
+          const resPins = await fetch(BRIDGE + '/api/pins');
+          const dataPins = await resPins.json();
+          shadow.getElementById('cp-pin-count').textContent = dataPins.pins ? dataPins.pins.length : 0;
           const list = shadow.getElementById('cp-pin-list');
           list.innerHTML = '';
-          if (data.pins) {
-            data.pins.forEach(function(pin) {
+          if (dataPins.pins) {
+            dataPins.pins.forEach(function(pin) {
               const div = document.createElement('div');
               div.className = 'cp-pin-item';
               const name = pin.context ? pin.context.component.name : pin.id;
               const file = pin.context ? pin.context.source.file.split('/').pop() : '';
-              div.innerHTML = '<span>' + name + ' <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">' + file + '</span></span>' +
+              
+              // check if this pin is frozen
+              const isPinFrozen = frozenEntries.some(f => (pin.context && f.file === pin.context.source.file) || f.id === pin.id);
+              const lockIcon = isPinFrozen ? '<span style="color:#ef4444; margin-right:4px;">' + ICONS.lock + '</span>' : '';
+              
+              div.innerHTML = '<span>' + lockIcon + name + ' <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">' + file + '</span></span>' +
                 '<button class="cp-pin-remove" data-id="' + pin.id + '">' + ICONS.x + '</button>';
               list.appendChild(div);
             });
@@ -654,31 +746,65 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             removeBtns.forEach(btn => {
                btn.onclick = async () => {
                  const id = btn.getAttribute('data-id');
-                 const p = data.pins.find(x => x.id === id);
+                 const p = dataPins.pins.find(x => x.id === id);
                  if (p) {
                    await fetch(BRIDGE + '/api/pin', {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({ action: 'remove', file: p.context.source.file })
                    });
-                   refreshPins();
+                   refreshState();
                  }
                };
             });
           }
+
+          // Update token savings UI
+          const savingsDiv = shadow.getElementById('cp-token-savings');
+          if (dataPins.pins && dataPins.pins.length > 0 && dataPins.totalTokens) {
+            const levelSelect = shadow.getElementById('cp-context-level');
+            const level = levelSelect.value;
+            const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
+            const fullRepoEstimate = 45000; // Average full repo context size
+            const percentSaved = Math.round((1 - (cost / fullRepoEstimate)) * 100);
+            
+            savingsDiv.style.display = 'block';
+            savingsDiv.innerHTML = 'This context = ' + cost.toLocaleString() + ' tokens<br/>' + 
+              '<span style="opacity: 0.8; font-size: 10px;">(' + percentSaved + '% fewer tokens vs full repo)</span>';
+          } else {
+            savingsDiv.style.display = 'none';
+          }
         } catch(e) { }
       }
+
+      shadow.getElementById('cp-context-level').addEventListener('change', refreshState);
 
       if (ws) {
         ws.onmessage = (msg) => {
           try {
             const payload = JSON.parse(msg.data);
-            if (payload.type === 'pins-update') refreshPins();
+            if (payload.type === 'state-update') {
+              frozenEntries = payload.data.frozenEntries || [];
+              refreshState();
+            } else if (payload.type === 'pins-update') {
+              refreshState();
+            }
           } catch(e) {}
         };
       }
 
-      refreshPins();
+      // Initial fetch for frozen entries
+      fetch(BRIDGE + '/api/freeze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list' })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.frozenEntries) frozenEntries = d.frozenEntries;
+        refreshState();
+      })
+      .catch(e => refreshState());
       console.log('[agent-hover] ✓ UI initialized');
     })();
   `;

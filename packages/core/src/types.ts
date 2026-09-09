@@ -64,6 +64,7 @@ export interface ComponentContext {
   };
   relationships?: RelationshipInfo;
   styling?: StyleInfo;
+  computedStyles?: ComputedStyleInfo;
   imports?: ImportInfo[];
   associations?: AssociatedFiles;
   tokens: TokenEstimate;
@@ -94,4 +95,69 @@ export interface TaskContext {
   }[];
   context: string;      // formatted context string
   tokenCost: number;
+  frozenFiles?: FrozenFileDirective[];
+}
+
+/**
+ * A file/component that the AI agent MUST NOT modify.
+ */
+export interface FrozenFileDirective {
+  file: string;
+  component: string;
+  reason?: string;
+}
+
+/**
+ * A frozen component entry — components the developer has explicitly
+ * locked to prevent AI agents from modifying them.
+ */
+export interface FreezeEntry {
+  id: string;
+  file: string;
+  component: string;
+  line: number;
+  frozenAt: string; // ISO timestamp
+}
+
+/**
+ * Computed CSS styles captured from the live browser runtime.
+ * Contains only the ~25 most useful properties for AI debugging.
+ */
+export interface ComputedStyleInfo {
+  // Box model
+  width: string;
+  height: string;
+  padding: string;
+  margin: string;
+  border: string;
+  // Layout
+  display: string;
+  position: string;
+  flexDirection?: string;
+  alignItems?: string;
+  justifyContent?: string;
+  gridTemplateColumns?: string;
+  gap?: string;
+  zIndex: string;
+  overflow: string;
+  // Visibility
+  opacity: string;
+  visibility: string;
+  // Typography
+  fontSize: string;
+  lineHeight: string;
+  color: string;
+  backgroundColor: string;
+  // Sizing
+  maxWidth?: string;
+  maxHeight?: string;
+  minWidth?: string;
+  minHeight?: string;
+  // Bounding box (from getBoundingClientRect)
+  boundingBox?: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
 }

@@ -260,6 +260,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["instruction"],
         },
       },
+      {
+        name: "get_frozen_components",
+        description:
+          "Get a list of components that the developer has explicitly frozen. These components MUST NOT be modified by the AI agent.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -357,6 +366,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text" as const,
               text: taskContext,
+            },
+          ],
+        };
+      }
+
+      case "get_frozen_components": {
+        const result = await postToBridge("/api/freeze", { action: 'list' });
+        
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: result,
             },
           ],
         };

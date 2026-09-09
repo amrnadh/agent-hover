@@ -15,6 +15,8 @@ import type {
   PinSet,
   ComponentContext,
   ContextLevel,
+  FreezeEntry,
+  ComputedStyleInfo
 } from '@agent-hover/core';
 
 export class BridgeServer {
@@ -27,6 +29,8 @@ export class BridgeServer {
   private contextBuilder: ContextBuilder;
   private relationshipResolver: RelationshipResolver;
   private pins: PinEntry[] = [];
+  private frozenEntries: FreezeEntry[] = [];
+  private computedStyles: Map<string, ComputedStyleInfo> = new Map();
   private clients: Set<WebSocket> = new Set();
 
   constructor(projectRoot: string, port: number) {
@@ -207,7 +211,7 @@ export class BridgeServer {
           return;
         }
 
-        this.broadcastPins();
+        this.broadcastState();
         res.json(this.getPinSet());
       } catch (error: unknown) {
         const message =
@@ -230,6 +234,58 @@ export class BridgeServer {
       }
     });
 
+    // Manage frozen components
+    this.app.post('/api/freeze', (req, res) => {
+      try {
+        const { action, file, component, line } = req.body;
+        
+        if (action === 'clear') {
+          this.frozenEntries = [];
+        } else if (action === 'add' && file && component) {
+          const exists = this.frozenEntries.some(f => f.file === file && f.component === component);
+          if (!exists) {
+            this.frozenEntries.push({
+              id: `${file}:${component}`,
+              file,
+              component,
+              line: line || 1,
+              frozenAt: new Date().toISOString()
+            });
+          }
+        } else if (action === 'remove' && file && component) {
+          this.frozenEntries = this.frozenEntries.filter(
+            f => !(f.file === file && f.component === component)
+          );
+        } else if (action !== 'list') {
+          res.status(400).json({ error: 'Invalid action or missing file/component' });
+          return;
+        }
+
+        this.broadcastState();
+        res.json({ frozenEntries: this.frozenEntries });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to manage frozen components';
+        console.error('[agent-hover] Freeze error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Store computed styles
+    this.app.post('/api/computed-styles', (req, res) => {
+      try {
+        const { id, styles } = req.body;
+        if (!id || !styles) {
+          res.status(400).json({ error: 'Missing id or styles' });
+          return;
+        }
+        this.computedStyles.set(id, styles);
+        res.json({ success: true });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to store styles';
+        res.status(500).json({ error: message });
+      }
+    });
+
     // Generate task context
     this.app.post('/api/task', async (req, res) => {
       try {
@@ -247,6 +303,11 @@ export class BridgeServer {
             pin.context.source.startLine,
             level as ContextLevel
           );
+          // Attach computed styles if we have them
+          const styleId = `${context.source.file}:${context.component.name}`;
+          if (this.computedStyles.has(styleId)) {
+            context.computedStyles = this.computedStyles.get(styleId);
+          }
           updatedPins.push({ id: context.id, context });
         }
 
@@ -255,7 +316,7 @@ export class BridgeServer {
           pins: updatedPins,
         };
 
-        const taskContext = formatTaskContext(pinSet, instruction);
+        const taskContext = formatTaskContext(pinSet, instruction, this.frozenEntries);
         res.json(taskContext);
       } catch (error: unknown) {
         const message =
@@ -354,11 +415,11 @@ export class BridgeServer {
         this.clients.delete(ws);
       });
 
-      // Send current pin state to new connections
+      // Send current state to new connections
       ws.send(
         JSON.stringify({
-          type: 'pins-update',
-          data: { pins: this.pins },
+          type: 'state-update',
+          data: { pins: this.pins, frozenEntries: this.frozenEntries },
         })
       );
     });
@@ -380,10 +441,10 @@ export class BridgeServer {
     this.httpServer?.close();
   }
 
-  private broadcastPins() {
+  private broadcastState() {
     const data = JSON.stringify({
-      type: 'pins-update',
-      data: { pins: this.pins },
+      type: 'state-update',
+      data: { pins: this.pins, frozenEntries: this.frozenEntries },
     });
     this.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
