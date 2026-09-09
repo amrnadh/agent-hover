@@ -811,6 +811,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             savingsDiv.style.display = 'none';
           }
         } catch(e) { }
+      }
+      
       if (ws) {
         ws.onmessage = (msg) => {
           try {
