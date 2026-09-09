@@ -164,7 +164,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             z-index: 1000000;
             display: none;
             flex-direction: column;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             border: 1px solid var(--border-glass);
             overflow: hidden;
             animation: springUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -213,35 +213,45 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           .cp-section { margin-bottom: 20px; }
           .cp-section:last-child { margin-bottom: 0; }
           .cp-section-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.6px;
             color: var(--text-muted);
             margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
           }
+          .cp-section-title:hover { color: var(--text); }
+          details.cp-section > summary { list-style: none; }
+          details.cp-section > summary::-webkit-details-marker { display: none; }
+          details.cp-section > summary::before {
+            content: '▶'; font-size: 9px; display: inline-block; margin-right: 6px; transition: transform 0.2s;
+          }
+          details.cp-section[open] > summary::before { transform: rotate(90deg); }
           .cp-code {
             background: var(--code-bg);
             border: 1px solid var(--border-glass);
             border-radius: 8px;
             padding: 12px;
-            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
             font-size: 12px;
             overflow-x: auto;
             white-space: pre;
             max-height: 250px;
             overflow-y: auto;
             line-height: 1.5;
+            margin-top: 8px;
           }
           
-          .cp-props-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          .cp-props-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
           .cp-props-table th {
             text-align: left; padding: 6px 8px; color: var(--text-muted);
             border-bottom: 1px solid var(--border-glass); font-weight: 500;
           }
           .cp-props-table td {
             padding: 6px 8px; border-bottom: 1px solid var(--border-glass);
-            font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
+            font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace; font-size: 11px;
           }
 
           .cp-badge {
@@ -347,6 +357,16 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       shadow.getElementById('cp-close').onclick = () => { panel.style.display = 'none'; };
 
       let lastCopiedContext = null;
+      let lastResolved = null;
+      let lastInfoName = null;
+      let lastComputedStyles = null;
+
+      shadow.getElementById('cp-context-level').addEventListener('change', async () => {
+        refreshState();
+        if (panel.style.display === 'flex' && lastResolved && lastInfoName) {
+          await loadComponentContext(lastInfoName, lastResolved, lastComputedStyles);
+        }
+      });
 
       shadow.getElementById('cp-copy').onclick = async () => {
         if (lastCopiedContext) {
@@ -595,17 +615,30 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             body: JSON.stringify({ id: resolved.file + ':' + info.name, styles: computedStyles })
           }).catch(e => console.error(e));
 
+          await loadComponentContext(info.name, resolved, computedStyles);
+        } catch(err) {
+          panelContent.innerHTML = '<p style="color:#f87171;">Failed to load context: ' + err.message + '</p>';
+        }
+      }, true);
+
+      async function loadComponentContext(infoName, resolved, computedStyles) {
+        panelContent.innerHTML = '<p style="color:var(--text-muted);">Loading context...</p>';
+        try {
+          const level = shadow.getElementById('cp-context-level').value || 'standard';
           const res = await fetch(BRIDGE + '/api/context', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file: resolved.file, line: resolved.line, level: 'standard' })
+            body: JSON.stringify({ file: resolved.file, line: resolved.line, level })
           });
           const ctx = await res.json();
           lastCopiedContext = ctx;
+          lastResolved = resolved;
+          lastInfoName = infoName;
+          lastComputedStyles = computedStyles;
 
           let html = '';
 
-          html += '<div class="cp-section">';
+          html += '<div class="cp-section" style="margin-bottom:12px;">';
           html += '<span class="cp-badge cp-badge-purple">' + ctx.component.type + '</span> ';
           html += '<span class="cp-badge cp-badge-green">' + ctx.component.exportType + ' export</span> ';
           html += '<span class="cp-badge cp-badge-gray">' + ctx.tokens.current + ' tokens</span>';
@@ -613,69 +646,72 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           html += '</div>';
 
           if (ctx.interface && ctx.interface.props && ctx.interface.props.length > 0) {
-            html += '<div class="cp-section">';
-            html += '<div class="cp-section-title">Props</div>';
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Props</summary>';
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Type</th><th>Req</th></tr>';
             ctx.interface.props.forEach(function(p) {
               html += '<tr><td>' + p.name + '</td><td style="color:#cbd5e1;">' + p.type + '</td><td>' + (p.required ? '✓' : '—') + '</td></tr>';
             });
-            html += '</table></div>';
+            html += '</table></details>';
           }
 
           if (ctx.interface && ctx.interface.hooks && ctx.interface.hooks.length > 0) {
-            html += '<div class="cp-section">';
-            html += '<div class="cp-section-title">Hooks</div>';
-            html += '<div style="font-family:monospace; font-size:12px; color:#cbd5e1;">' + ctx.interface.hooks.join(', ') + '</div>';
-            html += '</div>';
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Hooks</summary>';
+            html += '<div style="font-family:&quot;JetBrains Mono&quot;, &quot;Fira Code&quot;, monospace; font-size:12px; color:#cbd5e1; margin-top:8px;">' + ctx.interface.hooks.join(', ') + '</div>';
+            html += '</details>';
           }
 
           if (ctx.imports && ctx.imports.length > 0) {
-            html += '<div class="cp-section">';
-            html += '<div class="cp-section-title">Imports</div>';
+            html += '<details class="cp-section">';
+            html += '<summary class="cp-section-title">Imports</summary>';
+            html += '<div style="margin-top:8px;">';
             ctx.imports.forEach(function(imp) {
               const badge = imp.isLocal ? '<span class="cp-badge cp-badge-green" style="font-size:9px; padding:2px 6px;">L</span>' : '<span class="cp-badge cp-badge-gray" style="font-size:9px; padding:2px 6px;">E</span>';
-              html += '<div style="padding:3px 0; display:flex; align-items:center; gap:6px;">' + badge + ' <span style="font-family:monospace;">' + imp.name + '</span></div>';
+              html += '<div style="padding:3px 0; display:flex; align-items:center; gap:6px;">' + badge + ' <span style="font-family:&quot;JetBrains Mono&quot;, &quot;Fira Code&quot;, monospace;">' + imp.name + '</span></div>';
             });
-            html += '</div>';
+            html += '</div></details>';
           }
 
-          // Computed Styles Box Model Mini View
-          html += '<div class="cp-section">';
-          html += '<div class="cp-section-title">Computed Box Model</div>';
-          html += '<div style="background:var(--code-bg); border:1px solid var(--border-glass); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; color:#cbd5e1; text-align:center;">';
-          html += '<div style="margin-bottom:4px; color:#94a3b8;">margin: ' + computedStyles.margin + '</div>';
-          html += '<div style="border:1px dashed #64748b; padding:8px; margin:4px; display:inline-block; border-radius:4px;">';
-          html += '<div style="margin-bottom:4px; color:#94a3b8;">border: ' + computedStyles.border + '</div>';
-          html += '<div style="border:1px solid #475569; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.05); border-radius:2px;">';
-          html += '<div style="margin-bottom:4px; color:#94a3b8;">padding: ' + computedStyles.padding + '</div>';
-          html += '<div style="background:rgba(99, 102, 241, 0.2); border:1px solid rgba(99,102,241,0.5); padding:8px; display:inline-block; color:#fff; border-radius:2px;">';
-          html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
-          html += '</div></div></div></div>';
-          
-          html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:11px; font-family:monospace;">';
-          html += '<div><span style="color:#94a3b8">display:</span> ' + computedStyles.display + '</div>';
-          html += '<div><span style="color:#94a3b8">position:</span> ' + computedStyles.position + '</div>';
-          if (computedStyles.display.includes('flex')) {
-            html += '<div><span style="color:#94a3b8">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
-            html += '<div><span style="color:#94a3b8">gap:</span> ' + computedStyles.gap + '</div>';
+          if (computedStyles && Object.keys(computedStyles).length > 0) {
+            // Computed Styles Box Model Mini View
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Computed Box Model</summary>';
+            html += '<div style="margin-top:8px; background:var(--code-bg); border:1px solid var(--border-glass); border-radius:8px; padding:12px; font-family:&quot;JetBrains Mono&quot;, &quot;Fira Code&quot;, monospace; font-size:11px; color:#cbd5e1; text-align:center;">';
+            html += '<div style="margin-bottom:4px; color:#94a3b8;">margin: ' + computedStyles.margin + '</div>';
+            html += '<div style="border:1px dashed #64748b; padding:8px; margin:4px; display:inline-block; border-radius:4px;">';
+            html += '<div style="margin-bottom:4px; color:#94a3b8;">border: ' + computedStyles.border + '</div>';
+            html += '<div style="border:1px solid #475569; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.05); border-radius:2px;">';
+            html += '<div style="margin-bottom:4px; color:#94a3b8;">padding: ' + computedStyles.padding + '</div>';
+            html += '<div style="background:rgba(99, 102, 241, 0.2); border:1px solid rgba(99,102,241,0.5); padding:8px; display:inline-block; color:#fff; border-radius:2px;">';
+            html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
+            html += '</div></div></div></div>';
+            
+            html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:11px; font-family:&quot;JetBrains Mono&quot;, &quot;Fira Code&quot;, monospace;">';
+            html += '<div><span style="color:#94a3b8">display:</span> ' + computedStyles.display + '</div>';
+            html += '<div><span style="color:#94a3b8">position:</span> ' + computedStyles.position + '</div>';
+            if (computedStyles.display && computedStyles.display.includes('flex')) {
+              html += '<div><span style="color:#94a3b8">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
+              html += '<div><span style="color:#94a3b8">gap:</span> ' + computedStyles.gap + '</div>';
+            }
+            html += '<div><span style="color:#94a3b8">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
+            html += '</div>';
+            
+            html += '</details>';
           }
-          html += '<div><span style="color:#94a3b8">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
-          html += '</div>';
-          
-          html += '</div>';
 
           if (ctx.source && ctx.source.code) {
-            html += '<div class="cp-section">';
-            html += '<div class="cp-section-title">Source</div>';
+            html += '<details class="cp-section">';
+            html += '<summary class="cp-section-title">Source</summary>';
             html += '<div class="cp-code">' + escapeHtml(ctx.source.code) + '</div>';
-            html += '</div>';
+            html += '</details>';
           }
 
           panelContent.innerHTML = html;
         } catch(err) {
           panelContent.innerHTML = '<p style="color:#f87171;">Failed to load context: ' + err.message + '</p>';
         }
-      }, true);
+      }
 
       // --- Helpers ---
       async function resolveComponent(info) {
@@ -775,10 +811,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             savingsDiv.style.display = 'none';
           }
         } catch(e) { }
-      }
-
-      shadow.getElementById('cp-context-level').addEventListener('change', refreshState);
-
       if (ws) {
         ws.onmessage = (msg) => {
           try {
