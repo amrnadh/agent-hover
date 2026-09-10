@@ -1,5 +1,7 @@
 import type { Plugin } from 'vite';
 import { BridgeServer } from './bridge-server.js';
+import { readFileSync } from 'fs';
+import { createRequire } from 'module';
 
 export interface ComponentPointerOptions {
   /** Port for the bridge server. Default: 9850 */
@@ -27,6 +29,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let currentElement = null;
       let currentComponentInfo = null;
       let frozenEntries = [];
+      let screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null };
 
       // --- Icons ---
       const ICONS = {
@@ -261,6 +264,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           .cp-badge-purple { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
           .cp-badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
           .cp-badge-gray { background: var(--hover-bg); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
+          .cp-badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
           .cp-btn {
             background: var(--primary); color: white; border: none;
@@ -310,6 +314,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             <button class="cp-btn" id="cp-copy">\${ICONS.copy} Copy Context</button>
             <button class="cp-btn cp-btn-ghost" id="cp-pin-btn">\${ICONS.pin} Pin</button>
             <button class="cp-btn cp-btn-ghost" id="cp-editor-btn">\${ICONS.code} Open</button>
+            <button class="cp-btn cp-btn-ghost" id="cp-screenshot-btn">📸 Before</button>
           </div>
           <div id="cp-pin-bar">
             <h4>Pinned (<span id="cp-pin-count">0</span>)</h4>
@@ -327,6 +332,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               <div id="cp-token-savings" style="font-size: 11px; color: #34d399; font-weight: 500; display: none;"></div>
               <button class="cp-btn" id="cp-gen-task" style="width:100%;">Generate Task Context</button>
             </div>
+          </div>
+          <div id="cp-diff-viewer" style="display:none; padding:16px 20px; border-top:1px solid var(--border-glass);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span class="cp-section-title" style="margin:0;">Visual Diff</span>
+              <button class="cp-btn-ghost cp-btn-icon" id="cp-diff-clear" style="border:none; font-size:11px; color:var(--text-muted);">Clear</button>
+            </div>
+            <div id="cp-diff-badge" style="margin-bottom:8px;"></div>
+            <div id="cp-diff-images" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;"></div>
           </div>
         </div>
       \`;
@@ -403,6 +416,119 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             alert('Failed to connect to agent-hover bridge server.');
             shadow.getElementById('cp-editor-btn').innerHTML = ICONS.code + ' Open';
           }
+        }
+      };
+
+      shadow.getElementById('cp-screenshot-btn').onclick = async () => {
+        if (!lastCopiedContext || !currentElement) return;
+        const btn = shadow.getElementById('cp-screenshot-btn');
+        const componentId = lastCopiedContext.source.file + ':' + lastCopiedContext.component.name;
+        
+        if (!screenshotState.beforeDataUrl || screenshotState.currentComponentId !== componentId) {
+          // Capture BEFORE
+          btn.innerHTML = '⏳ Capturing...';
+          const dataUrl = await captureElement(currentElement);
+          if (!dataUrl) {
+            btn.innerHTML = '❌ Failed';
+            setTimeout(() => btn.innerHTML = '📸 Before', 2000);
+            return;
+          }
+          screenshotState = { beforeDataUrl: dataUrl, afterDataUrl: null, currentComponentId: componentId };
+          const rect = currentElement.getBoundingClientRect();
+          // POST to bridge
+          fetch(BRIDGE + '/api/screenshot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: componentId,
+              label: 'before',
+              dataUrl: dataUrl,
+              boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+              viewport: { width: window.innerWidth, height: window.innerHeight }
+            })
+          }).catch(e => console.error(e));
+          
+          btn.innerHTML = '📸 After';
+          // Show thumbnail preview
+          const viewer = shadow.getElementById('cp-diff-viewer');
+          viewer.style.display = 'block';
+          shadow.getElementById('cp-diff-images').innerHTML =
+            '<div style="text-align:center;"><div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">Before</div><img src="' + dataUrl + '" style="max-width:100%; border-radius:4px; border:1px solid var(--border-glass);" /></div>' +
+            '<div style="text-align:center; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:11px;">Make your changes, then click "📸 After"</div>' +
+            '<div></div>';
+          shadow.getElementById('cp-diff-badge').innerHTML = '<span class="cp-badge cp-badge-gray">Before captured — waiting for After</span>';
+        } else {
+          // Capture AFTER
+          btn.innerHTML = '⏳ Capturing...';
+          const dataUrl = await captureElement(currentElement);
+          if (!dataUrl) {
+            btn.innerHTML = '❌ Failed';
+            setTimeout(() => btn.innerHTML = '📸 After', 2000);
+            return;
+          }
+          screenshotState.afterDataUrl = dataUrl;
+          btn.innerHTML = '⏳ Diffing...';
+          
+          // Generate pixel diff
+          const diffResult = await generatePixelDiff(screenshotState.beforeDataUrl, dataUrl);
+          const rect = currentElement.getBoundingClientRect();
+          const beforeRect = screenshotState.beforeDataUrl ? rect : { top: 0, left: 0, width: 0, height: 0 };
+          
+          const diff = {
+            componentId: componentId,
+            componentName: lastCopiedContext.component.name,
+            before: { id: componentId, label: 'before', dataUrl: screenshotState.beforeDataUrl, timestamp: new Date().toISOString(), boundingBox: beforeRect, viewport: { width: window.innerWidth, height: window.innerHeight } },
+            after: { id: componentId, label: 'after', dataUrl: dataUrl, timestamp: new Date().toISOString(), boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }, viewport: { width: window.innerWidth, height: window.innerHeight } },
+            diffDataUrl: diffResult.diffDataUrl,
+            changedPixelPercent: diffResult.changedPixelPercent,
+            createdAt: new Date().toISOString()
+          };
+          
+          // POST after + diff to bridge
+          fetch(BRIDGE + '/api/screenshot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: componentId,
+              label: 'after',
+              dataUrl: dataUrl,
+              boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+              diff: diff
+            })
+          }).catch(e => console.error(e));
+          
+          // Show diff viewer
+          const pct = diffResult.changedPixelPercent;
+          let badgeClass = 'cp-badge-green';
+          let badgeText = '✅ No change (0%)';
+          if (pct > 0 && pct < 0.5) { badgeClass = 'cp-badge-gray'; badgeText = '⚠️ Minimal (' + pct + '%)'; }
+          else if (pct >= 0.5 && pct < 10) { badgeClass = 'cp-badge-purple'; badgeText = '🔄 Changed (' + pct + '%)'; }
+          else if (pct >= 10) { badgeClass = 'cp-badge-red'; badgeText = '🔴 Significant (' + pct + '%)'; }
+          
+          shadow.getElementById('cp-diff-badge').innerHTML = '<span class="cp-badge ' + badgeClass + '">' + badgeText + '</span>';
+          shadow.getElementById('cp-diff-images').innerHTML =
+            '<div style="text-align:center;"><div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">Before</div><img src="' + screenshotState.beforeDataUrl + '" style="max-width:100%; border-radius:4px; border:1px solid var(--border-glass);" /></div>' +
+            '<div style="text-align:center;"><div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">Diff</div><img src="' + (diffResult.diffDataUrl || '') + '" style="max-width:100%; border-radius:4px; border:1px solid var(--border-glass);" /></div>' +
+            '<div style="text-align:center;"><div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">After</div><img src="' + dataUrl + '" style="max-width:100%; border-radius:4px; border:1px solid var(--border-glass);" /></div>';
+          
+          btn.innerHTML = '📸 Before';
+          screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null };
+        }
+      };
+
+      // Clear diff viewer
+      shadow.getElementById('cp-diff-clear').onclick = () => {
+        screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null };
+        shadow.getElementById('cp-diff-viewer').style.display = 'none';
+        shadow.getElementById('cp-screenshot-btn').innerHTML = '📸 Before';
+        if (lastCopiedContext) {
+          const componentId = lastCopiedContext.source.file + ':' + lastCopiedContext.component.name;
+          fetch(BRIDGE + '/api/screenshot/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: componentId })
+          }).catch(e => console.error(e));
         }
       };
 
@@ -552,6 +678,86 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           fontSize: s.fontSize, lineHeight: s.lineHeight, color: s.color, backgroundColor: s.backgroundColor,
           boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
         };
+      }
+
+      async function captureElement(element) {
+        if (!window.domtoimage) {
+          console.error('[agent-hover] dom-to-image-more not loaded, cannot capture screenshot');
+          return null;
+        }
+        try {
+          element.scrollIntoView({ block: 'center', behavior: 'instant' });
+          // Small delay to let scroll settle and any animations complete
+          await new Promise(r => setTimeout(r, 150));
+          const dataUrl = await window.domtoimage.toPng(element, {
+            width: element.offsetWidth,
+            height: element.offsetHeight,
+            style: { transform: 'none', animation: 'none' }
+          });
+          return dataUrl;
+        } catch (err) {
+          console.error('[agent-hover] Screenshot capture failed:', err);
+          return null;
+        }
+      }
+
+      function generatePixelDiff(beforeDataUrl, afterDataUrl) {
+        return new Promise((resolve) => {
+          const imgA = new Image();
+          const imgB = new Image();
+          let loaded = 0;
+          function onLoad() {
+            if (++loaded < 2) return;
+            const w = Math.max(imgA.width, imgB.width);
+            const h = Math.max(imgA.height, imgB.height);
+            const cA = document.createElement('canvas');
+            cA.width = w; cA.height = h;
+            const cB = document.createElement('canvas');
+            cB.width = w; cB.height = h;
+            const cD = document.createElement('canvas');
+            cD.width = w; cD.height = h;
+            cA.getContext('2d').drawImage(imgA, 0, 0);
+            cB.getContext('2d').drawImage(imgB, 0, 0);
+            const dA = cA.getContext('2d').getImageData(0, 0, w, h);
+            const dB = cB.getContext('2d').getImageData(0, 0, w, h);
+            const dD = cD.getContext('2d').createImageData(w, h);
+            let changed = 0;
+            const tolerance = 16;
+            for (let i = 0; i < dA.data.length; i += 4) {
+              const dr = Math.abs(dA.data[i] - dB.data[i]);
+              const dg = Math.abs(dA.data[i+1] - dB.data[i+1]);
+              const db = Math.abs(dA.data[i+2] - dB.data[i+2]);
+              if (dr > tolerance || dg > tolerance || db > tolerance) {
+                dD.data[i] = 255; dD.data[i+1] = 0; dD.data[i+2] = 255; dD.data[i+3] = 200;
+                changed++;
+              } else {
+                dD.data[i] = dA.data[i]; dD.data[i+1] = dA.data[i+1];
+                dD.data[i+2] = dA.data[i+2]; dD.data[i+3] = 50;
+              }
+            }
+            cD.getContext('2d').putImageData(dD, 0, 0);
+            resolve({
+              diffDataUrl: cD.toDataURL('image/png'),
+              changedPixelPercent: Math.round((changed / (w * h)) * 1000) / 10
+            });
+          }
+          imgA.onload = onLoad;
+          imgB.onload = onLoad;
+          imgA.onerror = () => resolve({ diffDataUrl: null, changedPixelPercent: -1 });
+          imgB.onerror = () => resolve({ diffDataUrl: null, changedPixelPercent: -1 });
+          imgA.src = beforeDataUrl;
+          imgB.src = afterDataUrl;
+        });
+      }
+
+      function findComponentElement(componentName) {
+        const allElements = document.querySelectorAll('*');
+        for (const el of allElements) {
+          if (el.id === 'agent-hover-root') continue;
+          const info = getComponentInfo(el);
+          if (info && info.name === componentName) return el;
+        }
+        return null;
       }
 
       // --- Click to inspect ---
@@ -822,6 +1028,59 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               refreshState();
             } else if (payload.type === 'pins-update') {
               refreshState();
+            } else if (payload.type === 'capture-screenshot') {
+              const { requestId, file, component, label, componentId } = payload.data;
+              const el = findComponentElement(component);
+              if (!el) {
+                // Component not in DOM — send error back
+                fetch(BRIDGE + '/api/screenshot', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: componentId, label: label, dataUrl: '', requestId: requestId, error: 'Component not found in DOM. It may be on a different route or not currently rendered.' })
+                }).catch(e => console.error(e));
+                return;
+              }
+              
+              // Capture the element
+              captureElement(el).then(async (dataUrl) => {
+                if (!dataUrl) {
+                  fetch(BRIDGE + '/api/screenshot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: componentId, label: label, dataUrl: '', requestId: requestId, error: 'Screenshot capture failed' })
+                  }).catch(e => console.error(e));
+                  return;
+                }
+                
+                const rect = el.getBoundingClientRect();
+                const postBody = {
+                  id: componentId,
+                  label: label,
+                  dataUrl: dataUrl,
+                  boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                  viewport: { width: window.innerWidth, height: window.innerHeight },
+                  requestId: requestId
+                };
+                
+                // If this is an 'after' capture and we have a 'before', generate diff
+                if (label === 'after') {
+                  try {
+                    const checkRes = await fetch(BRIDGE + '/api/screenshot/' + encodeURIComponent(componentId));
+                    const checkData = await checkRes.json();
+                    if (checkData.before) {
+                      // We need the before dataUrl — fetch it
+                      // Actually, the GET endpoint strips dataUrl for size. Let's store locally instead.
+                      // For MCP captures, we'll just post without diff and let the bridge handle it
+                    }
+                  } catch(e) {}
+                }
+                
+                fetch(BRIDGE + '/api/screenshot', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(postBody)
+                }).catch(e => console.error(e));
+              });
             }
           } catch(e) {}
         };
@@ -872,15 +1131,31 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
     },
     
     transformIndexHtml() {
-      // Inject the overlay script and element-source into the page
-      return [
-        {
+      // Inline dom-to-image-more library for screenshot capture
+      const req = createRequire(import.meta.url);
+      let domToImageSource = '';
+      try {
+        const domToImagePath = req.resolve('dom-to-image-more/dist/dom-to-image-more.min.js');
+        domToImageSource = readFileSync(domToImagePath, 'utf-8');
+      } catch (e) {
+        console.warn('[agent-hover] Could not load dom-to-image-more, screenshot capture will be disabled');
+      }
+
+      const tags: any[] = [];
+      if (domToImageSource) {
+        tags.push({
           tag: 'script',
-          attrs: { type: 'module' },
-          children: generateOverlayBootstrap(port, editor),
-          injectTo: 'body',
-        },
-      ];
+          children: domToImageSource,
+          injectTo: 'body' as const,
+        });
+      }
+      tags.push({
+        tag: 'script',
+        attrs: { type: 'module' },
+        children: generateOverlayBootstrap(port, editor),
+        injectTo: 'body' as const,
+      });
+      return tags;
     },
   };
 }

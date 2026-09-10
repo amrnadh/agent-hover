@@ -269,6 +269,49 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "capture_screenshot",
+        description:
+          "Trigger a screenshot capture of a component's rendered bounding box in the browser. Use label 'before' before making changes, and 'after' once HMR has applied your changes. The overlay will automatically scroll the component into view and capture it. Both before and after must be captured before verify_visual_change can return a diff.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            file: {
+              type: "string",
+              description: "Relative path to the component file (e.g., src/components/Button.tsx)",
+            },
+            component: {
+              type: "string",
+              description: "Component name (e.g., Button)",
+            },
+            label: {
+              type: "string",
+              enum: ["before", "after"],
+              description: "Whether this is a 'before' (pre-change) or 'after' (post-change) capture",
+            },
+          },
+          required: ["file", "component", "label"],
+        },
+      },
+      {
+        name: "verify_visual_change",
+        description:
+          "Get the visual diff result after capturing before/after screenshots. Returns the percentage of pixels that changed and a human-readable assessment. Use this to verify your CSS/layout changes actually produced the expected visual result.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            file: {
+              type: "string",
+              description: "Relative path to the component file",
+            },
+            component: {
+              type: "string",
+              description: "Component name",
+            },
+          },
+          required: ["file", "component"],
+        },
+      },
     ],
   };
 });
@@ -381,6 +424,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: result,
             },
           ],
+        };
+      }
+
+      case "capture_screenshot": {
+        const file = args?.file as string;
+        const component = args?.component as string;
+        const label = args?.label as string;
+
+        if (!file || !component || !label) {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'file', 'component', and 'label' parameters are required." }],
+            isError: true,
+          };
+        }
+
+        const result = await postToBridge("/api/screenshot/trigger", { file, component, label });
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
+      case "verify_visual_change": {
+        const file = args?.file as string;
+        const component = args?.component as string;
+
+        if (!file || !component) {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'file' and 'component' parameters are required." }],
+            isError: true,
+          };
+        }
+
+        const componentId = `${file}:${component}`;
+        const result = await getFromBridge(`/api/screenshot/${encodeURIComponent(componentId)}`);
+        return {
+          content: [{ type: "text" as const, text: result }],
         };
       }
 

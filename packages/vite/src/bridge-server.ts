@@ -9,6 +9,7 @@ import {
   formatContextMarkdown,
   formatPinSetMarkdown,
   formatTaskContext,
+  formatScreenshotDiff,
 } from '@agent-hover/core';
 import type {
   PinEntry,
@@ -16,7 +17,9 @@ import type {
   ComponentContext,
   ContextLevel,
   FreezeEntry,
-  ComputedStyleInfo
+  ComputedStyleInfo,
+  ScreenshotSnapshot,
+  ScreenshotDiff
 } from '@agent-hover/core';
 
 export class BridgeServer {
@@ -31,6 +34,9 @@ export class BridgeServer {
   private pins: PinEntry[] = [];
   private frozenEntries: FreezeEntry[] = [];
   private computedStyles: Map<string, ComputedStyleInfo> = new Map();
+  private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
+  private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
+  private readonly MAX_SCREENSHOT_ENTRIES = 20;
   private clients: Set<WebSocket> = new Set();
 
   constructor(projectRoot: string, port: number) {
@@ -67,6 +73,13 @@ export class BridgeServer {
         ),
       },
     };
+  }
+
+  private evictOldestScreenshot() {
+    if (this.screenshotStore.size > this.MAX_SCREENSHOT_ENTRIES) {
+      const oldestKey = this.screenshotStore.keys().next().value;
+      if (oldestKey) this.screenshotStore.delete(oldestKey);
+    }
   }
 
   private setupRoutes() {
@@ -328,6 +341,144 @@ export class BridgeServer {
       }
     });
 
+    // Clear screenshots
+    this.app.post('/api/screenshot/clear', (req, res) => {
+      try {
+        const { id } = req.body;
+        if (id) {
+          this.screenshotStore.delete(id);
+        } else {
+          this.screenshotStore.clear();
+        }
+        res.json({ success: true });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to clear screenshots';
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Trigger screenshot capture via WebSocket (for MCP)
+    this.app.post('/api/screenshot/trigger', (req, res) => {
+      try {
+        const { file, component, label } = req.body;
+        if (!file || !component || !label) {
+          res.status(400).json({ error: 'Missing file, component, or label' });
+          return;
+        }
+
+        const componentId = `${file}:${component}`;
+        const requestId = `capture-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+        if (this.clients.size === 0) {
+          res.status(503).json({ error: 'No browser overlay connected. Please open your app in the browser with the Agent Hover overlay active.' });
+          return;
+        }
+
+        // Create a promise that will be resolved when the overlay responds
+        const capturePromise = new Promise<any>((resolve) => {
+          const timer = setTimeout(() => {
+            this.pendingCaptures.delete(requestId);
+            resolve({ error: 'Capture timed out after 10s. The component may not be visible in the browser viewport, or the overlay may not be active.' });
+          }, 10000);
+
+          this.pendingCaptures.set(requestId, { resolve, timer });
+        });
+
+        // Send capture request to all connected overlay clients
+        const wsMessage = JSON.stringify({
+          type: 'capture-screenshot',
+          data: { requestId, file, component, label, componentId },
+        });
+        this.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(wsMessage);
+          }
+        });
+
+        // Wait for the overlay to capture and respond
+        capturePromise.then((result) => {
+          if (result.error) {
+            res.status(408).json(result);
+          } else {
+            res.json(result);
+          }
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to trigger capture';
+        console.error('[agent-hover] Screenshot trigger error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Store screenshot snapshot
+    this.app.post('/api/screenshot', (req, res) => {
+      try {
+        const { id, label, dataUrl, boundingBox, viewport, requestId } = req.body;
+        if (!id || !label || !dataUrl) {
+          res.status(400).json({ error: 'Missing id, label, or dataUrl' });
+          return;
+        }
+
+        const snapshot: ScreenshotSnapshot = {
+          id,
+          label,
+          dataUrl,
+          timestamp: new Date().toISOString(),
+          boundingBox: boundingBox || { top: 0, left: 0, width: 0, height: 0 },
+          viewport: viewport || { width: 1920, height: 1080 },
+        };
+
+        let entry = this.screenshotStore.get(id);
+        if (!entry) {
+          entry = {};
+          this.screenshotStore.set(id, entry);
+          this.evictOldestScreenshot();
+        }
+        entry[label as keyof typeof entry] = snapshot as any;
+
+        // If both before and after exist, store the diff (sent from client)
+        if (req.body.diff) {
+          entry.diff = req.body.diff;
+        }
+
+        // Resolve pending MCP capture if requestId matches
+        if (requestId && this.pendingCaptures.has(requestId)) {
+          const pending = this.pendingCaptures.get(requestId)!;
+          clearTimeout(pending.timer);
+          pending.resolve({ snapshot, diff: entry.diff || null });
+          this.pendingCaptures.delete(requestId);
+        }
+
+        res.json({ success: true, hasBeforeAndAfter: !!(entry.before && entry.after), diff: entry.diff || null });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to store screenshot';
+        console.error('[agent-hover] Screenshot error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Get screenshot diff for a component
+    this.app.get('/api/screenshot/:id', (req, res) => {
+      try {
+        const id = decodeURIComponent(req.params.id);
+        const entry = this.screenshotStore.get(id);
+        if (!entry) {
+          res.status(404).json({ error: 'No screenshots found for this component', id });
+          return;
+        }
+        res.json({
+          id,
+          before: entry.before ? { ...entry.before, dataUrl: undefined, timestamp: entry.before.timestamp, boundingBox: entry.before.boundingBox, viewport: entry.before.viewport } : null,
+          after: entry.after ? { ...entry.after, dataUrl: undefined, timestamp: entry.after.timestamp, boundingBox: entry.after.boundingBox, viewport: entry.after.viewport } : null,
+          hasDiff: !!entry.diff,
+          diff: entry.diff ? { componentId: entry.diff.componentId, componentName: entry.diff.componentName, changedPixelPercent: entry.diff.changedPixelPercent, createdAt: entry.diff.createdAt } : null,
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get screenshot';
+        res.status(500).json({ error: message });
+      }
+    });
+
     // Open in editor
     this.app.post('/api/open-editor', (req, res) => {
       try {
@@ -444,7 +595,7 @@ export class BridgeServer {
   private broadcastState() {
     const data = JSON.stringify({
       type: 'state-update',
-      data: { pins: this.pins, frozenEntries: this.frozenEntries },
+      data: { pins: this.pins, frozenEntries: this.frozenEntries, screenshotCount: this.screenshotStore.size },
     });
     this.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {

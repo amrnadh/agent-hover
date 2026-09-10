@@ -161,3 +161,38 @@ export interface ComputedStyleInfo {
     height: number;
   };
 }
+
+/**
+ * A screenshot snapshot of a component's rendered bounding box.
+ * Captured from the browser overlay using dom-to-image.
+ */
+export interface ScreenshotSnapshot {
+  id: string;                  // component identifier (file:componentName)
+  label: 'before' | 'after';
+  dataUrl: string;             // base64 PNG data URL
+  timestamp: string;           // ISO timestamp
+  boundingBox: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
+  viewport: {
+    width: number;
+    height: number;
+  };
+}
+
+/**
+ * A visual diff comparing before/after screenshots of a component.
+ * Generated client-side using pixel comparison on Canvas.
+ */
+export interface ScreenshotDiff {
+  componentId: string;
+  componentName: string;
+  before: ScreenshotSnapshot;
+  after: ScreenshotSnapshot;
+  diffDataUrl: string;          // pixel-diff overlay PNG data URL
+  changedPixelPercent: number;  // 0-100
+  createdAt: string;            // ISO timestamp
+}

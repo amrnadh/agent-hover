@@ -1,4 +1,4 @@
-import type { ComponentContext, ContextLevel, PinSet, TaskContext, FreezeEntry, FrozenFileDirective, ComputedStyleInfo } from './types.js';
+import type { ComponentContext, ContextLevel, PinSet, TaskContext, FreezeEntry, FrozenFileDirective, ComputedStyleInfo, ScreenshotDiff } from './types.js';
 
 export function formatContextMarkdown(context: ComponentContext, level: ContextLevel): string {
   let md = `## ${context.component.name}\n`;
@@ -145,5 +145,49 @@ export function formatComputedStyles(styles: ComputedStyleInfo): string {
     md += `\n**Bounding Box**: top=${b.top}px, left=${b.left}px, ${b.width}×${b.height}px\n`;
   }
 
+  return md;
+}
+
+/**
+ * Formats a screenshot diff result into a concise markdown block for AI consumption.
+ */
+export function formatScreenshotDiff(diff: ScreenshotDiff): string {
+  let md = `## Visual Diff: ${diff.componentName}\n\n`;
+  md += `**Component**: \`${diff.componentId}\`\n`;
+  md += `**Captured at**: ${diff.createdAt}\n\n`;
+
+  const pct = diff.changedPixelPercent;
+  let status: string;
+  if (pct === 0) {
+    status = '✅ NO VISUAL CHANGE — the component looks identical before and after.';
+  } else if (pct < 0.5) {
+    status = `⚠️ MINIMAL CHANGE — only ${pct}% of pixels differ (likely sub-pixel rendering or anti-aliasing).`;
+  } else if (pct < 10) {
+    status = `🔄 MODERATE CHANGE — ${pct}% of pixels differ. This appears to be an intentional UI change.`;
+  } else {
+    status = `🔴 SIGNIFICANT CHANGE — ${pct}% of pixels differ. Please verify this is intentional.`;
+  }
+
+  md += `### Result\n${status}\n\n`;
+
+  md += `### Before\n`;
+  md += `- Size: ${diff.before.boundingBox.width}×${diff.before.boundingBox.height}px\n`;
+  md += `- Position: (${diff.before.boundingBox.left}, ${diff.before.boundingBox.top})\n`;
+  md += `- Viewport: ${diff.before.viewport.width}×${diff.before.viewport.height}\n\n`;
+
+  md += `### After\n`;
+  md += `- Size: ${diff.after.boundingBox.width}×${diff.after.boundingBox.height}px\n`;
+  md += `- Position: (${diff.after.boundingBox.left}, ${diff.after.boundingBox.top})\n`;
+  md += `- Viewport: ${diff.after.viewport.width}×${diff.after.viewport.height}\n\n`;
+
+  const widthDelta = diff.after.boundingBox.width - diff.before.boundingBox.width;
+  const heightDelta = diff.after.boundingBox.height - diff.before.boundingBox.height;
+  if (widthDelta !== 0 || heightDelta !== 0) {
+    md += `### Size Change\n`;
+    md += `- Width: ${widthDelta > 0 ? '+' : ''}${widthDelta}px\n`;
+    md += `- Height: ${heightDelta > 0 ? '+' : ''}${heightDelta}px\n\n`;
+  }
+
+  md += `**Pixels changed**: ${pct}%\n`;
   return md;
 }
