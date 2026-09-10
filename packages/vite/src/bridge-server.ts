@@ -84,7 +84,7 @@ export class BridgeServer {
 
   private setupRoutes() {
     this.app.use(cors());
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: '50mb' }));
 
     // Health check
     this.app.get('/api/health', (_req, res) => {
@@ -466,12 +466,28 @@ export class BridgeServer {
           res.status(404).json({ error: 'No screenshots found for this component', id });
           return;
         }
+        const includeData = req.query.include_data === 'true';
         res.json({
           id,
-          before: entry.before ? { ...entry.before, dataUrl: undefined, timestamp: entry.before.timestamp, boundingBox: entry.before.boundingBox, viewport: entry.before.viewport } : null,
-          after: entry.after ? { ...entry.after, dataUrl: undefined, timestamp: entry.after.timestamp, boundingBox: entry.after.boundingBox, viewport: entry.after.viewport } : null,
+          before: entry.before ? {
+            timestamp: entry.before.timestamp,
+            boundingBox: entry.before.boundingBox,
+            viewport: entry.before.viewport,
+            ...(includeData ? { dataUrl: entry.before.dataUrl } : {}),
+          } : null,
+          after: entry.after ? {
+            timestamp: entry.after.timestamp,
+            boundingBox: entry.after.boundingBox,
+            viewport: entry.after.viewport,
+            ...(includeData ? { dataUrl: entry.after.dataUrl } : {}),
+          } : null,
           hasDiff: !!entry.diff,
-          diff: entry.diff ? { componentId: entry.diff.componentId, componentName: entry.diff.componentName, changedPixelPercent: entry.diff.changedPixelPercent, createdAt: entry.diff.createdAt } : null,
+          diff: entry.diff ? {
+            componentId: entry.diff.componentId,
+            componentName: entry.diff.componentName,
+            changedPixelPercent: entry.diff.changedPixelPercent,
+            createdAt: entry.diff.createdAt,
+          } : null,
         });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to get screenshot';
