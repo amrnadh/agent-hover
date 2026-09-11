@@ -15,8 +15,7 @@ export interface ComponentPointerOptions {
 const UI_HTML = `
         <style>
           * { box-sizing: border-box; }
-          :host {
-            all: initial;
+          :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
             --font-sans: 'Geist', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'JetBrains Mono', 'Geist Mono', 'Fira Code', SFMono-Regular, monospace;
             
@@ -873,7 +872,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       container.id = 'agent-hover-root';
       const shadow = container.attachShadow({ mode: 'open' });
       shadow.innerHTML = ${JSON.stringify(UI_HTML)};
-      document.body.appendChild(container);
+      if (document.body) {
+        document.body.appendChild(container);
+      } else {
+        window.addEventListener('DOMContentLoaded', () => document.body.appendChild(container));
+      }
 
       // Elements
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
@@ -1223,7 +1226,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       shadow.getElementById('cp-gen-task').onclick = async () => {
         const instruction = prompt('Describe the task for your AI agent:');
         if (!instruction) return;
-        const level = (shadow.getElementById('cp-context-level') as HTMLSelectElement)?.value || 'standard';
+        const level = shadow.getElementById('cp-context-level')?.value || 'standard';
         try {
           const res = await fetch(BRIDGE + '/api/task', {
             method: 'POST',
@@ -1499,7 +1502,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       async function loadComponentContext(infoName, resolved, computedStyles) {
         flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
         try {
-          const level = (shadow.getElementById('cp-context-level') as HTMLSelectElement)?.value || 'standard';
+          const level = shadow.getElementById('cp-context-level')?.value || 'standard';
           const res = await fetch(BRIDGE + '/api/context', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1698,7 +1701,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
           const savingsDiv = shadow.getElementById('cp-token-savings');
           if (dataPins.pins && dataPins.pins.length > 0 && dataPins.totalTokens) {
-            const levelSelect = shadow.getElementById('cp-context-level') as HTMLSelectElement;
+            const levelSelect = shadow.getElementById('cp-context-level');
             const level = levelSelect.value;
             const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
             const fullRepoEstimate = 45000;
@@ -1748,7 +1751,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 }
                 
                 const rect = el.getBoundingClientRect();
-                const postBody: any = {
+                const postBody = {
                   id: componentId,
                   label: label,
                   dataUrl: dataUrl,
@@ -1762,7 +1765,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                     const checkRes = await fetch(BRIDGE + '/api/screenshot/' + encodeURIComponent(componentId) + '?include_data=true');
                     const checkData = await checkRes.json();
                     if (checkData.before && checkData.before.dataUrl) {
-                      const diffResult: any = await generatePixelDiff(checkData.before.dataUrl, dataUrl);
+                      const diffResult = await generatePixelDiff(checkData.before.dataUrl, dataUrl);
                       postBody.diff = {
                         componentId: componentId,
                         componentName: component,
