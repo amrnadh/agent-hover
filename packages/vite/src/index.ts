@@ -88,6 +88,7 @@ const UI_HTML = `
             box-shadow: var(--shadow-tile);
             transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
+            height: 50px;
           }
 
           .cp-dock-tile:hover {
@@ -101,219 +102,11 @@ const UI_HTML = `
             transform: scale(0.96);
           }
 
-          /* Tile 1: Hero Squircle with Neon Cyan Ring & Time */
-          #cp-dock-toggle {
-            height: 66px;
-            border-radius: 18px;
-            background: rgba(14, 22, 36, 0.85);
-            padding: 6px 4px 4px 4px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-          }
-
-          .cp-hero-frame {
-            width: 36px;
-            height: 36px;
-            border-radius: 12px;
-            border: 2px solid var(--border-cyan);
-            background: rgba(0, 240, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-primary);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-
-          #cp-dock-toggle.active .cp-hero-frame {
+          .cp-dock-tile.active {
+            color: var(--accent-cyan);
             border-color: var(--accent-cyan);
-            background: rgba(0, 240, 255, 0.18);
-            color: var(--accent-cyan);
-            box-shadow: 0 0 16px var(--accent-cyan-glow), inset 0 0 10px rgba(0, 240, 255, 0.25);
-            animation: heroPulse 2.2s infinite;
-          }
-
-          @keyframes heroPulse {
-            0% { box-shadow: 0 0 12px var(--accent-cyan-glow), inset 0 0 6px rgba(0, 240, 255, 0.2); }
-            50% { box-shadow: 0 0 22px rgba(0, 240, 255, 0.7), inset 0 0 12px rgba(0, 240, 255, 0.4); }
-            100% { box-shadow: 0 0 12px var(--accent-cyan-glow), inset 0 0 6px rgba(0, 240, 255, 0.2); }
-          }
-
-          .cp-hero-icon {
-            width: 18px;
-            height: 18px;
-          }
-
-          .cp-hero-time {
-            font-family: var(--font-mono);
-            font-size: 10.5px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            letter-spacing: 0.2px;
-            line-height: 1;
-            margin-bottom: 2px;
-          }
-
-          #cp-dock-toggle.active .cp-hero-time {
-            color: var(--accent-cyan);
-          }
-
-          /* Small Subtitle between Hero and Matrix */
-          .cp-dock-caption {
-            font-family: var(--font-mono);
-            font-size: 8px;
-            color: rgba(148, 163, 184, 0.45);
-            letter-spacing: 0.6px;
-            text-align: center;
-            margin: -2px 0 1px 0;
-            user-select: none;
-          }
-
-          /* Tile 2: Dot Matrix Grid Tile */
-          #cp-dock-matrix {
-            height: 50px;
-            border-radius: 16px;
-          }
-
-          .cp-dot-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 5px);
-            grid-template-rows: repeat(4, 5px);
-            gap: 3.5px;
-            pointer-events: none;
-          }
-
-          .cp-dot-grid span {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.16);
-            transition: all 0.25s ease;
-          }
-
-          #cp-dock-matrix:hover .cp-dot-grid span:nth-child(3n+1) {
-            background: var(--accent-cyan);
-            box-shadow: 0 0 6px var(--accent-cyan);
-          }
-
-          #cp-dock-matrix.has-pins .cp-dot-grid span {
-            background: var(--accent-cyan);
-            box-shadow: 0 0 4px var(--accent-cyan);
-          }
-
-          /* Tile 3: Fluid Wave Tile */
-          #cp-dock-wave {
-            height: 56px;
-            border-radius: 16px;
-            background: rgba(10, 16, 26, 0.95);
-            justify-content: flex-start;
-            padding-top: 6px;
-          }
-
-          .cp-wave-metric {
-            font-family: var(--font-mono);
-            font-size: 10.5px;
-            font-weight: 600;
-            color: var(--text-primary);
-            z-index: 2;
-            letter-spacing: 0.3px;
-          }
-
-          .cp-wave-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 32px;
-            overflow: hidden;
-            pointer-events: none;
-          }
-
-          .cp-liquid-wave {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 200%;
-            height: 100%;
-            animation: waveFlow 4s linear infinite;
-          }
-
-          @keyframes waveFlow {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-
-          .cp-wave-path {
-            fill: url(#cp-liquid-grad);
-          }
-
-          /* Tile 4: Notes / Stack Card */
-          #cp-dock-notes {
-            height: auto;
-            min-height: 64px;
-            border-radius: 16px;
-            padding: 6px 5px 6px 6px;
-            align-items: flex-start;
-            justify-content: flex-start;
-            background: rgba(14, 22, 36, 0.9);
-          }
-
-          .cp-notes-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            margin-bottom: 4px;
-            padding: 0 2px;
-          }
-
-          .cp-notes-title {
-            font-family: var(--font-mono);
-            font-size: 8.5px;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text-muted);
-            font-weight: 600;
-          }
-
-          .cp-notes-list {
-            display: flex;
-            flex-direction: column;
-            gap: 2.5px;
-            width: 100%;
-            overflow: hidden;
-          }
-
-          .cp-notes-item {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-family: var(--font-mono);
-            font-size: 8px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.2;
-          }
-
-          .cp-notes-bullet {
-            font-size: 7.5px;
-            color: var(--accent-cyan);
-            flex-shrink: 0;
-          }
-
-          .cp-notes-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          /* Tile 5: Direct Jump to IDE */
-          #cp-dock-open {
-            height: 44px;
-            border-radius: 14px;
+            background: rgba(0, 240, 255, 0.12);
+            box-shadow: 0 0 16px var(--accent-cyan-glow), inset 0 0 10px rgba(0, 240, 255, 0.15);
           }
 
           /* Bottom Drag & Snap Handle */
@@ -322,7 +115,7 @@ const UI_HTML = `
             height: 4px;
             background: rgba(255, 255, 255, 0.22);
             border-radius: 999px;
-            margin-top: 2px;
+            margin-top: 4px;
             cursor: grab;
             transition: all 0.2s ease;
           }
@@ -436,6 +229,29 @@ const UI_HTML = `
           #cp-flyout.open {
             opacity: 1;
             pointer-events: auto;
+          }
+
+          /* Dynamic Dock Orientation: Flip to Left Side when on Right */
+          #cp-dock-wrapper.cp-dock-right #cp-dock-callout {
+            left: auto;
+            right: 78px;
+          }
+
+          #cp-dock-wrapper.cp-dock-right .cp-callout-tail {
+            left: auto;
+            right: -7px;
+            border-right: none;
+            border-left: 7px solid rgba(11, 18, 32, 0.95);
+          }
+
+          #cp-dock-wrapper.cp-dock-right #cp-flyout {
+            left: auto;
+            right: 82px;
+          }
+
+          #cp-dock-wrapper.cp-dock-bottom #cp-flyout {
+            top: auto;
+            bottom: 0;
           }
 
           #cp-flyout-header {
@@ -687,62 +503,26 @@ const UI_HTML = `
 
         <div id="cp-dock-wrapper">
           <div id="cp-dock">
-            <!-- Tile 1: Hero Squircle with Neon Cyan Ring & Time -->
+            
             <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
-              <div class="cp-hero-frame">
-                <svg class="cp-hero-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-              </div>
-              <div class="cp-hero-time" id="cp-hero-clock">04:14</div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </div>
 
-            <!-- Subtitle caption -->
-            <div class="cp-dock-caption">hover ui...</div>
-
-            <!-- Tile 2: Dot Matrix Grid Tile -->
-            <div class="cp-dock-tile" id="cp-dock-matrix" title="Pinned Components Matrix">
-              <div class="cp-dot-grid">
-                <span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span>
-              </div>
+            <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
               <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
             </div>
 
-            <!-- Tile 3: Fluid Wave Tile -->
-            <div class="cp-dock-tile" id="cp-dock-wave" title="Session Activity & State Pulse">
-              <div class="cp-wave-metric" id="cp-wave-metric">00:42</div>
-              <div class="cp-wave-container">
-                <svg class="cp-liquid-wave" viewBox="0 0 120 40" preserveAspectRatio="none">
-                  <path class="cp-wave-path" d="M0,15 C30,5 60,25 90,12 C105,6 115,18 120,15 L120,40 L0,40 Z"></path>
-                </svg>
-              </div>
+            <div class="cp-dock-tile" id="cp-dock-diff" title="Track Visual Diff">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
             </div>
 
-            <!-- Tile 4: Notes / Pinned Micro Card -->
-            <div class="cp-dock-tile" id="cp-dock-notes" title="Pinned Notes / Stack">
-              <div class="cp-notes-header">
-                <span class="cp-notes-title">Notes</span>
-                <span id="cp-notes-count" style="color:var(--accent-cyan); font-size:8px; font-weight:700;">0</span>
-              </div>
-              <div class="cp-notes-list" id="cp-notes-mini-list">
-                <div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Point & click</span></div>
-                <div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Press Alt</span></div>
-                <div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Jump to code</span></div>
-              </div>
+            <div class="cp-dock-tile" id="cp-dock-export" title="Export Context for AI">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
             </div>
 
-            <!-- Tile 5: Direct Jump to IDE -->
             <div class="cp-dock-tile" id="cp-dock-open" title="Jump to Source in IDE">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="22" y1="12" x2="18" y2="12"/>
-                <line x1="6" y1="12" x2="2" y2="12"/>
-                <line x1="12" y1="6" x2="12" y2="2"/>
-                <line x1="12" y1="22" x2="12" y2="18"/>
-              </svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
             </div>
 
             <!-- Bottom Drag Handle -->
@@ -881,19 +661,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       // Elements
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
       const dockToggle = shadow.getElementById('cp-dock-toggle');
-      const dockMatrix = shadow.getElementById('cp-dock-matrix');
-      const dockWave = shadow.getElementById('cp-dock-wave');
-      const dockNotes = shadow.getElementById('cp-dock-notes');
+      const dockPins = shadow.getElementById('cp-dock-pins');
+      const dockDiff = shadow.getElementById('cp-dock-diff');
+      const dockExport = shadow.getElementById('cp-dock-export');
       const dockOpen = shadow.getElementById('cp-dock-open');
       const dockHandle = shadow.getElementById('cp-dock-handle');
       const dockPinBadge = shadow.getElementById('cp-dock-pin-badge');
       const callout = shadow.getElementById('cp-dock-callout');
       const calloutText = shadow.getElementById('cp-callout-text');
       const calloutMeta = shadow.getElementById('cp-callout-meta');
-      const heroClock = shadow.getElementById('cp-hero-clock');
-      const waveMetric = shadow.getElementById('cp-wave-metric');
-      const notesMiniList = shadow.getElementById('cp-notes-mini-list');
-      const notesCount = shadow.getElementById('cp-notes-count');
 
       const highlight = shadow.getElementById('cp-highlight');
       const label = shadow.getElementById('cp-label');
@@ -901,20 +677,24 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const flyoutTitle = shadow.getElementById('cp-flyout-title');
       const flyoutContent = shadow.getElementById('cp-flyout-content');
 
-      // Live Digital Clock & Counter
-      function updateClock() {
-        const now = new Date();
-        const hrs = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        const timeStr = hrs + ':' + mins;
-        if (heroClock) heroClock.textContent = timeStr;
-        
-        // Update seconds on wave metric
-        const secs = String(now.getSeconds()).padStart(2, '0');
-        if (waveMetric) waveMetric.textContent = mins + ':' + secs;
+
+
+      function updateDockOrientation() {
+        const rect = dockWrapper.getBoundingClientRect();
+        const isRight = (rect.left + rect.width / 2) > (window.innerWidth / 2);
+        if (isRight) {
+          dockWrapper.classList.add('cp-dock-right');
+        } else {
+          dockWrapper.classList.remove('cp-dock-right');
+        }
+
+        const isBottom = (rect.top + rect.height / 2) > (window.innerHeight / 2);
+        if (isBottom) {
+          dockWrapper.classList.add('cp-dock-bottom');
+        } else {
+          dockWrapper.classList.remove('cp-dock-bottom');
+        }
       }
-      setInterval(updateClock, 1000);
-      updateClock();
 
       // Persist & Drag Dock
       try {
@@ -926,6 +706,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           dockWrapper.style.transform = 'none';
         }
       } catch(e) {}
+      updateDockOrientation();
+      window.addEventListener('resize', updateDockOrientation);
 
       let isDragging = false;
       let dragStartY = 0;
@@ -950,11 +732,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const newLeft = Math.max(10, Math.min(window.innerWidth - 80, initialLeft + (e.clientX - dragStartX)));
         dockWrapper.style.top = newTop + 'px';
         dockWrapper.style.left = newLeft + 'px';
+        updateDockOrientation();
       });
 
       window.addEventListener('mouseup', () => {
         if (!isDragging) return;
         isDragging = false;
+        updateDockOrientation();
         try {
           localStorage.setItem('agent_hover_dock_pos', JSON.stringify({
             top: dockWrapper.style.top,
@@ -991,20 +775,22 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       dockToggle.onclick = togglePointerMode;
 
-      dockMatrix.onclick = () => {
+      dockPins.onclick = () => {
         flyout.classList.toggle('open');
         const pinBar = shadow.getElementById('cp-pin-bar');
         pinBar.scrollIntoView({ behavior: 'smooth' });
       };
 
-      dockWave.onclick = () => {
-        flyout.classList.toggle('open');
+      dockDiff.onclick = () => {
+        if (!lastCopiedContext || !currentElement) {
+          showCallout('Select a component first', 'TIP');
+          return;
+        }
+        shadow.getElementById('cp-track-btn').click();
       };
 
-      dockNotes.onclick = () => {
-        flyout.classList.toggle('open');
-        const pinBar = shadow.getElementById('cp-pin-bar');
-        pinBar.scrollIntoView({ behavior: 'smooth' });
+      dockExport.onclick = () => {
+        shadow.getElementById('cp-gen-task').click();
       };
 
       shadow.getElementById('cp-flyout-close').onclick = () => {
@@ -1636,35 +1422,17 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const dataPins = await resPins.json();
           const count = dataPins.pins ? dataPins.pins.length : 0;
           shadow.getElementById('cp-pin-count').textContent = count;
-          if (notesCount) notesCount.textContent = count;
 
           if (count > 0) {
             dockPinBadge.style.display = 'block';
             dockPinBadge.textContent = count;
-            dockMatrix.classList.add('has-pins');
+
           } else {
             dockPinBadge.style.display = 'none';
-            dockMatrix.classList.remove('has-pins');
+
           }
 
-          // Update mini notes list in dock
-          if (notesMiniList) {
-            if (dataPins.pins && dataPins.pins.length > 0) {
-              notesMiniList.innerHTML = '';
-              dataPins.pins.slice(0, 3).forEach(pin => {
-                const name = pin.context ? pin.context.component.name : (pin.id.split(':').pop() || 'Item');
-                const row = document.createElement('div');
-                row.className = 'cp-notes-item';
-                row.innerHTML = '<span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">' + name + '</span>';
-                notesMiniList.appendChild(row);
-              });
-            } else {
-              notesMiniList.innerHTML = 
-                '<div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Point & click</span></div>' +
-                '<div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Press Alt</span></div>' +
-                '<div class="cp-notes-item"><span class="cp-notes-bullet">⊙</span><span class="cp-notes-text">Jump to code</span></div>';
-            }
-          }
+
 
           const list = shadow.getElementById('cp-pin-list');
           list.innerHTML = '';
@@ -1822,6 +1590,12 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
     },
     
     configureServer(server) {
+      // If a bridge server was already running from a previous reload, stop it first
+      if (bridgeServer) {
+        try {
+          bridgeServer.stop();
+        } catch (e) {}
+      }
       // Start bridge server when Vite dev server starts
       bridgeServer = new BridgeServer(projectRoot, port);
       bridgeServer.start();
@@ -1830,6 +1604,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
       server.httpServer?.on('close', () => {
         if (bridgeServer) {
           bridgeServer.stop();
+          bridgeServer = null;
         }
       });
     },
