@@ -420,9 +420,51 @@ const UI_HTML = `
             border: 2px solid var(--accent-cyan);
             background: rgba(0, 240, 255, 0.08);
             box-shadow: 0 0 24px var(--accent-cyan-glow), inset 0 0 16px rgba(0, 240, 255, 0.06);
-            border-radius: 8px;
+            border-radius: 2px;
             display: none;
-            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 80ms ease-out;
+          }
+
+          /* Box-model bands — asymmetric border-widths show real spacing */
+          #cp-margin-band {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999996;
+            box-sizing: border-box;
+            background: transparent;
+            border-style: solid;
+            border-color: rgba(255, 99, 99, 0.28);
+            border-width: 0;
+            display: none;
+            transition: all 80ms ease-out;
+          }
+          #cp-padding-band {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999998;
+            box-sizing: border-box;
+            background: transparent;
+            border-style: solid;
+            border-color: rgba(124, 200, 134, 0.30);
+            border-width: 0;
+            display: none;
+            transition: all 80ms ease-out;
+          }
+
+          /* Dimension label chip */
+          #cp-dim-label {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999999;
+            background: rgba(0, 240, 255, 0.9);
+            color: #0a101a;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: none;
+            white-space: nowrap;
           }
 
           #cp-label {
@@ -584,6 +626,9 @@ const UI_HTML = `
         <div id="cp-highlight">
           <div id="cp-label"></div>
         </div>
+        <div id="cp-margin-band"></div>
+        <div id="cp-padding-band"></div>
+        <div id="cp-dim-label"></div>
 
         <div id="cp-tracker">
           <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent-cyan); font-family:var(--font-mono);"></span></div>
@@ -675,6 +720,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       const highlight = shadow.getElementById('cp-highlight');
       const label = shadow.getElementById('cp-label');
+      const marginBand = shadow.getElementById('cp-margin-band');
+      const paddingBand = shadow.getElementById('cp-padding-band');
+      const dimLabel = shadow.getElementById('cp-dim-label');
       const flyout = shadow.getElementById('cp-flyout');
       const flyoutTitle = shadow.getElementById('cp-flyout-title');
       const flyoutContent = shadow.getElementById('cp-flyout-content');
@@ -769,8 +817,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         } else {
           dockToggle.classList.remove('active');
           highlight.style.display = 'none';
+          hideBands();
           callout.classList.remove('show');
           currentComponentInfo = null;
+          currentElement = null;
+          currentStack = [];
+          currentStackIndex = -1;
           console.log('[agent-hover] Pointer mode OFF');
         }
       }
@@ -1138,6 +1190,74 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let currentStack = [];
       let currentStackIndex = -1;
 
+      // Position margin/padding bands around an element (design-mode style)
+      function positionBands(el) {
+        if (!el || !marginBand || !paddingBand) return;
+        const cs = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const px = (v) => parseFloat(v) || 0;
+        const mt = px(cs.marginTop), mr = px(cs.marginRight), mb = px(cs.marginBottom), ml = px(cs.marginLeft);
+        const pt = px(cs.paddingTop), pr = px(cs.paddingRight), pb = px(cs.paddingBottom), pl = px(cs.paddingLeft);
+        const bt = px(cs.borderTopWidth), brw = px(cs.borderRightWidth), bb = px(cs.borderBottomWidth), blw = px(cs.borderLeftWidth);
+
+        if (mt || mr || mb || ml) {
+          marginBand.style.display = 'block';
+          marginBand.style.top = (rect.top - mt) + 'px';
+          marginBand.style.left = (rect.left - ml) + 'px';
+          marginBand.style.width = (rect.width + ml + mr) + 'px';
+          marginBand.style.height = (rect.height + mt + mb) + 'px';
+          marginBand.style.borderTopWidth = mt + 'px';
+          marginBand.style.borderRightWidth = mr + 'px';
+          marginBand.style.borderBottomWidth = mb + 'px';
+          marginBand.style.borderLeftWidth = ml + 'px';
+        } else {
+          marginBand.style.display = 'none';
+        }
+
+        if (pt || pr || pb || pl) {
+          paddingBand.style.display = 'block';
+          paddingBand.style.top = (rect.top + bt) + 'px';
+          paddingBand.style.left = (rect.left + blw) + 'px';
+          paddingBand.style.width = Math.max(0, rect.width - blw - brw) + 'px';
+          paddingBand.style.height = Math.max(0, rect.height - bt - bb) + 'px';
+          paddingBand.style.borderTopWidth = pt + 'px';
+          paddingBand.style.borderRightWidth = pr + 'px';
+          paddingBand.style.borderBottomWidth = pb + 'px';
+          paddingBand.style.borderLeftWidth = pl + 'px';
+        } else {
+          paddingBand.style.display = 'none';
+        }
+      }
+
+      // Show dimension label chip below the highlight
+      function showDimLabel(rect) {
+        if (!dimLabel) return;
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        dimLabel.textContent = w + ' x ' + h;
+        dimLabel.style.display = 'block';
+        dimLabel.style.top = (rect.top + rect.height + 4) + 'px';
+        dimLabel.style.left = rect.left + 'px';
+      }
+
+      function hideBands() {
+        if (marginBand) marginBand.style.display = 'none';
+        if (paddingBand) paddingBand.style.display = 'none';
+        if (dimLabel) dimLabel.style.display = 'none';
+      }
+
+      // Generate a readable element descriptor: tag.class1.class2 or tag#id
+      function describeElement(el) {
+        let desc = el.tagName.toLowerCase();
+        if (el.id) {
+          desc += '#' + el.id;
+        } else if (el.className && typeof el.className === 'string') {
+          const cls = el.className.trim().split(/\s+/).slice(0, 3);
+          if (cls.length && cls[0]) desc += '.' + cls.join('.');
+        }
+        return desc;
+      }
+
       // Update highlight box to match a specific component in the stack
       function highlightComponent(info, useUnionRect) {
         if (!info) return;
@@ -1187,17 +1307,71 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           breadcrumb = '<div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap; margin-top:2px;">' + crumbs.join('<span style="color:var(--text-muted); font-size:9px; margin:0 1px;">›</span>') + '</div>';
         }
 
+        // Element tag descriptor below component name
+        let elemTag = '';
+        if (currentElement) {
+          elemTag = ' <span style="color:var(--text-muted); font-size:10px;">' + describeElement(currentElement) + '</span>';
+        }
+
         if (info.source) {
           const fileName = info.source.fileName.split('/').pop();
-          label.innerHTML = lockHtml + info.name + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
+          label.innerHTML = lockHtml + info.name + elemTag + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
           showCallout('<' + info.name + ' />', fileName + ':' + info.source.lineNumber);
         } else {
-          label.innerHTML = lockHtml + info.name + breadcrumb;
+          label.innerHTML = lockHtml + info.name + elemTag + breadcrumb;
           showCallout('<' + info.name + ' />', 'Component');
         }
 
         label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
         label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
+
+        // Show box-model bands and dimension label
+        if (currentElement) positionBands(currentElement);
+        showDimLabel(rect);
+      }
+
+      // Highlight any DOM element (no React component needed)
+      function highlightRawElement(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          highlight.style.display = 'none';
+          hideBands();
+          return;
+        }
+
+        highlight.style.display = 'block';
+        highlight.style.top = rect.top + 'px';
+        highlight.style.left = rect.left + 'px';
+        highlight.style.width = rect.width + 'px';
+        highlight.style.height = rect.height + 'px';
+        highlight.style.border = '2px solid rgba(100, 160, 255, 0.7)';
+        highlight.style.backgroundColor = 'rgba(100, 160, 255, 0.06)';
+        highlight.style.boxShadow = '0 0 12px rgba(100, 160, 255, 0.2)';
+
+        if (rect.top < 36) {
+          label.style.top = '4px';
+          label.style.borderRadius = '0 0 8px 8px';
+        } else {
+          label.style.top = '-30px';
+          label.style.borderRadius = '8px 8px 0 0';
+        }
+
+        const desc = describeElement(el);
+        const textPreview = el.textContent ? el.textContent.trim().substring(0, 40) : '';
+        const previewHtml = textPreview ? ' <span style="color:var(--text-muted); font-size:10px; opacity:0.7;">"' + textPreview + (el.textContent.trim().length > 40 ? '...' : '') + '"</span>' : '';
+        label.innerHTML = '<span style="color:rgba(100, 160, 255, 0.9);">' + desc + '</span>' + previewHtml;
+        label.style.borderColor = 'rgba(100, 160, 255, 0.5)';
+        label.style.color = 'rgba(100, 160, 255, 0.9)';
+
+        showCallout(desc, Math.round(rect.width) + ' x ' + Math.round(rect.height));
+
+        // Show box-model bands and dimension label
+        positionBands(el);
+        showDimLabel(rect);
+
+        // Set a minimal componentInfo so click-to-inspect can still work
+        currentComponentInfo = { name: desc, source: null, fiber: null, isRawElement: true, element: el };
       }
 
       // --- Keyboard Shortcuts ---
@@ -1249,23 +1423,38 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const info = stack[currentStackIndex];
             highlightComponent(info, true);
           } else {
-            highlight.style.display = 'none';
-            currentComponentInfo = null;
+            // No React component — highlight the raw DOM element
             currentStack = [];
             currentStackIndex = -1;
+            highlightRawElement(el);
           }
         });
       });
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
-        if (!currentComponentInfo || !currentComponentInfo.fiber || highlight.style.display === 'none') return;
-        const rect = getComponentBoundingRect(currentComponentInfo.fiber);
-        if (rect) {
+        if (!currentComponentInfo || highlight.style.display === 'none') return;
+
+        if (currentComponentInfo.isRawElement && currentComponentInfo.element) {
+          // Raw element — reposition using its bounding rect
+          const rect = currentComponentInfo.element.getBoundingClientRect();
           highlight.style.top = rect.top + 'px';
           highlight.style.left = rect.left + 'px';
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
+          positionBands(currentComponentInfo.element);
+          showDimLabel(rect);
+        } else if (currentComponentInfo.fiber) {
+          // React component — use union bounding rect
+          const rect = getComponentBoundingRect(currentComponentInfo.fiber);
+          if (rect) {
+            highlight.style.top = rect.top + 'px';
+            highlight.style.left = rect.left + 'px';
+            highlight.style.width = rect.width + 'px';
+            highlight.style.height = rect.height + 'px';
+            if (currentElement) positionBands(currentElement);
+            showDimLabel(rect);
+          }
         }
       }
       window.addEventListener('scroll', repositionHighlight, { capture: true, passive: true });
@@ -1374,38 +1563,114 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (!currentComponentInfo) return;
         const info = currentComponentInfo;
 
-        if (e.ctrlKey || e.metaKey) {
-          const resolved = await resolveComponent(info);
-          if (resolved) {
-            const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === info.name);
-            await fetch(BRIDGE + '/api/freeze', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: info.name, line: resolved.line })
-            });
-            showCallout(isCurrentlyFrozen ? 'Unfrozen ' + info.name : 'Frozen ' + info.name, 'LOCK');
-            refreshState();
+        // Raw elements can't be frozen/pinned
+        if (!info.isRawElement) {
+          if (e.ctrlKey || e.metaKey) {
+            const resolved = await resolveComponent(info);
+            if (resolved) {
+              const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === info.name);
+              await fetch(BRIDGE + '/api/freeze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: info.name, line: resolved.line })
+              });
+              showCallout(isCurrentlyFrozen ? 'Unfrozen ' + info.name : 'Frozen ' + info.name, 'LOCK');
+              refreshState();
+            }
+            return;
           }
-          return;
+
+          if (e.shiftKey) {
+            const resolved = await resolveComponent(info);
+            if (resolved) {
+              await fetch(BRIDGE + '/api/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
+              });
+              showCallout('Pinned ' + info.name, 'PIN');
+              refreshState();
+            }
+            return;
+          }
         }
 
-        if (e.shiftKey) {
-          const resolved = await resolveComponent(info);
-          if (resolved) {
-            await fetch(BRIDGE + '/api/pin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
-            });
-            showCallout('Pinned ' + info.name, 'PIN');
-            refreshState();
-          }
-          return;
-        }
-
-        const computedStyles = extractComputedStyles(currentElement);
+        const computedStyles = currentElement ? extractComputedStyles(currentElement) : {};
         flyout.classList.add('open');
         flyoutTitle.textContent = info.name;
+
+        // For raw elements, show element info directly
+        if (info.isRawElement && info.element) {
+          const el = info.element;
+          let html = '';
+          html += '<div class="cp-section" style="margin-bottom:14px;">';
+          html += '<span class="cp-badge cp-badge-cyan">' + el.tagName.toLowerCase() + '</span> ';
+          if (el.id) html += '<span class="cp-badge cp-badge-emerald">#' + el.id + '</span> ';
+          if (el.className && typeof el.className === 'string') {
+            const cls = el.className.trim().split(/\\s+/).slice(0, 5);
+            if (cls.length && cls[0]) {
+              cls.forEach(function(c) {
+                html += '<span class="cp-badge cp-badge-muted">.' + c + '</span> ';
+              });
+            }
+          }
+          html += '</div>';
+
+          // Text content preview
+          const text = el.textContent ? el.textContent.trim() : '';
+          if (text && text.length < 200) {
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Text Content</summary>';
+            html += '<div style="margin-top:6px; font-size:12px; color:var(--text-secondary); word-break:break-word;">"' + text + '"</div>';
+            html += '</details>';
+          }
+
+          // Attributes
+          const attrs = Array.from(el.attributes || []).filter(a => a.name !== 'class' && a.name !== 'id' && a.name !== 'style');
+          if (attrs.length > 0) {
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Attributes (' + attrs.length + ')</summary>';
+            html += '<table class="cp-props-table"><tr><th>Name</th><th>Value</th></tr>';
+            attrs.forEach(function(a) {
+              const val = a.value.length > 60 ? a.value.substring(0, 60) + '...' : a.value;
+              html += '<tr><td style="color:var(--accent-cyan);">' + a.name + '</td><td style="color:#cbd5e1;">' + val + '</td></tr>';
+            });
+            html += '</table></details>';
+          }
+
+          // Computed styles box model
+          if (computedStyles && Object.keys(computedStyles).length > 0) {
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title">Computed Box Model</summary>';
+            html += '<div class="cp-box-model">';
+            html += '<div style="margin-bottom:4px; color:var(--text-muted);">margin: ' + computedStyles.margin + '</div>';
+            html += '<div style="border:1px dashed #475569; padding:8px; margin:4px; display:inline-block; border-radius:6px;">';
+            html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
+            html += '<div style="border:1px solid #334155; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
+            html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
+            html += '<div style="background:rgba(100,160,255,0.12); border:1px solid rgba(100,160,255,0.4); padding:8px 12px; display:inline-block; color:#fff; border-radius:4px; font-weight:600;">';
+            html += Math.round(parseFloat(computedStyles.width)) + ' x ' + Math.round(parseFloat(computedStyles.height));
+            html += '</div></div></div></div>';
+            html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; font-family:var(--font-mono);">';
+            html += '<div><span style="color:var(--text-muted);">display:</span> ' + computedStyles.display + '</div>';
+            html += '<div><span style="color:var(--text-muted);">position:</span> ' + computedStyles.position + '</div>';
+            if (computedStyles.display && computedStyles.display.includes('flex')) {
+              html += '<div><span style="color:var(--text-muted);">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
+              html += '<div><span style="color:var(--text-muted);">gap:</span> ' + computedStyles.gap + '</div>';
+            }
+            html += '<div><span style="color:var(--text-muted);">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
+            html += '<div><span style="color:var(--text-muted);">bg:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.backgroundColor + '; margin-right:4px;"></span>' + computedStyles.backgroundColor + '</div>';
+            html += '</div></details>';
+          }
+
+          flyoutContent.innerHTML = html;
+
+          // Hide breadcrumb for raw elements
+          const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
+          breadcrumbEl.style.display = 'none';
+          return;
+        }
+
         flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
 
         // Populate ancestry breadcrumb in flyout
