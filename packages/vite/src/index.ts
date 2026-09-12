@@ -15,6 +15,12 @@ export interface ComponentPointerOptions {
 const UI_HTML = `
         <style>
           * { box-sizing: border-box; }
+          :host {
+            pointer-events: none;
+          }
+          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal {
+            pointer-events: auto;
+          }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
             --font-sans: 'Geist', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'JetBrains Mono', 'Geist Mono', 'Fira Code', SFMono-Regular, monospace;
@@ -419,11 +425,50 @@ const UI_HTML = `
             z-index: 999997;
             border: 2px solid var(--accent-cyan);
             background: rgba(0, 240, 255, 0.08);
-            box-shadow: 0 0 24px var(--accent-cyan-glow), inset 0 0 16px rgba(0, 240, 255, 0.06);
+            box-shadow: 0 0 20px var(--accent-cyan-glow), inset 0 0 12px rgba(0, 240, 255, 0.04);
             border-radius: 2px;
             display: none;
             transition: all 80ms ease-out;
+            box-sizing: border-box;
           }
+          #cp-highlight.selected {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 24px var(--accent-cyan-glow), inset 0 0 16px rgba(0, 240, 255, 0.08);
+          }
+          #cp-highlight.is-raw {
+            border-color: rgba(99, 179, 237, 0.85);
+            background: rgba(99, 179, 237, 0.06);
+            box-shadow: 0 0 16px rgba(99, 179, 237, 0.25);
+          }
+
+          /* 8 Selection Handles (Design Mode style) */
+          .cp-handle {
+            position: absolute;
+            width: 7px;
+            height: 7px;
+            background: var(--accent-cyan);
+            border: 1.5px solid #04070e;
+            border-radius: 1px;
+            box-shadow: 0 0 6px var(--accent-cyan-glow);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+          }
+          #cp-highlight.selected .cp-handle {
+            display: block;
+          }
+          #cp-highlight.is-raw .cp-handle {
+            background: #63b3ed;
+            box-shadow: 0 0 6px rgba(99, 179, 237, 0.6);
+          }
+          .cp-handle-nw { top: 0; left: 0; }
+          .cp-handle-n  { top: 0; left: 50%; }
+          .cp-handle-ne { top: 0; left: 100%; }
+          .cp-handle-e  { top: 50%; left: 100%; }
+          .cp-handle-se { top: 100%; left: 100%; }
+          .cp-handle-s  { top: 100%; left: 50%; }
+          .cp-handle-sw { top: 100%; left: 0; }
+          .cp-handle-w  { top: 50%; left: 0; }
 
           /* Box-model bands — asymmetric border-widths show real spacing */
           #cp-margin-band {
@@ -456,8 +501,8 @@ const UI_HTML = `
             position: fixed;
             pointer-events: none;
             z-index: 999999;
-            background: rgba(0, 240, 255, 0.9);
-            color: #0a101a;
+            background: var(--accent-cyan);
+            color: #04070e;
             font-size: 10px;
             font-family: var(--font-mono);
             font-weight: 700;
@@ -465,6 +510,10 @@ const UI_HTML = `
             border-radius: 3px;
             display: none;
             white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+          }
+          #cp-dim-label.is-raw {
+            background: #63b3ed;
           }
 
           #cp-label {
@@ -479,8 +528,11 @@ const UI_HTML = `
             font-size: 11px;
             font-weight: 600;
             padding: 4px 10px;
-            border-radius: 8px;
+            border-radius: 6px;
             white-space: nowrap;
+            max-width: 480px;
+            overflow: hidden;
+            text-overflow: ellipsis;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 12px var(--accent-cyan-glow);
           }
 
@@ -625,6 +677,14 @@ const UI_HTML = `
 
         <div id="cp-highlight">
           <div id="cp-label"></div>
+          <div class="cp-handle cp-handle-nw"></div>
+          <div class="cp-handle cp-handle-n"></div>
+          <div class="cp-handle cp-handle-ne"></div>
+          <div class="cp-handle cp-handle-e"></div>
+          <div class="cp-handle cp-handle-se"></div>
+          <div class="cp-handle cp-handle-s"></div>
+          <div class="cp-handle cp-handle-sw"></div>
+          <div class="cp-handle cp-handle-w"></div>
         </div>
         <div id="cp-margin-band"></div>
         <div id="cp-padding-band"></div>
@@ -697,6 +757,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       // --- Shadow DOM UI Container ---
       const container = document.createElement('div');
       container.id = 'agent-hover-root';
+      container.style.position = 'fixed';
+      container.style.inset = '0';
+      container.style.pointerEvents = 'none';
+      container.style.zIndex = '999990';
       const shadow = container.attachShadow({ mode: 'open' });
       shadow.innerHTML = ${JSON.stringify(UI_HTML)};
       if (document.body) {
@@ -1093,48 +1157,74 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return null;
       }
 
-      function getComponentStack(el) {
-        const fiber = getFiberNode(el);
-        if (!fiber) return [];
-
-        const stack = [];
-        const seen = new Set();
-        let curr = fiber;
-        while (curr) {
-          let name = null;
-          let source = null;
-          if (typeof curr.type === 'function') {
-            name = curr.type.displayName || curr.type.name;
-            source = curr._debugSource || null;
-          } else if (curr.type && typeof curr.type === 'object') {
-            const inner = curr.type.render || curr.type.type;
-            if (typeof inner === 'function') {
-              name = inner.displayName || inner.name;
-              source = curr._debugSource || null;
-            }
-          }
-          if (name && name !== 'Fragment' && !name.startsWith('_') && name !== 'Suspense' && name !== 'StrictMode') {
-            if (!seen.has(name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null'))) {
-              seen.add(name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null'));
-              stack.push({ name, source, fiber: curr });
-            }
-          }
-          curr = curr.return;
+      // --- Element & Component Detection (Universal Selection) ---
+      function describeElement(el) {
+        if (!el) return '';
+        let desc = el.tagName.toLowerCase();
+        if (el.id) {
+          desc += '#' + el.id;
+        } else if (el.className && typeof el.className === 'string') {
+          const cls = el.className.trim().split(/\\s+/).slice(0, 2);
+          if (cls.length && cls[0]) desc += '.' + cls.join('.');
         }
-        return stack; // [innermost, ..., outermost]  e.g. [Card, StatCard, StatsGrid, Dashboard, App]
+        return desc;
       }
 
-      // Get the best default component from the ancestry stack
-      // Skips generic wrapper components in shared/common/ui folders
+      function buildHierarchyStack(el) {
+        if (!el) return [];
+        const stack = [];
+
+        // 1. The exact DOM element under the cursor is ALWAYS level 0 (direct selection)
+        const desc = describeElement(el);
+        const textSnippet = el.textContent ? el.textContent.trim().slice(0, 35) : '';
+        stack.push({
+          name: desc,
+          isDomElement: true,
+          element: el,
+          tagName: el.tagName.toLowerCase(),
+          textPreview: textSnippet
+        });
+
+        // 2. Walk fiber ancestry to find all React components containing this element
+        const fiber = getFiberNode(el);
+        if (fiber) {
+          const seen = new Set();
+          let curr = fiber;
+          while (curr) {
+            let name = null;
+            let source = null;
+            if (typeof curr.type === 'function') {
+              name = curr.type.displayName || curr.type.name;
+              source = curr._debugSource || null;
+            } else if (curr.type && typeof curr.type === 'object') {
+              const inner = curr.type.render || curr.type.type;
+              if (typeof inner === 'function') {
+                name = inner.displayName || inner.name;
+                source = curr._debugSource || null;
+              }
+            }
+            if (name && name !== 'Fragment' && !name.startsWith('_') && name !== 'Suspense' && name !== 'StrictMode') {
+              const key = name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null');
+              if (!seen.has(key)) {
+                seen.add(key);
+                stack.push({ name, source, fiber: curr, isDomElement: false, element: el });
+              }
+            }
+            curr = curr.return;
+          }
+        }
+        return stack; // [leaf DOM element, innermost React component, ..., outermost App]
+      }
+
+      function getComponentStack(el) {
+        return buildHierarchyStack(el).filter(x => !x.isDomElement);
+      }
+
       function getBestComponent(stack) {
-        if (stack.length === 0) return null;
-        if (stack.length === 1) return stack[0];
-        // Default to the 2nd item (first non-leaf), which is typically the meaningful component
-        // e.g. stack = [Card, StatCard, ...] -> return StatCard
-        return stack[1];
+        if (!stack || stack.length === 0) return null;
+        return stack[0];
       }
 
-      // Legacy compat wrapper — returns single component info (uses best match from stack)
       function getComponentInfo(el) {
         const stack = getComponentStack(el);
         return getBestComponent(stack);
@@ -1148,7 +1238,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           if (f.stateNode && f.stateNode instanceof HTMLElement && f.stateNode !== document.body) {
             nodes.push(f.stateNode);
           } else {
-            // If this fiber doesn't have a DOM node, walk its children
             let child = f.child;
             while (child) {
               walkFiber(child);
@@ -1156,13 +1245,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             }
           }
         }
-        // Walk the fiber's children to find all DOM nodes it owns
         let child = fiber.child;
         while (child) {
           walkFiber(child);
           child = child.sibling;
         }
-        // Also include the fiber's own stateNode if it's an element
         if (fiber.stateNode && fiber.stateNode instanceof HTMLElement && fiber.stateNode !== document.body) {
           nodes.push(fiber.stateNode);
         }
@@ -1186,7 +1273,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return { top, left, width: right - left, height: bottom - top };
       }
 
-      // --- Component Ancestry Navigation State ---
+      // --- Hierarchy Navigation State ---
       let currentStack = [];
       let currentStackIndex = -1;
 
@@ -1230,14 +1317,19 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       // Show dimension label chip below the highlight
-      function showDimLabel(rect) {
+      function showDimLabel(rect, isRaw) {
         if (!dimLabel) return;
         const w = Math.round(rect.width);
         const h = Math.round(rect.height);
-        dimLabel.textContent = w + ' x ' + h;
+        dimLabel.textContent = w + ' × ' + h;
         dimLabel.style.display = 'block';
         dimLabel.style.top = (rect.top + rect.height + 4) + 'px';
         dimLabel.style.left = rect.left + 'px';
+        if (isRaw) {
+          dimLabel.classList.add('is-raw');
+        } else {
+          dimLabel.classList.remove('is-raw');
+        }
       }
 
       function hideBands() {
@@ -1246,30 +1338,28 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (dimLabel) dimLabel.style.display = 'none';
       }
 
-      // Generate a readable element descriptor: tag.class1.class2 or tag#id
-      function describeElement(el) {
-        let desc = el.tagName.toLowerCase();
-        if (el.id) {
-          desc += '#' + el.id;
-        } else if (el.className && typeof el.className === 'string') {
-          const cls = el.className.trim().split(/\s+/).slice(0, 3);
-          if (cls.length && cls[0]) desc += '.' + cls.join('.');
-        }
-        return desc;
-      }
-
-      // Update highlight box to match a specific component in the stack
+      // Update highlight box to match a specific item in currentStack
       function highlightComponent(info, useUnionRect) {
         if (!info) return;
         currentComponentInfo = info;
-        let rect;
-        if (useUnionRect && info.fiber) {
+        let rect = null;
+
+        if (info.isDomElement && info.element) {
+          rect = info.element.getBoundingClientRect();
+          highlight.classList.add('is-raw');
+        } else if (useUnionRect && info.fiber) {
           rect = getComponentBoundingRect(info.fiber);
-        }
-        if (!rect && currentElement) {
+          highlight.classList.remove('is-raw');
+        } else if (currentElement) {
           rect = currentElement.getBoundingClientRect();
+          highlight.classList.remove('is-raw');
         }
-        if (!rect) return;
+
+        if (!rect || (rect.width === 0 && rect.height === 0)) {
+          highlight.style.display = 'none';
+          hideBands();
+          return;
+        }
 
         highlight.style.display = 'block';
         highlight.style.top = rect.top + 'px';
@@ -1278,9 +1368,19 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         highlight.style.height = rect.height + 'px';
 
         const isFrozen = frozenEntries.some(f => (info.source && f.file === info.source.fileName) || f.component === info.name);
-        highlight.style.border = isFrozen ? '2px solid rgba(244, 63, 94, 0.85)' : '2px solid var(--accent-cyan)';
-        highlight.style.backgroundColor = isFrozen ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0, 240, 255, 0.08)';
-        highlight.style.boxShadow = isFrozen ? '0 0 20px rgba(244, 63, 94, 0.4)' : '0 0 24px var(--accent-cyan-glow)';
+        if (isFrozen) {
+          highlight.style.border = '2px solid rgba(244, 63, 94, 0.85)';
+          highlight.style.backgroundColor = 'rgba(244, 63, 94, 0.1)';
+          highlight.style.boxShadow = '0 0 20px rgba(244, 63, 94, 0.4)';
+        } else if (info.isDomElement) {
+          highlight.style.border = '2px solid rgba(99, 179, 237, 0.85)';
+          highlight.style.backgroundColor = 'rgba(99, 179, 237, 0.06)';
+          highlight.style.boxShadow = '0 0 16px rgba(99, 179, 237, 0.25)';
+        } else {
+          highlight.style.border = '2px solid var(--accent-cyan)';
+          highlight.style.backgroundColor = 'rgba(0, 240, 255, 0.08)';
+          highlight.style.boxShadow = '0 0 20px var(--accent-cyan-glow)';
+        }
 
         if (rect.top < 36) {
           label.style.top = '4px';
@@ -1292,7 +1392,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
         const lockHtml = isFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
 
-        // Build ancestry breadcrumb
+        // Build ancestry breadcrumbs
         let breadcrumb = '';
         if (currentStack.length > 1) {
           const crumbs = [];
@@ -1300,78 +1400,37 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const c = currentStack[i];
             const isActive = i === currentStackIndex;
             const style = isActive
-              ? 'color:var(--accent-cyan); text-decoration:underline; text-underline-offset:3px;'
+              ? 'color:var(--accent-cyan); text-decoration:underline; text-underline-offset:3px; font-weight:600;'
               : 'color:var(--text-muted); cursor:pointer;';
             crumbs.push('<span style="' + style + ' font-size:10px;" data-stack-idx="' + i + '">' + c.name + '</span>');
           }
           breadcrumb = '<div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap; margin-top:2px;">' + crumbs.join('<span style="color:var(--text-muted); font-size:9px; margin:0 1px;">›</span>') + '</div>';
         }
 
-        // Element tag descriptor below component name
-        let elemTag = '';
-        if (currentElement) {
-          elemTag = ' <span style="color:var(--text-muted); font-size:10px;">' + describeElement(currentElement) + '</span>';
-        }
-
-        if (info.source) {
+        if (info.isDomElement) {
+          const textPreview = info.textPreview ? ' <span style="color:var(--text-muted); font-size:10px; opacity:0.8;">"' + info.textPreview + '"</span>' : '';
+          const parentComp = currentStack.length > 1 ? '<span style="color:var(--accent-cyan); margin-right:4px;">' + currentStack[1].name + ' ›</span>' : '';
+          label.innerHTML = lockHtml + parentComp + '<span style="color:#63b3ed;">' + info.name + '</span>' + textPreview + breadcrumb;
+          label.style.borderColor = 'rgba(99, 179, 237, 0.6)';
+          label.style.color = '#63b3ed';
+          showCallout(info.name, Math.round(rect.width) + ' × ' + Math.round(rect.height));
+          if (info.element) positionBands(info.element);
+        } else if (info.source) {
           const fileName = info.source.fileName.split('/').pop();
-          label.innerHTML = lockHtml + info.name + elemTag + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
+          label.innerHTML = lockHtml + info.name + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
+          label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
+          label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
           showCallout('<' + info.name + ' />', fileName + ':' + info.source.lineNumber);
+          if (currentElement) positionBands(currentElement);
         } else {
-          label.innerHTML = lockHtml + info.name + elemTag + breadcrumb;
+          label.innerHTML = lockHtml + info.name + breadcrumb;
+          label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
+          label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
           showCallout('<' + info.name + ' />', 'Component');
+          if (currentElement) positionBands(currentElement);
         }
 
-        label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
-        label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
-
-        // Show box-model bands and dimension label
-        if (currentElement) positionBands(currentElement);
-        showDimLabel(rect);
-      }
-
-      // Highlight any DOM element (no React component needed)
-      function highlightRawElement(el) {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) {
-          highlight.style.display = 'none';
-          hideBands();
-          return;
-        }
-
-        highlight.style.display = 'block';
-        highlight.style.top = rect.top + 'px';
-        highlight.style.left = rect.left + 'px';
-        highlight.style.width = rect.width + 'px';
-        highlight.style.height = rect.height + 'px';
-        highlight.style.border = '2px solid rgba(100, 160, 255, 0.7)';
-        highlight.style.backgroundColor = 'rgba(100, 160, 255, 0.06)';
-        highlight.style.boxShadow = '0 0 12px rgba(100, 160, 255, 0.2)';
-
-        if (rect.top < 36) {
-          label.style.top = '4px';
-          label.style.borderRadius = '0 0 8px 8px';
-        } else {
-          label.style.top = '-30px';
-          label.style.borderRadius = '8px 8px 0 0';
-        }
-
-        const desc = describeElement(el);
-        const textPreview = el.textContent ? el.textContent.trim().substring(0, 40) : '';
-        const previewHtml = textPreview ? ' <span style="color:var(--text-muted); font-size:10px; opacity:0.7;">"' + textPreview + (el.textContent.trim().length > 40 ? '...' : '') + '"</span>' : '';
-        label.innerHTML = '<span style="color:rgba(100, 160, 255, 0.9);">' + desc + '</span>' + previewHtml;
-        label.style.borderColor = 'rgba(100, 160, 255, 0.5)';
-        label.style.color = 'rgba(100, 160, 255, 0.9)';
-
-        showCallout(desc, Math.round(rect.width) + ' x ' + Math.round(rect.height));
-
-        // Show box-model bands and dimension label
-        positionBands(el);
-        showDimLabel(rect);
-
-        // Set a minimal componentInfo so click-to-inspect can still work
-        currentComponentInfo = { name: desc, source: null, fiber: null, isRawElement: true, element: el };
+        showDimLabel(rect, info.isDomElement);
       }
 
       // --- Keyboard Shortcuts ---
@@ -1382,6 +1441,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
         if (e.key === 'Escape') {
           flyout.classList.remove('open');
+          highlight.classList.remove('selected');
           shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
@@ -1397,13 +1457,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             e.preventDefault();
             if (currentStackIndex > 0) {
               currentStackIndex--;
-              highlightComponent(currentStack[currentStackIndex], true);
+              highlightComponent(currentStack[currentStackIndex], currentStackIndex > 0);
             }
           }
         }
       });
 
-      // --- Hover Highlight (RAF-throttled) ---
+      // --- Hover Highlight (RAF-throttled, Universal Selection) ---
       let hoverRafPending = false;
       window.addEventListener('mousemove', (e) => {
         if (!isPointerMode || hoverRafPending) return;
@@ -1415,45 +1475,36 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           if (el.closest && el.closest('#agent-hover-root')) return;
           currentElement = el;
 
-          const stack = getComponentStack(el);
-          if (stack.length > 0) {
-            currentStack = stack;
-            // Default to best component (2nd in stack if available)
-            currentStackIndex = stack.length > 1 ? 1 : 0;
-            const info = stack[currentStackIndex];
-            highlightComponent(info, true);
-          } else {
-            // No React component — highlight the raw DOM element
-            currentStack = [];
-            currentStackIndex = -1;
-            highlightRawElement(el);
-          }
+          // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
+          currentStack = buildHierarchyStack(el);
+          currentStackIndex = 0; // Default to exact element under cursor!
+          highlight.classList.remove('selected');
+          highlightComponent(currentStack[0], false);
         });
       });
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
         if (!currentComponentInfo || highlight.style.display === 'none') return;
+        const target = currentStack[currentStackIndex] || currentComponentInfo;
 
-        if (currentComponentInfo.isRawElement && currentComponentInfo.element) {
-          // Raw element — reposition using its bounding rect
-          const rect = currentComponentInfo.element.getBoundingClientRect();
+        if (target.isDomElement && target.element) {
+          const rect = target.element.getBoundingClientRect();
           highlight.style.top = rect.top + 'px';
           highlight.style.left = rect.left + 'px';
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
-          positionBands(currentComponentInfo.element);
-          showDimLabel(rect);
-        } else if (currentComponentInfo.fiber) {
-          // React component — use union bounding rect
-          const rect = getComponentBoundingRect(currentComponentInfo.fiber);
+          positionBands(target.element);
+          showDimLabel(rect, true);
+        } else if (target.fiber) {
+          const rect = getComponentBoundingRect(target.fiber);
           if (rect) {
             highlight.style.top = rect.top + 'px';
             highlight.style.left = rect.left + 'px';
             highlight.style.width = rect.width + 'px';
             highlight.style.height = rect.height + 'px';
             if (currentElement) positionBands(currentElement);
-            showDimLabel(rect);
+            showDimLabel(rect, false);
           }
         }
       }
@@ -1560,49 +1611,87 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!currentComponentInfo) return;
-        const info = currentComponentInfo;
+        if (!currentStack || currentStack.length === 0) return;
+        const target = currentStack[currentStackIndex] || currentStack[0];
 
         // Raw elements can't be frozen/pinned
-        if (!info.isRawElement) {
+        if (!target.isDomElement) {
           if (e.ctrlKey || e.metaKey) {
-            const resolved = await resolveComponent(info);
+            const resolved = await resolveComponent(target);
             if (resolved) {
-              const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === info.name);
+              const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === target.name);
               await fetch(BRIDGE + '/api/freeze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: info.name, line: resolved.line })
+                body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: target.name, line: resolved.line })
               });
-              showCallout(isCurrentlyFrozen ? 'Unfrozen ' + info.name : 'Frozen ' + info.name, 'LOCK');
+              showCallout(isCurrentlyFrozen ? 'Unfrozen ' + target.name : 'Frozen ' + target.name, 'LOCK');
               refreshState();
             }
             return;
           }
 
           if (e.shiftKey) {
-            const resolved = await resolveComponent(info);
+            const resolved = await resolveComponent(target);
             if (resolved) {
               await fetch(BRIDGE + '/api/pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
               });
-              showCallout('Pinned ' + info.name, 'PIN');
+              showCallout('Pinned ' + target.name, 'PIN');
               refreshState();
             }
             return;
           }
         }
 
-        const computedStyles = currentElement ? extractComputedStyles(currentElement) : {};
-        flyout.classList.add('open');
-        flyoutTitle.textContent = info.name;
+        await renderFlyoutForStackIndex(currentStackIndex >= 0 ? currentStackIndex : 0);
+      }, true);
 
-        // For raw elements, show element info directly
-        if (info.isRawElement && info.element) {
-          const el = info.element;
+      async function renderFlyoutForStackIndex(index) {
+        if (!currentStack || currentStack.length === 0) return;
+        currentStackIndex = index;
+        const item = currentStack[index];
+        currentComponentInfo = item;
+        highlightComponent(item, index > 0);
+
+        flyout.classList.add('open');
+        highlight.classList.add('selected');
+
+        // Render interactive breadcrumbs
+        const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
+        if (currentStack.length > 1) {
+          const crumbs = [];
+          for (let i = currentStack.length - 1; i >= 0; i--) {
+            const c = currentStack[i];
+            const isActive = i === currentStackIndex;
+            const style = isActive
+              ? 'color:var(--accent-cyan); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:rgba(0,240,255,0.1);'
+              : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
+            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + c.name + '</span>');
+          }
+          breadcrumbEl.innerHTML = crumbs.join('<span style="color:var(--text-muted); margin:0 2px; font-size:10px;">›</span>');
+          breadcrumbEl.style.display = 'block';
+
+          breadcrumbEl.onclick = (evt) => {
+            const targetEl = evt.target.closest('[data-bc-idx]');
+            if (!targetEl) return;
+            const idx = parseInt(targetEl.getAttribute('data-bc-idx'), 10);
+            if (isNaN(idx) || idx < 0 || idx >= currentStack.length) return;
+            renderFlyoutForStackIndex(idx);
+          };
+        } else {
+          breadcrumbEl.style.display = 'none';
+        }
+
+        const computedStyles = currentElement ? extractComputedStyles(currentElement) : {};
+
+        if (item.isDomElement) {
+          flyoutTitle.textContent = item.name;
+          const el = item.element;
           let html = '';
+
           html += '<div class="cp-section" style="margin-bottom:14px;">';
           html += '<span class="cp-badge cp-badge-cyan">' + el.tagName.toLowerCase() + '</span> ';
           if (el.id) html += '<span class="cp-badge cp-badge-emerald">#' + el.id + '</span> ';
@@ -1616,12 +1705,25 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
           html += '</div>';
 
+          // If inside a React component, link to the parent component
+          if (currentStack.length > 1) {
+            const parentComp = currentStack[1];
+            html += '<div class="cp-section" style="background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.15); border-radius:8px; padding:10px 14px; margin-bottom:14px;">';
+            html += '<div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;">Rendered In Component</div>';
+            html += '<div style="font-size:13px; font-weight:600; color:var(--accent-cyan); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
+            if (parentComp.source) {
+              html += '<div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-top:4px;">' + parentComp.source.fileName + ':' + parentComp.source.lineNumber + '</div>';
+              lastResolved = { file: parentComp.source.fileName, line: parentComp.source.lineNumber };
+            }
+            html += '</div>';
+          }
+
           // Text content preview
           const text = el.textContent ? el.textContent.trim() : '';
-          if (text && text.length < 200) {
+          if (text) {
             html += '<details class="cp-section" open>';
             html += '<summary class="cp-section-title">Text Content</summary>';
-            html += '<div style="margin-top:6px; font-size:12px; color:var(--text-secondary); word-break:break-word;">"' + text + '"</div>';
+            html += '<div style="margin-top:6px; font-size:12px; color:var(--text-secondary); word-break:break-word; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:6px; font-family:var(--font-mono);">' + escapeHtml(text) + '</div>';
             html += '</details>';
           }
 
@@ -1633,7 +1735,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Value</th></tr>';
             attrs.forEach(function(a) {
               const val = a.value.length > 60 ? a.value.substring(0, 60) + '...' : a.value;
-              html += '<tr><td style="color:var(--accent-cyan);">' + a.name + '</td><td style="color:#cbd5e1;">' + val + '</td></tr>';
+              html += '<tr><td style="color:var(--accent-cyan);">' + a.name + '</td><td style="color:#cbd5e1;">' + escapeHtml(val) + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -1648,8 +1750,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
             html += '<div style="border:1px solid #334155; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
-            html += '<div style="background:rgba(100,160,255,0.12); border:1px solid rgba(100,160,255,0.4); padding:8px 12px; display:inline-block; color:#fff; border-radius:4px; font-weight:600;">';
-            html += Math.round(parseFloat(computedStyles.width)) + ' x ' + Math.round(parseFloat(computedStyles.height));
+            html += '<div style="background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.4); padding:8px 12px; display:inline-block; color:#fff; border-radius:4px; font-weight:600;">';
+            html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
             html += '</div></div></div></div>';
             html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; font-family:var(--font-mono);">';
             html += '<div><span style="color:var(--text-muted);">display:</span> ' + computedStyles.display + '</div>';
@@ -1665,91 +1767,33 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
           flyoutContent.innerHTML = html;
 
-          // Hide breadcrumb for raw elements
-          const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
-          breadcrumbEl.style.display = 'none';
-          return;
-        }
-
-        flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
-
-        // Populate ancestry breadcrumb in flyout
-        const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
-        if (currentStack.length > 1) {
-          const crumbs = [];
-          for (let i = currentStack.length - 1; i >= 0; i--) {
-            const c = currentStack[i];
-            const isActive = i === currentStackIndex;
-            const style = isActive
-              ? 'color:var(--accent-cyan); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:rgba(0,240,255,0.1);'
-              : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
-            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + c.name + '</span>');
-          }
-          breadcrumbEl.innerHTML = crumbs.join('<span style="color:var(--text-muted); margin:0 2px; font-size:10px;">›</span>');
-          breadcrumbEl.style.display = 'block';
-
-          // Click handler for breadcrumb navigation
-          breadcrumbEl.onclick = async (evt) => {
-            const target = evt.target.closest('[data-bc-idx]');
-            if (!target) return;
-            const idx = parseInt(target.getAttribute('data-bc-idx'), 10);
-            if (isNaN(idx) || idx < 0 || idx >= currentStack.length) return;
-            currentStackIndex = idx;
-            const newInfo = currentStack[idx];
-            currentComponentInfo = newInfo;
-            highlightComponent(newInfo, true);
-            flyoutTitle.textContent = newInfo.name;
-            flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
-
-            // Update breadcrumb active state
-            const spans = breadcrumbEl.querySelectorAll('[data-bc-idx]');
-            spans.forEach(s => {
-              const sIdx = parseInt(s.getAttribute('data-bc-idx'), 10);
-              if (sIdx === idx) {
-                s.style.color = 'var(--accent-cyan)';
-                s.style.fontWeight = '600';
-                s.style.textDecoration = 'underline';
-                s.style.background = 'rgba(0,240,255,0.1)';
-              } else {
-                s.style.color = 'var(--text-muted)';
-                s.style.fontWeight = 'normal';
-                s.style.textDecoration = 'none';
-                s.style.background = 'none';
-              }
+          if (currentStack.length > 1 && !lastResolved) {
+            resolveComponent(currentStack[1]).then(res => {
+              if (res) lastResolved = res;
             });
-
-            try {
-              const resolvedNew = await resolveComponent(newInfo);
-              if (resolvedNew) {
-                const newComputedStyles = currentElement ? extractComputedStyles(currentElement) : {};
-                await loadComponentContext(newInfo.name, resolvedNew, newComputedStyles);
-              }
-            } catch(err) {
-              flyoutContent.innerHTML = '<p style="color:#fb7185;">Failed to load context: ' + err.message + '</p>';
-            }
-          };
-        } else {
-          breadcrumbEl.style.display = 'none';
-        }
-
-        try {
-          const resolved = await resolveComponent(info);
-          if (!resolved) {
-            flyoutContent.innerHTML = '<p style="color:#fb7185;">Could not find source file for ' + info.name + '</p>';
-            return;
           }
+        } else {
+          // React Component
+          flyoutTitle.textContent = item.name;
+          flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
+          try {
+            const resolved = await resolveComponent(item);
+            if (!resolved) {
+              flyoutContent.innerHTML = '<p style="color:#fb7185;">Could not find source file for ' + item.name + '</p>';
+              return;
+            }
+            fetch(BRIDGE + '/api/computed-styles', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: resolved.file + ':' + item.name, styles: computedStyles })
+            }).catch(e => console.error(e));
 
-          fetch(BRIDGE + '/api/computed-styles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: resolved.file + ':' + info.name, styles: computedStyles })
-          }).catch(e => console.error(e));
-
-          await loadComponentContext(info.name, resolved, computedStyles);
-        } catch(err) {
-          flyoutContent.innerHTML = '<p style="color:#fb7185;">Failed to load context: ' + err.message + '</p>';
+            await loadComponentContext(item.name, resolved, computedStyles);
+          } catch(err) {
+            flyoutContent.innerHTML = '<p style="color:#fb7185;">Failed to load context: ' + err.message + '</p>';
+          }
         }
-      }, true);
+      }
 
       async function loadComponentContext(infoName, resolved, computedStyles) {
         flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
