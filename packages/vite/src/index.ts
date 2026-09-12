@@ -2092,26 +2092,26 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
   const editor = options?.editor ?? 'auto';
   let projectRoot: string;
   let bridgeServer: BridgeServer | null = null;
-  
+
   return {
     name: 'agent-hover',
     apply: 'serve', // only in dev mode
-    
+
     configResolved(config) {
       projectRoot = config.root;
     },
-    
+
     configureServer(server) {
       // If a bridge server was already running from a previous reload, stop it first
       if (bridgeServer) {
         try {
           bridgeServer.stop();
-        } catch (e) {}
+        } catch (e) { }
       }
       // Start bridge server when Vite dev server starts
       bridgeServer = new BridgeServer(projectRoot, port);
       bridgeServer.start();
-      
+
       // Clean up on server close
       server.httpServer?.on('close', () => {
         if (bridgeServer) {
@@ -2120,7 +2120,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
         }
       });
     },
-    
+
     transformIndexHtml() {
       // Inline dom-to-image-more library for screenshot capture
       const req = createRequire(import.meta.url);
