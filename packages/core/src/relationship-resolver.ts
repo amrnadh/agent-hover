@@ -20,7 +20,7 @@ export class RelationshipResolver {
         const imports: string[] = [];
         const lines = content.split('\n');
         for (const line of lines) {
-          const match = line.match(/import\\s+.*?from\\s+['"](.+?)['"]/);
+          const match = line.match(/import\s+.*?from\s+['"](.+?)['"]/);
           if (match) {
             imports.push(match[1]);
           }

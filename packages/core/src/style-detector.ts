@@ -28,12 +28,12 @@ export function detectStyles(filePath: string, ast: any): StyleInfo {
         const value = path.node.value;
         if (t.isStringLiteral(value)) {
           if (approach === 'none') approach = 'tailwind';
-          value.value.split(/\\s+/).filter(Boolean).forEach(c => classes.add(c));
+          value.value.split(/\s+/).filter(Boolean).forEach(c => classes.add(c));
         } else if (t.isJSXExpressionContainer(value)) {
           if (t.isTemplateLiteral(value.expression)) {
             if (approach === 'none') approach = 'tailwind';
             value.expression.quasis.forEach(q => {
-              q.value.raw.split(/\\s+/).filter(Boolean).forEach(c => classes.add(c));
+              q.value.raw.split(/\s+/).filter(Boolean).forEach(c => classes.add(c));
             });
           }
         }

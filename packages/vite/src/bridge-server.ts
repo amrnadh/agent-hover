@@ -94,7 +94,7 @@ export class BridgeServer {
     // Resolve component name to file + line
     this.app.post('/api/resolve', async (req, res) => {
       try {
-        const { componentName } = req.body;
+        const { componentName, ancestors } = req.body;
         if (!componentName) {
           res.status(400).json({ error: 'Missing componentName' });
           return;
@@ -111,12 +111,68 @@ export class BridgeServer {
         );
 
         if (files.length > 0) {
-          // Found by filename match — find the component declaration line
-          const filePath = files[0];
+          let bestFile = files[0];
+
+          // If multiple matches exist and ancestors are provided, prefer non-shared files
+          if (files.length > 1 && ancestors && ancestors.length > 0) {
+            const sharedPatterns = ['/shared/', '/common/', '/ui/', '/lib/', '/primitives/'];
+            const nonShared = files.filter(f => !sharedPatterns.some(p => f.includes(p)));
+            if (nonShared.length > 0) {
+              bestFile = nonShared[0];
+            }
+          } else if (files.length > 1) {
+            // Even without ancestors, prefer non-shared files
+            const sharedPatterns = ['/shared/', '/common/', '/ui/', '/lib/', '/primitives/'];
+            const nonShared = files.filter(f => !sharedPatterns.some(p => f.includes(p)));
+            if (nonShared.length > 0) {
+              bestFile = nonShared[0];
+            }
+          }
+
+          // If ancestors are provided and the component is in a shared folder,
+          // try to resolve to an ancestor's file instead (the actual usage site)
+          if (ancestors && ancestors.length > 0) {
+            const sharedPatterns = ['/shared/', '/common/', '/ui/', '/lib/', '/primitives/'];
+            const isShared = sharedPatterns.some(p => bestFile.includes(p));
+            if (isShared) {
+              // Try to find an ancestor component file that would be more useful
+              for (const ancestorName of ancestors) {
+                const ancestorFiles = await fg.default(
+                  `**/${ancestorName}.{tsx,jsx,ts,js}`,
+                  { cwd: this.projectRoot, ignore: ['node_modules/**', 'dist/**'] }
+                );
+                if (ancestorFiles.length > 0) {
+                  // Check if this ancestor file actually imports/uses the component
+                  const fs = await import('fs/promises');
+                  const path = await import('path');
+                  for (const af of ancestorFiles) {
+                    try {
+                      const content = await fs.readFile(path.join(this.projectRoot, af), 'utf-8');
+                      if (content.includes(componentName)) {
+                        // This ancestor uses our component — resolve to this file instead
+                        const lines = content.split('\n');
+                        let line = 1;
+                        for (let i = 0; i < lines.length; i++) {
+                          if (lines[i].includes(`function ${ancestorName}`) || lines[i].includes(`const ${ancestorName}`)) {
+                            line = i + 1;
+                            break;
+                          }
+                        }
+                        res.json({ file: af, line, resolved: true, resolvedAs: ancestorName, note: 'Resolved to parent component that uses ' + componentName });
+                        return;
+                      }
+                    } catch(e) {}
+                  }
+                }
+              }
+            }
+          }
+
+          // Find the component declaration line in the best file
           const fs = await import('fs/promises');
           const path = await import('path');
           const content = await fs.readFile(
-            path.join(this.projectRoot, filePath),
+            path.join(this.projectRoot, bestFile),
             'utf-8'
           );
           const lines = content.split('\n');
@@ -132,7 +188,7 @@ export class BridgeServer {
               break;
             }
           }
-          res.json({ file: filePath, line, resolved: true });
+          res.json({ file: bestFile, line, resolved: true });
           return;
         }
 

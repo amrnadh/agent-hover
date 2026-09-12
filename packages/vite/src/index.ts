@@ -545,6 +545,8 @@ const UI_HTML = `
               </div>
               <button class="cp-dock-tile" id="cp-flyout-close" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
+            <div id="cp-flyout-breadcrumb" style="display:none; padding:8px 20px; background:rgba(0,0,0,0.15); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11px; overflow-x:auto; white-space:nowrap;">
+            </div>
 
             <div id="cp-flyout-content">
               <p style="color:var(--text-secondary); margin:0;">Point and click any element on the page, or press <kbd style="font-family:var(--font-mono); background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">Alt</kbd> to inspect.</p>
@@ -1039,31 +1041,163 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return null;
       }
 
-      function getComponentInfo(el) {
+      function getComponentStack(el) {
         const fiber = getFiberNode(el);
-        if (!fiber) return null;
+        if (!fiber) return [];
 
+        const stack = [];
+        const seen = new Set();
         let curr = fiber;
         while (curr) {
+          let name = null;
+          let source = null;
           if (typeof curr.type === 'function') {
-            const name = curr.type.displayName || curr.type.name;
-            if (name && name !== 'Fragment' && !name.startsWith('_')) {
-              const source = curr._debugSource || null;
-              return { name, source, fiber: curr };
-            }
-          }
-          if (curr.type && typeof curr.type === 'object') {
+            name = curr.type.displayName || curr.type.name;
+            source = curr._debugSource || null;
+          } else if (curr.type && typeof curr.type === 'object') {
             const inner = curr.type.render || curr.type.type;
             if (typeof inner === 'function') {
-              const name = inner.displayName || inner.name;
-              if (name && !name.startsWith('_')) {
-                return { name, source: curr._debugSource || null, fiber: curr };
-              }
+              name = inner.displayName || inner.name;
+              source = curr._debugSource || null;
+            }
+          }
+          if (name && name !== 'Fragment' && !name.startsWith('_') && name !== 'Suspense' && name !== 'StrictMode') {
+            if (!seen.has(name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null'))) {
+              seen.add(name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null'));
+              stack.push({ name, source, fiber: curr });
             }
           }
           curr = curr.return;
         }
-        return null;
+        return stack; // [innermost, ..., outermost]  e.g. [Card, StatCard, StatsGrid, Dashboard, App]
+      }
+
+      // Get the best default component from the ancestry stack
+      // Skips generic wrapper components in shared/common/ui folders
+      function getBestComponent(stack) {
+        if (stack.length === 0) return null;
+        if (stack.length === 1) return stack[0];
+        // Default to the 2nd item (first non-leaf), which is typically the meaningful component
+        // e.g. stack = [Card, StatCard, ...] -> return StatCard
+        return stack[1];
+      }
+
+      // Legacy compat wrapper — returns single component info (uses best match from stack)
+      function getComponentInfo(el) {
+        const stack = getComponentStack(el);
+        return getBestComponent(stack);
+      }
+
+      // Collect all DOM nodes owned by a fiber
+      function collectFiberDomNodes(fiber) {
+        const nodes = [];
+        function walkFiber(f) {
+          if (!f) return;
+          if (f.stateNode && f.stateNode instanceof HTMLElement && f.stateNode !== document.body) {
+            nodes.push(f.stateNode);
+          } else {
+            // If this fiber doesn't have a DOM node, walk its children
+            let child = f.child;
+            while (child) {
+              walkFiber(child);
+              child = child.sibling;
+            }
+          }
+        }
+        // Walk the fiber's children to find all DOM nodes it owns
+        let child = fiber.child;
+        while (child) {
+          walkFiber(child);
+          child = child.sibling;
+        }
+        // Also include the fiber's own stateNode if it's an element
+        if (fiber.stateNode && fiber.stateNode instanceof HTMLElement && fiber.stateNode !== document.body) {
+          nodes.push(fiber.stateNode);
+        }
+        return nodes;
+      }
+
+      // Compute the union bounding rect of all DOM nodes in a fiber subtree
+      function getComponentBoundingRect(fiber) {
+        const nodes = collectFiberDomNodes(fiber);
+        if (nodes.length === 0) return null;
+        let top = Infinity, left = Infinity, bottom = -Infinity, right = -Infinity;
+        for (const node of nodes) {
+          const r = node.getBoundingClientRect();
+          if (r.width === 0 && r.height === 0) continue;
+          if (r.top < top) top = r.top;
+          if (r.left < left) left = r.left;
+          if (r.bottom > bottom) bottom = r.bottom;
+          if (r.right > right) right = r.right;
+        }
+        if (top === Infinity) return null;
+        return { top, left, width: right - left, height: bottom - top };
+      }
+
+      // --- Component Ancestry Navigation State ---
+      let currentStack = [];
+      let currentStackIndex = -1;
+
+      // Update highlight box to match a specific component in the stack
+      function highlightComponent(info, useUnionRect) {
+        if (!info) return;
+        currentComponentInfo = info;
+        let rect;
+        if (useUnionRect && info.fiber) {
+          rect = getComponentBoundingRect(info.fiber);
+        }
+        if (!rect && currentElement) {
+          rect = currentElement.getBoundingClientRect();
+        }
+        if (!rect) return;
+
+        highlight.style.display = 'block';
+        highlight.style.top = rect.top + 'px';
+        highlight.style.left = rect.left + 'px';
+        highlight.style.width = rect.width + 'px';
+        highlight.style.height = rect.height + 'px';
+
+        const isFrozen = frozenEntries.some(f => (info.source && f.file === info.source.fileName) || f.component === info.name);
+        highlight.style.border = isFrozen ? '2px solid rgba(244, 63, 94, 0.85)' : '2px solid var(--accent-cyan)';
+        highlight.style.backgroundColor = isFrozen ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0, 240, 255, 0.08)';
+        highlight.style.boxShadow = isFrozen ? '0 0 20px rgba(244, 63, 94, 0.4)' : '0 0 24px var(--accent-cyan-glow)';
+
+        if (rect.top < 36) {
+          label.style.top = '4px';
+          label.style.borderRadius = '0 0 8px 8px';
+        } else {
+          label.style.top = '-30px';
+          label.style.borderRadius = '8px 8px 0 0';
+        }
+
+        const lockHtml = isFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
+
+        // Build ancestry breadcrumb
+        let breadcrumb = '';
+        if (currentStack.length > 1) {
+          const crumbs = [];
+          for (let i = currentStack.length - 1; i >= 0; i--) {
+            const c = currentStack[i];
+            const isActive = i === currentStackIndex;
+            const style = isActive
+              ? 'color:var(--accent-cyan); text-decoration:underline; text-underline-offset:3px;'
+              : 'color:var(--text-muted); cursor:pointer;';
+            crumbs.push('<span style="' + style + ' font-size:10px;" data-stack-idx="' + i + '">' + c.name + '</span>');
+          }
+          breadcrumb = '<div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap; margin-top:2px;">' + crumbs.join('<span style="color:var(--text-muted); font-size:9px; margin:0 1px;">›</span>') + '</div>';
+        }
+
+        if (info.source) {
+          const fileName = info.source.fileName.split('/').pop();
+          label.innerHTML = lockHtml + info.name + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
+          showCallout('<' + info.name + ' />', fileName + ':' + info.source.lineNumber);
+        } else {
+          label.innerHTML = lockHtml + info.name + breadcrumb;
+          showCallout('<' + info.name + ' />', 'Component');
+        }
+
+        label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
+        label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
       }
 
       // --- Keyboard Shortcuts ---
@@ -1076,58 +1210,66 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           flyout.classList.remove('open');
           shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
+        // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
+        if (isPointerMode && currentStack.length > 1) {
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentStackIndex < currentStack.length - 1) {
+              currentStackIndex++;
+              highlightComponent(currentStack[currentStackIndex], true);
+            }
+          }
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentStackIndex > 0) {
+              currentStackIndex--;
+              highlightComponent(currentStack[currentStackIndex], true);
+            }
+          }
+        }
       });
 
-      // --- Hover Highlight ---
+      // --- Hover Highlight (RAF-throttled) ---
+      let hoverRafPending = false;
       window.addEventListener('mousemove', (e) => {
-        if (!isPointerMode) return;
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        if (!el || el === currentElement) return;
+        if (!isPointerMode || hoverRafPending) return;
+        hoverRafPending = true;
+        requestAnimationFrame(() => {
+          hoverRafPending = false;
+          const el = document.elementFromPoint(e.clientX, e.clientY);
+          if (!el || el === currentElement) return;
+          if (el.closest && el.closest('#agent-hover-root')) return;
+          currentElement = el;
 
-        if (el.closest && el.closest('#agent-hover-root')) return;
-        currentElement = el;
+          const stack = getComponentStack(el);
+          if (stack.length > 0) {
+            currentStack = stack;
+            // Default to best component (2nd in stack if available)
+            currentStackIndex = stack.length > 1 ? 1 : 0;
+            const info = stack[currentStackIndex];
+            highlightComponent(info, true);
+          } else {
+            highlight.style.display = 'none';
+            currentComponentInfo = null;
+            currentStack = [];
+            currentStackIndex = -1;
+          }
+        });
+      });
 
-        const info = getComponentInfo(el);
-        if (info) {
-          currentComponentInfo = info;
-          const rect = el.getBoundingClientRect();
-          highlight.style.display = 'block';
+      // Reposition highlight on scroll/resize
+      function repositionHighlight() {
+        if (!currentComponentInfo || !currentComponentInfo.fiber || highlight.style.display === 'none') return;
+        const rect = getComponentBoundingRect(currentComponentInfo.fiber);
+        if (rect) {
           highlight.style.top = rect.top + 'px';
           highlight.style.left = rect.left + 'px';
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
-
-          const isFrozen = frozenEntries.some(f => (info.source && f.file === info.source.fileName) || f.component === info.name);
-          highlight.style.border = isFrozen ? '2px solid rgba(244, 63, 94, 0.85)' : '2px solid var(--accent-cyan)';
-          highlight.style.backgroundColor = isFrozen ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0, 240, 255, 0.08)';
-          highlight.style.boxShadow = isFrozen ? '0 0 20px rgba(244, 63, 94, 0.4)' : '0 0 24px var(--accent-cyan-glow)';
-
-          if (rect.top < 36) {
-            label.style.top = '4px';
-            label.style.borderRadius = '0 0 8px 8px';
-          } else {
-            label.style.top = '-30px';
-            label.style.borderRadius = '8px 8px 0 0';
-          }
-          
-          const lockHtml = isFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
-          
-          if (info.source) {
-            const fileName = info.source.fileName.split('/').pop();
-            label.innerHTML = lockHtml + info.name + ' — ' + fileName + ':' + info.source.lineNumber;
-            showCallout('<' + info.name + ' />', fileName + ':' + info.source.lineNumber);
-          } else {
-            label.innerHTML = lockHtml + info.name;
-            showCallout('<' + info.name + ' />', 'Component');
-          }
-          
-          label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
-          label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
-        } else {
-          highlight.style.display = 'none';
-          currentComponentInfo = null;
         }
-      });
+      }
+      window.addEventListener('scroll', repositionHighlight, { capture: true, passive: true });
+      window.addEventListener('resize', repositionHighlight);
 
       function extractComputedStyles(el) {
         const s = window.getComputedStyle(el);
@@ -1266,6 +1408,65 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         flyoutTitle.textContent = info.name;
         flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
 
+        // Populate ancestry breadcrumb in flyout
+        const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
+        if (currentStack.length > 1) {
+          const crumbs = [];
+          for (let i = currentStack.length - 1; i >= 0; i--) {
+            const c = currentStack[i];
+            const isActive = i === currentStackIndex;
+            const style = isActive
+              ? 'color:var(--accent-cyan); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:rgba(0,240,255,0.1);'
+              : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
+            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + c.name + '</span>');
+          }
+          breadcrumbEl.innerHTML = crumbs.join('<span style="color:var(--text-muted); margin:0 2px; font-size:10px;">›</span>');
+          breadcrumbEl.style.display = 'block';
+
+          // Click handler for breadcrumb navigation
+          breadcrumbEl.onclick = async (evt) => {
+            const target = evt.target.closest('[data-bc-idx]');
+            if (!target) return;
+            const idx = parseInt(target.getAttribute('data-bc-idx'), 10);
+            if (isNaN(idx) || idx < 0 || idx >= currentStack.length) return;
+            currentStackIndex = idx;
+            const newInfo = currentStack[idx];
+            currentComponentInfo = newInfo;
+            highlightComponent(newInfo, true);
+            flyoutTitle.textContent = newInfo.name;
+            flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
+
+            // Update breadcrumb active state
+            const spans = breadcrumbEl.querySelectorAll('[data-bc-idx]');
+            spans.forEach(s => {
+              const sIdx = parseInt(s.getAttribute('data-bc-idx'), 10);
+              if (sIdx === idx) {
+                s.style.color = 'var(--accent-cyan)';
+                s.style.fontWeight = '600';
+                s.style.textDecoration = 'underline';
+                s.style.background = 'rgba(0,240,255,0.1)';
+              } else {
+                s.style.color = 'var(--text-muted)';
+                s.style.fontWeight = 'normal';
+                s.style.textDecoration = 'none';
+                s.style.background = 'none';
+              }
+            });
+
+            try {
+              const resolvedNew = await resolveComponent(newInfo);
+              if (resolvedNew) {
+                const newComputedStyles = currentElement ? extractComputedStyles(currentElement) : {};
+                await loadComponentContext(newInfo.name, resolvedNew, newComputedStyles);
+              }
+            } catch(err) {
+              flyoutContent.innerHTML = '<p style="color:#fb7185;">Failed to load context: ' + err.message + '</p>';
+            }
+          };
+        } else {
+          breadcrumbEl.style.display = 'none';
+        }
+
         try {
           const resolved = await resolveComponent(info);
           if (!resolved) {
@@ -1380,10 +1581,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           return { file: info.source.fileName, line: info.source.lineNumber };
         }
         try {
+          // Send ancestor names so bridge can prefer the right file
+          const ancestorNames = currentStack.map(c => c.name).filter(n => n !== info.name);
           const res = await fetch(BRIDGE + '/api/resolve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ componentName: info.name })
+            body: JSON.stringify({ componentName: info.name, ancestors: ancestorNames })
           });
           const data = await res.json();
           if (data.resolved) return { file: data.file, line: data.line };
