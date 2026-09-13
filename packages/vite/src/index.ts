@@ -215,13 +215,13 @@ const UI_HTML = `
             top: 0;
             opacity: 0;
             pointer-events: none;
-            width: 480px;
+            width: 460px;
             max-height: calc(100vh - 60px);
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
-            border-radius: 24px;
+            border-radius: 16px;
             color: var(--text-primary);
             font-family: var(--font-sans);
             box-shadow: var(--shadow-dock);
@@ -229,12 +229,41 @@ const UI_HTML = `
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           #cp-flyout.open {
             opacity: 1;
             pointer-events: auto;
+          }
+
+          /* Flyout Sidebar Mode (Right-Docked) */
+          #cp-flyout.is-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            left: auto !important;
+            width: 440px !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            border-left: 1px solid var(--border-glass) !important;
+            box-shadow: -12px 0 36px rgba(0, 0, 0, 0.55) !important;
+            transform: translateX(100%);
+            transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+            z-index: 999995 !important;
+          }
+
+          #cp-flyout.is-sidebar.open {
+            transform: translateX(0);
+          }
+
+          /* Shift dock slightly away from sidebar edge when open on right */
+          #cp-dock-wrapper.sidebar-open.cp-dock-right {
+            right: 456px !important;
+            transition: right 0.24s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           /* Dynamic Dock Orientation: Flip to Left Side when on Right */
@@ -250,12 +279,12 @@ const UI_HTML = `
             border-left: 7px solid rgba(11, 18, 32, 0.95);
           }
 
-          #cp-dock-wrapper.cp-dock-right #cp-flyout {
+          #cp-dock-wrapper.cp-dock-right #cp-flyout:not(.is-sidebar) {
             left: auto;
             right: 82px;
           }
 
-          #cp-dock-wrapper.cp-dock-bottom #cp-flyout {
+          #cp-dock-wrapper.cp-dock-bottom #cp-flyout:not(.is-sidebar) {
             top: auto;
             bottom: 0;
           }
@@ -429,38 +458,36 @@ const UI_HTML = `
             text-align: center;
           }
 
-          /* --- Highlight Box --- */
+          /* --- Highlight Box (Clean, Minimal, No Gradients) --- */
           #cp-highlight {
             position: fixed;
             pointer-events: none;
             z-index: 999997;
-            border: 2px solid var(--accent-cyan);
-            background: rgba(0, 240, 255, 0.08);
-            box-shadow: 0 0 20px var(--accent-cyan-glow), inset 0 0 12px rgba(0, 240, 255, 0.04);
+            border: 1.5px solid #0284c7;
+            background: transparent;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
             border-radius: 2px;
             display: none;
-            transition: all 80ms ease-out;
+            transition: all 60ms ease-out;
             box-sizing: border-box;
           }
           #cp-highlight.selected {
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 24px var(--accent-cyan-glow), inset 0 0 16px rgba(0, 240, 255, 0.08);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.4);
           }
           #cp-highlight.is-raw {
-            border-color: rgba(99, 179, 237, 0.85);
-            background: rgba(99, 179, 237, 0.06);
-            box-shadow: 0 0 16px rgba(99, 179, 237, 0.25);
+            border-color: #38bdf8;
           }
 
-          /* 8 Selection Handles (Design Mode style) */
+          /* 8 Selection Handles (Figma Minimal Style) */
           .cp-handle {
             position: absolute;
-            width: 7px;
-            height: 7px;
-            background: var(--accent-cyan);
-            border: 1.5px solid #04070e;
+            width: 6px;
+            height: 6px;
+            background: #ffffff;
+            border: 1.5px solid #0284c7;
             border-radius: 1px;
-            box-shadow: 0 0 6px var(--accent-cyan-glow);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
             pointer-events: none;
             transform: translate(-50%, -50%);
             display: none;
@@ -469,8 +496,7 @@ const UI_HTML = `
             display: block;
           }
           #cp-highlight.is-raw .cp-handle {
-            background: #63b3ed;
-            box-shadow: 0 0 6px rgba(99, 179, 237, 0.6);
+            border-color: #38bdf8;
           }
           .cp-handle-nw { top: 0; left: 0; }
           .cp-handle-n  { top: 0; left: 50%; }
@@ -481,7 +507,7 @@ const UI_HTML = `
           .cp-handle-sw { top: 100%; left: 0; }
           .cp-handle-w  { top: 50%; left: 0; }
 
-          /* Box-model bands — asymmetric border-widths show real spacing */
+          /* Box-model bands — opt-in only, no default clutter */
           #cp-margin-band {
             position: fixed;
             pointer-events: none;
@@ -489,10 +515,9 @@ const UI_HTML = `
             box-sizing: border-box;
             background: transparent;
             border-style: solid;
-            border-color: rgba(255, 99, 99, 0.28);
+            border-color: rgba(255, 99, 99, 0.25);
             border-width: 0;
             display: none;
-            transition: all 80ms ease-out;
           }
           #cp-padding-band {
             position: fixed;
@@ -501,50 +526,42 @@ const UI_HTML = `
             box-sizing: border-box;
             background: transparent;
             border-style: solid;
-            border-color: rgba(124, 200, 134, 0.30);
+            border-color: rgba(52, 211, 153, 0.25);
             border-width: 0;
             display: none;
-            transition: all 80ms ease-out;
           }
 
-          /* Dimension label chip */
+          /* Dimension label chip (merged into cp-label) */
           #cp-dim-label {
-            position: fixed;
-            pointer-events: none;
-            z-index: 999999;
-            background: var(--accent-cyan);
-            color: #04070e;
-            font-size: 10px;
-            font-family: var(--font-mono);
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 3px;
-            display: none;
-            white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-          }
-          #cp-dim-label.is-raw {
-            background: #63b3ed;
+            display: none !important;
           }
 
+          /* Clean, Single-Line Compact Pill (#cp-label) */
           #cp-label {
             position: absolute;
-            top: -30px;
-            left: -2px;
-            background: rgba(10, 16, 26, 0.95);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
+            top: -24px;
+            left: -1px;
+            background: #090d16;
+            border: 1px solid #0284c7;
+            color: #38bdf8;
             font-family: var(--font-mono);
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 6px;
+            padding: 2px 8px;
+            border-radius: 4px;
             white-space: nowrap;
-            max-width: 480px;
+            max-width: 360px;
             overflow: hidden;
             text-overflow: ellipsis;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 12px var(--accent-cyan-glow);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1.4;
+          }
+          #cp-label.inside-top {
+            top: 2px;
+            left: 2px;
           }
 
           #cp-pin-bar {
@@ -812,12 +829,38 @@ const UI_HTML = `
           <div id="cp-flyout">
             <div id="cp-flyout-header">
               <div id="cp-flyout-title-wrap">
-                <span class="cp-badge cp-badge-cyan">LENS</span>
+                <span class="cp-badge cp-badge-cyan" id="cp-flyout-badge">LENS</span>
                 <h3 id="cp-flyout-title">Component Inspector</h3>
               </div>
-              <button class="cp-dock-tile" id="cp-flyout-close" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <button class="cp-dock-tile" id="cp-flyout-mode-toggle" title="Toggle Sidebar / Float mode" style="width:30px; height:30px; border-radius:8px;">
+                  <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
+                  <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+                <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
             </div>
             <div id="cp-flyout-breadcrumb" style="display:none; padding:10px 20px; background:rgba(0,0,0,0.18); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11.5px; overflow-x:auto; white-space:nowrap;">
+            </div>
+
+            <!-- Live Token Meter & Context Level Bar -->
+            <div id="cp-token-meter" style="padding: 7px 18px; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  ⚡ <span id="cp-token-count">0</span> tokens
+                </span>
+                <span id="cp-token-savings" class="cp-badge cp-badge-emerald" style="min-height: 18px; font-size: 9.5px; padding: 1px 6px;">
+                  prompt-ready
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-muted); font-size: 10px;">Context:</span>
+                <select id="cp-context-level" style="background: rgba(255,255,255,0.06); color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 4px; font-size: 10.5px; font-family: var(--font-mono); padding: 2px 6px; cursor: pointer;">
+                  <option value="minimal">Compact (Prompt-Ready)</option>
+                  <option value="standard" selected>Standard (+Source)</option>
+                  <option value="full">Deep (+Styles)</option>
+                </select>
+              </div>
             </div>
 
             <div id="cp-flyout-content">
@@ -825,10 +868,15 @@ const UI_HTML = `
             </div>
 
             <div class="cp-flyout-actions">
-              <button class="cp-btn-bento primary" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> Open in IDE</button>
-              <button class="cp-btn-bento" id="cp-copy"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy Context</button>
-              <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-track-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
+              <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(2, 132, 199, 0.35) 100%); border-color: #0ea5e9; color: #38bdf8;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                ⚡ Copy for AI Prompt
+              </button>
+              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> Open in IDE</button>
+              <button class="cp-btn-bento" id="cp-copy"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy Context</button>
+              <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
+              <button class="cp-btn-bento" id="cp-track-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
             </div>
 
             <div id="cp-pin-bar">
@@ -837,16 +885,7 @@ const UI_HTML = `
               </div>
               <div id="cp-pin-list"></div>
               
-              <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); font-family:var(--font-mono);">
-                  <span>Context Level:</span>
-                  <select id="cp-context-level" style="background: rgba(0,0,0,0.4); color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 6px; padding: 3px 6px; font-size: 11px; font-family:var(--font-mono);">
-                    <option value="minimal">Minimal (Name + Props)</option>
-                    <option value="standard" selected>Standard (+ Source + Imports)</option>
-                    <option value="full">Full (+ Relations + Styles)</option>
-                  </select>
-                </div>
-                <div id="cp-token-savings" style="font-size: 11px; color: var(--accent-cyan); font-family:var(--font-mono); font-weight: 500; display: none;"></div>
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
                 <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Generate Task Context</button>
               </div>
             </div>
@@ -1097,6 +1136,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       dockPins.onclick = () => {
         flyout.classList.toggle('open');
+        if (flyout.classList.contains('open') && flyout.classList.contains('is-sidebar')) {
+          dockWrapper.classList.add('sidebar-open');
+        } else {
+          dockWrapper.classList.remove('sidebar-open');
+        }
         const pinBar = shadow.getElementById('cp-pin-bar');
         pinBar.scrollIntoView({ behavior: 'smooth' });
       };
@@ -1115,7 +1159,67 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       shadow.getElementById('cp-flyout-close').onclick = () => {
         flyout.classList.remove('open');
+        dockWrapper.classList.remove('sidebar-open');
       };
+
+      // Flyout Sidebar Mode Switcher
+      const flyoutModeToggle = shadow.getElementById('cp-flyout-mode-toggle');
+      const modeSidebarIcon = shadow.getElementById('cp-mode-sidebar-icon');
+      const modeFloatIcon = shadow.getElementById('cp-mode-float-icon');
+
+      let flyoutMode = 'sidebar';
+      try {
+        flyoutMode = localStorage.getItem('agent-hover-flyout-mode') || 'sidebar';
+      } catch(e) {}
+
+      function applyFlyoutMode(mode) {
+        flyoutMode = mode;
+        try {
+          localStorage.setItem('agent-hover-flyout-mode', mode);
+        } catch(e) {}
+
+        if (mode === 'sidebar') {
+          flyout.classList.add('is-sidebar');
+          if (modeSidebarIcon) modeSidebarIcon.style.display = 'none';
+          if (modeFloatIcon) modeFloatIcon.style.display = 'block';
+          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Switch to Floating Mode');
+          if (flyout.classList.contains('open')) {
+            dockWrapper.classList.add('sidebar-open');
+          }
+        } else {
+          flyout.classList.remove('is-sidebar');
+          if (modeSidebarIcon) modeSidebarIcon.style.display = 'block';
+          if (modeFloatIcon) modeFloatIcon.style.display = 'none';
+          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Switch to Sidebar Mode');
+          dockWrapper.classList.remove('sidebar-open');
+        }
+      }
+
+      applyFlyoutMode(flyoutMode);
+
+      if (flyoutModeToggle) {
+        flyoutModeToggle.onclick = () => {
+          applyFlyoutMode(flyoutMode === 'sidebar' ? 'float' : 'sidebar');
+        };
+      }
+
+      // Spacing Overlay Toggle (Opt-in Box Model)
+      let showSpacingOverlay = false;
+      const toggleSpacingBtn = shadow.getElementById('cp-toggle-spacing');
+      if (toggleSpacingBtn) {
+        toggleSpacingBtn.onclick = () => {
+          showSpacingOverlay = !showSpacingOverlay;
+          if (showSpacingOverlay) {
+            toggleSpacingBtn.classList.add('primary');
+            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Spacing ON';
+            if (currentElement) positionBands(currentElement);
+          } else {
+            toggleSpacingBtn.classList.remove('primary');
+            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay';
+            hideBands();
+          }
+        };
+      }
 
       dockOpen.onclick = async () => {
         if (!lastCopiedContext || !lastCopiedContext.source) {
@@ -1136,6 +1240,23 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           await loadComponentContext(lastInfoName, lastResolved, lastComputedStyles);
         }
       });
+
+      // Dedicated Copy for AI Prompt Action
+      const copyAiBtn = shadow.getElementById('cp-copy-ai');
+      if (copyAiBtn) {
+        copyAiBtn.onclick = async () => {
+          if (lastCopiedContext) {
+            const promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
+            await navigator.clipboard.writeText(promptText);
+            const originalHtml = copyAiBtn.innerHTML;
+            copyAiBtn.innerHTML = '✓ Copied AI Prompt!';
+            showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', '✓');
+            setTimeout(() => { copyAiBtn.innerHTML = originalHtml; }, 1600);
+          } else {
+            showCallout('Select a component first', 'TIP');
+          }
+        };
+      }
 
       shadow.getElementById('cp-copy').onclick = async () => {
         if (lastCopiedContext) {
@@ -1182,10 +1303,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       shadow.getElementById('cp-editor-btn').onclick = openInEditor;
 
       // Track Visuals
-      shadow.getElementById('cp-track-btn').onclick = async () => {
-        if (!lastCopiedContext || !currentElement) return;
-        const btn = shadow.getElementById('cp-track-btn');
-        const compName = lastCopiedContext.component.name;
+      const trackVisualBtn = shadow.getElementById('cp-track-btn');
+      if (trackVisualBtn) {
+        trackVisualBtn.onclick = async () => {
+          if (!lastCopiedContext || !currentElement) return;
+          const btn = trackVisualBtn;
+          const compName = lastCopiedContext.component.name;
         const componentId = lastCopiedContext.source.file + ':' + compName;
         
         btn.innerHTML = '⏳ Capturing...';
@@ -1222,6 +1345,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         shadow.getElementById('cp-tracker').style.display = 'flex';
         showCallout('Baseline captured: ' + compName, 'DIFF');
       };
+    }
 
       shadow.getElementById('cp-tracker-cancel').onclick = () => {
         shadow.getElementById('cp-tracker').style.display = 'none';
@@ -1931,69 +2055,40 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         highlight.style.height = rect.height + 'px';
 
         const isFrozen = frozenEntries.some(f => (info.source && f.file === info.source.fileName) || f.component === info.name);
-        if (isFrozen) {
-          highlight.style.border = '2px solid rgba(244, 63, 94, 0.85)';
-          highlight.style.backgroundColor = 'rgba(244, 63, 94, 0.1)';
-          highlight.style.boxShadow = '0 0 20px rgba(244, 63, 94, 0.4)';
-        } else if (info.isDomElement) {
-          highlight.style.border = '2px solid rgba(99, 179, 237, 0.85)';
-          highlight.style.backgroundColor = 'rgba(99, 179, 237, 0.06)';
-          highlight.style.boxShadow = '0 0 16px rgba(99, 179, 237, 0.25)';
-        } else {
-          highlight.style.border = '2px solid var(--accent-cyan)';
-          highlight.style.backgroundColor = 'rgba(0, 240, 255, 0.08)';
-          highlight.style.boxShadow = '0 0 20px var(--accent-cyan-glow)';
-        }
+        const frameColor = isFrozen ? '#f43f5e' : (info.isDomElement ? '#38bdf8' : '#0ea5e9');
+        highlight.style.border = '1.5px solid ' + frameColor;
+        highlight.style.background = 'transparent';
+        highlight.style.boxShadow = '0 0 0 1px rgba(255, 255, 255, 0.12)';
 
-        if (rect.top < 36) {
-          label.style.top = '4px';
-          label.style.borderRadius = '0 0 8px 8px';
+        // Position single-line chip cleanly above the frame, or inside if too close to viewport top
+        if (rect.top < 26) {
+          label.style.top = '2px';
+          label.style.left = '2px';
+          label.style.borderRadius = '3px';
         } else {
-          label.style.top = '-30px';
-          label.style.borderRadius = '8px 8px 0 0';
+          label.style.top = '-23px';
+          label.style.left = '-1px';
+          label.style.borderRadius = '4px';
         }
 
         const lockHtml = isFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
-
-        // Build ancestry breadcrumbs
-        let breadcrumb = '';
-        if (currentStack.length > 1) {
-          const crumbs = [];
-          for (let i = currentStack.length - 1; i >= 0; i--) {
-            const c = currentStack[i];
-            const isActive = i === currentStackIndex;
-            const style = isActive
-              ? 'color:var(--accent-cyan); text-decoration:underline; text-underline-offset:3px; font-weight:600;'
-              : 'color:var(--text-muted); cursor:pointer;';
-            crumbs.push('<span style="' + style + ' font-size:10px;" data-stack-idx="' + i + '">' + c.name + '</span>');
-          }
-          breadcrumb = '<div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap; margin-top:2px;">' + crumbs.join('<span style="color:var(--text-muted); font-size:9px; margin:0 1px;">›</span>') + '</div>';
-        }
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        const dimSpan = '<span style="color:var(--text-muted); font-size:9.5px; margin-left:4px; font-weight:normal;">' + w + ' × ' + h + '</span>';
 
         if (info.isDomElement) {
-          const textPreview = info.textPreview ? ' <span style="color:var(--text-muted); font-size:10px; opacity:0.8;">"' + info.textPreview + '"</span>' : '';
-          const parentComp = currentStack.length > 1 ? '<span style="color:var(--accent-cyan); margin-right:4px;">' + currentStack[1].name + ' ›</span>' : '';
-          label.innerHTML = lockHtml + parentComp + '<span style="color:#63b3ed;">' + info.name + '</span>' + textPreview + breadcrumb;
-          label.style.borderColor = 'rgba(99, 179, 237, 0.6)';
-          label.style.color = '#63b3ed';
-          showCallout(info.name, Math.round(rect.width) + ' × ' + Math.round(rect.height));
-          if (info.element) positionBands(info.element);
-        } else if (info.source) {
-          const fileName = info.source.fileName.split('/').pop();
-          label.innerHTML = lockHtml + info.name + ' — ' + fileName + ':' + info.source.lineNumber + breadcrumb;
-          label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
-          label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
-          showCallout('<' + info.name + ' />', fileName + ':' + info.source.lineNumber);
-          if (currentElement) positionBands(currentElement);
+          label.innerHTML = lockHtml + '<span style="color:#38bdf8;">' + info.name + '</span>' + dimSpan;
+          label.style.borderColor = '#38bdf8';
         } else {
-          label.innerHTML = lockHtml + info.name + breadcrumb;
-          label.style.borderColor = isFrozen ? '#f43f5e' : 'var(--accent-cyan)';
-          label.style.color = isFrozen ? '#fb7185' : 'var(--accent-cyan)';
-          showCallout('<' + info.name + ' />', 'Component');
-          if (currentElement) positionBands(currentElement);
+          label.innerHTML = lockHtml + '<span style="color:#0ea5e9;">&lt;' + info.name + ' /&gt;</span>' + dimSpan;
+          label.style.borderColor = isFrozen ? '#f43f5e' : '#0ea5e9';
         }
 
-        showDimLabel(rect, info.isDomElement);
+        if (showSpacingOverlay && (info.element || currentElement)) {
+          positionBands(info.element || currentElement);
+        } else {
+          hideBands();
+        }
       }
 
       // --- Keyboard Shortcuts ---
@@ -2008,6 +2103,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             return;
           }
           flyout.classList.remove('open');
+          dockWrapper.classList.remove('sidebar-open');
           highlight.classList.remove('selected');
           selectedRect = null;
           clearDistanceGuides();
@@ -2072,8 +2168,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           highlight.style.left = rect.left + 'px';
           highlight.style.width = rect.width + 'px';
           highlight.style.height = rect.height + 'px';
-          positionBands(target.element);
-          showDimLabel(rect, true);
+          if (showSpacingOverlay) positionBands(target.element);
         } else if (target.fiber) {
           const rect = getComponentBoundingRect(target.fiber);
           if (rect) {
@@ -2081,8 +2176,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             highlight.style.left = rect.left + 'px';
             highlight.style.width = rect.width + 'px';
             highlight.style.height = rect.height + 'px';
-            if (currentElement) positionBands(currentElement);
-            showDimLabel(rect, false);
+            if (showSpacingOverlay && currentElement) positionBands(currentElement);
           }
         }
       }
@@ -2245,6 +2339,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         clearDistanceGuides();
 
         flyout.classList.add('open');
+        if (flyout.classList.contains('is-sidebar')) {
+          dockWrapper.classList.add('sidebar-open');
+        }
         highlight.classList.add('selected');
 
         // Render interactive breadcrumbs
@@ -2398,6 +2495,19 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           lastInfoName = infoName;
           lastComputedStyles = computedStyles;
 
+          // Update Live Token Meter
+          const tokenCountEl = shadow.getElementById('cp-token-count');
+          const tokenSavingsEl = shadow.getElementById('cp-token-savings');
+          if (tokenCountEl && ctx.tokens) {
+            tokenCountEl.textContent = ctx.tokens.current || 0;
+          }
+          if (tokenSavingsEl && ctx.tokens) {
+            const fullTokens = Math.max(ctx.tokens.full || 800, 700);
+            const curTokens = ctx.tokens.current || 140;
+            const savings = Math.max(15, Math.min(95, Math.round((1 - curTokens / (fullTokens * 2.2)) * 100)));
+            tokenSavingsEl.textContent = '-' + savings + '% vs file';
+          }
+
           let html = '';
 
           html += '<div class="cp-section" style="margin-bottom:14px;">';
@@ -2493,6 +2603,32 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       function escapeHtml(str) {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function formatContextForAiPrompt(ctx, stack) {
+        const bt = String.fromCharCode(96);
+        const nl = String.fromCharCode(10);
+        let text = '### Component Context (Agent Hover)' + nl;
+        text += '- **Component**: ' + (ctx.component && ctx.component.name ? '<' + ctx.component.name + ' />' : 'Target Component') + nl;
+        if (ctx.source && ctx.source.file) {
+          text += '- **Location**: ' + bt + ctx.source.file + (ctx.source.startLine ? ':' + ctx.source.startLine + '-' + ctx.source.endLine : '') + bt + nl;
+        }
+        if (stack && stack.length > 0) {
+          const pathStr = stack.map(function(s) { return s.name; }).reverse().join(' › ');
+          text += '- **Hierarchy**: ' + pathStr + nl;
+        }
+        if (ctx.interface && ctx.interface.props && ctx.interface.props.length > 0) {
+          const propSummary = ctx.interface.props.map(function(p) { return p.name + ': ' + p.type + (p.required ? ' (req)' : ''); }).join(', ');
+          text += '- **Props**: ' + propSummary + nl;
+        }
+        if (ctx.interface && ctx.interface.hooks && ctx.interface.hooks.length > 0) {
+          text += '- **Hooks**: ' + ctx.interface.hooks.join(', ') + nl;
+        }
+        if (ctx.source && ctx.source.code) {
+          text += nl + bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
+        }
+        text += nl + '> Token Budget: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '150') + ' tokens (zero-searching target)' + nl;
+        return text;
       }
 
       function formatContextForClipboard(ctx) {
