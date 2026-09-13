@@ -2508,6 +2508,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         e.preventDefault();
         e.stopPropagation();
 
+        if (!currentStack || currentStack.length === 0) {
+          const clickedEl = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+          if (clickedEl && clickedEl !== document.body) {
+            currentStack = buildHierarchyStack(clickedEl);
+            currentStackIndex = 0;
+            currentElement = clickedEl;
+          }
+        }
         if (!currentStack || currentStack.length === 0) return;
         const target = currentStack[currentStackIndex] || currentStack[0];
 
