@@ -10,6 +10,7 @@ import {
   formatPinSetMarkdown,
   formatTaskContext,
   formatScreenshotDiff,
+  SourceEditor,
 } from '@agent-hover/core';
 import type {
   PinEntry,
@@ -31,6 +32,7 @@ export class BridgeServer {
 
   private contextBuilder: ContextBuilder;
   private relationshipResolver: RelationshipResolver;
+  private sourceEditor: SourceEditor;
   private pins: PinEntry[] = [];
   private frozenEntries: FreezeEntry[] = [];
   private computedStyles: Map<string, ComputedStyleInfo> = new Map();
@@ -46,6 +48,7 @@ export class BridgeServer {
 
     this.contextBuilder = new ContextBuilder(projectRoot);
     this.relationshipResolver = new RelationshipResolver(projectRoot);
+    this.sourceEditor = new SourceEditor(projectRoot);
 
     this.setupRoutes();
   }
@@ -607,6 +610,145 @@ export class BridgeServer {
         res.status(500).json({ error: message });
       }
     });
+
+    // Edit source text directly on disk via AST replacement
+    this.app.post('/api/edit-source', async (req, res) => {
+      try {
+        const { file, component, originalText, newText, line } = req.body;
+        if (!file || originalText === undefined || newText === undefined) {
+          res.status(400).json({ error: 'Missing required parameters (file, originalText, newText)' });
+          return;
+        }
+
+        let result = await this.sourceEditor.editSourceText({
+          projectRoot: this.projectRoot,
+          file,
+          component,
+          originalText,
+          newText,
+          line: typeof line === 'number' ? line : undefined,
+        });
+
+        // If not found in the specified file (e.g. call-site file was passed instead of definition file),
+        // search for the component or text across the project source files
+        if (!result.success) {
+          const fg = await import('fast-glob');
+          const fs = await import('fs/promises');
+          const path = await import('path');
+
+          const files = await fg.default('**/*.{tsx,jsx}', {
+            cwd: this.projectRoot,
+            ignore: ['node_modules/**', 'dist/**', file],
+          });
+
+          // Priority 1: Files matching component name
+          if (component) {
+            const compFile = files.find(f => f.toLowerCase().includes(component.toLowerCase()));
+            if (compFile) {
+              const retry = await this.sourceEditor.editSourceText({
+                projectRoot: this.projectRoot,
+                file: compFile,
+                component,
+                originalText,
+                newText,
+              });
+              if (retry.success) {
+                result = retry;
+              }
+            }
+          }
+
+          // Priority 2: Files containing originalText
+          if (!result.success) {
+            for (const candidateFile of files) {
+              try {
+                const content = await fs.readFile(path.join(this.projectRoot, candidateFile), 'utf-8');
+                if (content.includes(originalText.trim())) {
+                  const retry = await this.sourceEditor.editSourceText({
+                    projectRoot: this.projectRoot,
+                    file: candidateFile,
+                    component,
+                    originalText,
+                    newText,
+                  });
+                  if (retry.success) {
+                    result = retry;
+                    break;
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+        }
+
+        if (result.success) {
+          this.broadcast({
+            type: 'source-updated',
+            data: { file: result.file, oldText: result.oldText, newText: result.newText, line: result.line }
+          });
+          res.json(result);
+        } else {
+          res.status(400).json(result);
+        }
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // Save modified component source snippet directly to disk
+    this.app.post('/api/save-source', async (req, res) => {
+      try {
+        const { file, component, newSource, startLine, endLine } = req.body;
+        if (!file || newSource === undefined) {
+          res.status(400).json({ error: 'Missing required parameters (file, newSource)' });
+          return;
+        }
+
+        const result = await this.sourceEditor.saveComponentSource({
+          projectRoot: this.projectRoot,
+          file,
+          component,
+          newSource,
+          startLine: typeof startLine === 'number' ? startLine : undefined,
+          endLine: typeof endLine === 'number' ? endLine : undefined,
+        });
+
+        if (result.success) {
+          this.broadcast({
+            type: 'source-updated',
+            data: { file: result.file, component }
+          });
+          res.json(result);
+        } else {
+          res.status(400).json(result);
+        }
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // Revert the last source modification
+    this.app.post('/api/source-undo', async (_req, res) => {
+      try {
+        const result = await this.sourceEditor.undo();
+        if (result.success) {
+          this.broadcast({
+            type: 'source-reverted',
+            data: { file: result.file, description: result.description }
+          });
+          res.json(result);
+        } else {
+          res.status(400).json(result);
+        }
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // Get undo stack
+    this.app.get('/api/source-history', (_req, res) => {
+      res.json({ history: this.sourceEditor.getUndoStack() });
+    });
   }
 
   public start() {
@@ -662,6 +804,15 @@ export class BridgeServer {
     this.clients.forEach((client) => client.close());
     this.wss?.close();
     this.httpServer?.close();
+  }
+
+  private broadcast(msg: { type: string; data?: any }) {
+    const data = JSON.stringify(msg);
+    this.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(data);
+      }
+    });
   }
 
   private broadcastState() {

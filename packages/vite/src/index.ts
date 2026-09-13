@@ -413,6 +413,29 @@ const UI_HTML = `
             color: #d1d9e6;
           }
 
+          #cp-source-code-editor {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            line-height: 1.55;
+            padding: 10px;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 200px;
+            max-height: 400px;
+            resize: vertical;
+            outline: none;
+            tab-size: 2;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          }
+          #cp-source-code-editor:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+          }
+
           .cp-props-table {
             width: 100%;
             border-collapse: collapse;
@@ -507,28 +530,57 @@ const UI_HTML = `
           .cp-handle-sw { top: 100%; left: 0; }
           .cp-handle-w  { top: 50%; left: 0; }
 
-          /* Box-model bands — opt-in only, no default clutter */
+          /* Box-model dashed frame bands (Design-Mode style) */
           #cp-margin-band {
             position: fixed;
             pointer-events: none;
             z-index: 999996;
             box-sizing: border-box;
-            background: transparent;
-            border-style: solid;
-            border-color: rgba(255, 99, 99, 0.25);
+            background: rgba(244, 63, 94, 0.05);
+            border-style: dashed;
+            border-color: rgba(244, 63, 94, 0.7);
             border-width: 0;
             display: none;
           }
           #cp-padding-band {
             position: fixed;
             pointer-events: none;
-            z-index: 999998;
+            z-index: 999997;
             box-sizing: border-box;
-            background: transparent;
-            border-style: solid;
-            border-color: rgba(52, 211, 153, 0.25);
+            background: rgba(52, 211, 153, 0.06);
+            border-style: dashed;
+            border-color: rgba(52, 211, 153, 0.7);
             border-width: 0;
             display: none;
+          }
+          #cp-axis-guides {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999995;
+          }
+          .cp-axis-line {
+            position: fixed;
+            pointer-events: none;
+          }
+          .cp-axis-h {
+            left: 0;
+            width: 100vw;
+            height: 0;
+            border-top: 1px dashed rgba(14, 165, 233, 0.45);
+          }
+          .cp-axis-v {
+            top: 0;
+            height: 100vh;
+            width: 0;
+            border-left: 1px dashed rgba(14, 165, 233, 0.45);
+          }
+          .cp-layout-child-frame {
+            position: fixed;
+            pointer-events: none;
+            box-sizing: border-box;
+            border: 1px dashed rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.03);
           }
 
           /* Dimension label chip (merged into cp-label) */
@@ -905,12 +957,14 @@ const UI_HTML = `
         </div>
         <div id="cp-margin-band"></div>
         <div id="cp-padding-band"></div>
+        <div id="cp-axis-guides"></div>
         <div id="cp-dim-label"></div>
         <div id="cp-distance-layer"></div>
 
         <div id="cp-text-editor">
           <div id="cp-text-editor-header">
-            <span>✏️ Edit Text</span>
+            <span>✏️ Edit Source Text</span>
+            <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--accent-cyan); background:rgba(14,165,233,0.1); padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid rgba(14,165,233,0.2); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
             <div id="cp-text-editor-toolbar">
               <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
               <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
@@ -920,7 +974,7 @@ const UI_HTML = `
           </div>
           <div id="cp-text-editor-content" contenteditable="true" spellcheck="false"></div>
           <div id="cp-text-editor-footer">
-            <button class="cp-text-action-btn apply" id="cp-text-apply">Apply</button>
+            <button class="cp-text-action-btn apply" id="cp-text-apply">💾 Commit to Source</button>
             <button class="cp-text-action-btn revert" id="cp-text-revert">Revert</button>
             <span id="cp-text-char-count"></span>
           </div>
@@ -1022,6 +1076,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const label = shadow.getElementById('cp-label');
       const marginBand = shadow.getElementById('cp-margin-band');
       const paddingBand = shadow.getElementById('cp-padding-band');
+      const axisGuides = shadow.getElementById('cp-axis-guides');
       const dimLabel = shadow.getElementById('cp-dim-label');
       const flyout = shadow.getElementById('cp-flyout');
       const flyoutTitle = shadow.getElementById('cp-flyout-title');
@@ -1030,6 +1085,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const textEditor = shadow.getElementById('cp-text-editor');
       const textEditorContent = shadow.getElementById('cp-text-editor-content');
       const textCharCount = shadow.getElementById('cp-text-char-count');
+      const textTargetBadge = shadow.getElementById('cp-text-target-badge');
 
       function updateDockOrientation() {
         const rect = dockWrapper.getBoundingClientRect();
@@ -1603,9 +1659,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let currentStack = [];
       let currentStackIndex = -1;
 
-      // Position margin/padding bands around an element (design-mode style)
+      // Position margin/padding bands and dashed axis guides (Design-Mode style)
       function positionBands(el) {
-        if (!el || !marginBand || !paddingBand) return;
+        if (!el) return;
         const cs = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
         const px = (v) => parseFloat(v) || 0;
@@ -1613,32 +1669,63 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const pt = px(cs.paddingTop), pr = px(cs.paddingRight), pb = px(cs.paddingBottom), pl = px(cs.paddingLeft);
         const bt = px(cs.borderTopWidth), brw = px(cs.borderRightWidth), bb = px(cs.borderBottomWidth), blw = px(cs.borderLeftWidth);
 
-        if (mt || mr || mb || ml) {
-          marginBand.style.display = 'block';
-          marginBand.style.top = (rect.top - mt) + 'px';
-          marginBand.style.left = (rect.left - ml) + 'px';
-          marginBand.style.width = (rect.width + ml + mr) + 'px';
-          marginBand.style.height = (rect.height + mt + mb) + 'px';
-          marginBand.style.borderTopWidth = mt + 'px';
-          marginBand.style.borderRightWidth = mr + 'px';
-          marginBand.style.borderBottomWidth = mb + 'px';
-          marginBand.style.borderLeftWidth = ml + 'px';
-        } else {
-          marginBand.style.display = 'none';
+        // 1. Draw full-canvas dashed Axis Projection Lines (Figma / Design-Mode style)
+        if (axisGuides) {
+          const lines = [
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.top) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.bottom) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.left) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.right) + 'px;"></div>'
+          ];
+
+          // Flex / Grid direct child dashed frames
+          if (cs.display.includes('flex') || cs.display.includes('grid')) {
+            const children = Array.from(el.children);
+            for (let i = 0; i < children.length; i++) {
+              const child = children[i];
+              if (!(child instanceof HTMLElement) || child.id === 'agent-hover-root') continue;
+              const cr = child.getBoundingClientRect();
+              if (cr.width > 0 && cr.height > 0) {
+                lines.push('<div class="cp-layout-child-frame" style="top:' + Math.round(cr.top) + 'px; left:' + Math.round(cr.left) + 'px; width:' + Math.round(cr.width) + 'px; height:' + Math.round(cr.height) + 'px;"></div>');
+              }
+            }
+          }
+
+          axisGuides.innerHTML = lines.join('');
         }
 
-        if (pt || pr || pb || pl) {
-          paddingBand.style.display = 'block';
-          paddingBand.style.top = (rect.top + bt) + 'px';
-          paddingBand.style.left = (rect.left + blw) + 'px';
-          paddingBand.style.width = Math.max(0, rect.width - blw - brw) + 'px';
-          paddingBand.style.height = Math.max(0, rect.height - bt - bb) + 'px';
-          paddingBand.style.borderTopWidth = pt + 'px';
-          paddingBand.style.borderRightWidth = pr + 'px';
-          paddingBand.style.borderBottomWidth = pb + 'px';
-          paddingBand.style.borderLeftWidth = pl + 'px';
-        } else {
-          paddingBand.style.display = 'none';
+        // 2. Margin Outer Dashed Frame
+        if (marginBand) {
+          if (mt || mr || mb || ml) {
+            marginBand.style.display = 'block';
+            marginBand.style.top = (rect.top - mt) + 'px';
+            marginBand.style.left = (rect.left - ml) + 'px';
+            marginBand.style.width = (rect.width + ml + mr) + 'px';
+            marginBand.style.height = (rect.height + mt + mb) + 'px';
+            marginBand.style.borderTopWidth = mt + 'px';
+            marginBand.style.borderRightWidth = mr + 'px';
+            marginBand.style.borderBottomWidth = mb + 'px';
+            marginBand.style.borderLeftWidth = ml + 'px';
+          } else {
+            marginBand.style.display = 'none';
+          }
+        }
+
+        // 3. Padding Inner Dashed Frame
+        if (paddingBand) {
+          if (pt || pr || pb || pl) {
+            paddingBand.style.display = 'block';
+            paddingBand.style.top = (rect.top + bt) + 'px';
+            paddingBand.style.left = (rect.left + blw) + 'px';
+            paddingBand.style.width = Math.max(0, rect.width - blw - brw) + 'px';
+            paddingBand.style.height = Math.max(0, rect.height - bt - bb) + 'px';
+            paddingBand.style.borderTopWidth = pt + 'px';
+            paddingBand.style.borderRightWidth = pr + 'px';
+            paddingBand.style.borderBottomWidth = pb + 'px';
+            paddingBand.style.borderLeftWidth = pl + 'px';
+          } else {
+            paddingBand.style.display = 'none';
+          }
         }
       }
 
@@ -1662,6 +1749,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (marginBand) marginBand.style.display = 'none';
         if (paddingBand) paddingBand.style.display = 'none';
         if (dimLabel) dimLabel.style.display = 'none';
+        if (axisGuides) axisGuides.innerHTML = '';
       }
 
       // --- Measurement Distance Guides ---
@@ -1769,9 +1857,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       }
 
-      // --- Inline Text Editor ---
+      // --- Inline Text Editor (Writes directly to Source with DOM Fallback) ---
       let textEditTarget = null;
       let textEditOriginalHTML = '';
+      let textEditOriginalText = '';
+      let textEditTargetFile = null;
+      let textEditTargetLine = null;
+      let textEditTargetComponent = null;
       let textEdits = new Map(); // element -> { originalHTML, currentHTML }
       let textEditorVisible = false;
 
@@ -1793,7 +1885,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         textEdits.forEach(function(val, el) {
           const attrVal = 'ah-edited-' + idx;
           el.setAttribute('data-ah-edited', attrVal);
-          css += '[data-ah-edited=\"' + attrVal + '\"] { outline: 1px dashed rgba(0, 240, 255, 0.35) !important; outline-offset: 2px !important; }\\n';
+          css += '[data-ah-edited="' + attrVal + '"] { outline: 1px dashed rgba(0, 240, 255, 0.35) !important; outline-offset: 2px !important; }\\n';
           idx++;
         });
         sheet.textContent = css;
@@ -1848,42 +1940,166 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (!textEditor || !textEditorContent || !el) return;
         textEditTarget = el;
         textEditOriginalHTML = el.innerHTML;
+        textEditOriginalText = (el.textContent || '').trim();
+        textEditTargetFile = null;
+        textEditTargetLine = null;
+        textEditTargetComponent = null;
 
-        // If this element was previously edited, show the current edited version
-        const prev = textEdits.get(el);
+        // Find enclosing React component and source location
+        const stack = buildHierarchyStack(el);
+        const comp = stack.find(c => !c.isDomElement);
+        if (comp) {
+          textEditTargetComponent = comp.name;
+          if (comp.source && comp.source.fileName) {
+            const fn = comp.source.fileName.split('/').pop().replace(/\.[jt]sx?$/, '');
+            if (fn.toLowerCase() === comp.name.toLowerCase()) {
+              textEditTargetFile = comp.source.fileName;
+              textEditTargetLine = comp.source.lineNumber;
+            }
+          }
+        }
+
+        // Target badge
+        const targetBadge = shadow.getElementById('cp-text-target-badge');
+        if (targetBadge) {
+          if (textEditTargetFile) {
+            const fileName = textEditTargetFile.split('/').pop();
+            targetBadge.textContent = (textEditTargetComponent ? textEditTargetComponent + ' • ' : '') + fileName + (textEditTargetLine ? ':' + textEditTargetLine : '');
+            targetBadge.title = textEditTargetFile + (textEditTargetLine ? ':' + textEditTargetLine : '');
+          } else if (textEditTargetComponent) {
+            targetBadge.textContent = textEditTargetComponent + ' • resolving...';
+            resolveComponent({ name: textEditTargetComponent }).then(resolved => {
+              if (resolved && resolved.file) {
+                textEditTargetFile = resolved.file;
+                textEditTargetLine = resolved.line;
+                const fn = resolved.file.split('/').pop();
+                targetBadge.textContent = textEditTargetComponent + ' • ' + fn + (resolved.line ? ':' + resolved.line : '');
+                targetBadge.title = resolved.file + ':' + resolved.line;
+              } else {
+                targetBadge.textContent = textEditTargetComponent + ' (DOM only)';
+              }
+            });
+          } else {
+            targetBadge.textContent = 'DOM preview only';
+            targetBadge.title = 'No component source resolved';
+          }
+        }
+
+        // If this element was previously edited, show current content
         textEditorContent.innerHTML = el.innerHTML;
 
         positionTextEditor(el);
         textEditor.style.display = 'block';
         textEditorVisible = true;
 
-        // Focus the editor
-        setTimeout(function() { textEditorContent.focus(); }, 50);
+        // Focus the editor and select all text
+        setTimeout(function() {
+          textEditorContent.focus();
+          try {
+            const range = document.createRange();
+            range.selectNodeContents(textEditorContent);
+            const sel = window.getSelection();
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          } catch (e) {}
+        }, 50);
 
         // Update char count
         updateCharCount();
-        showCallout('Double-clicked: editing text', 'EDIT');
+        showCallout('Editing source text', 'EDIT');
       }
 
       function closeTextEditor() {
         if (textEditor) textEditor.style.display = 'none';
         textEditorVisible = false;
         textEditTarget = null;
+        textEditTargetFile = null;
+        textEditTargetLine = null;
+        textEditTargetComponent = null;
+        textEditOriginalText = '';
       }
 
-      function applyTextEdit() {
+      async function applyTextEdit() {
         if (!textEditTarget || !textEditorContent) return;
+        const newText = (textEditorContent.textContent || textEditorContent.innerText || '').trim();
+        const originalText = textEditOriginalText;
         const newHTML = textEditorContent.innerHTML;
+
+        const applyBtn = shadow.getElementById('cp-text-apply');
+
+        // If source file is known and text actually changed, write directly to source code!
+        if (textEditTargetFile && originalText && newText !== originalText) {
+          if (applyBtn) {
+            applyBtn.textContent = 'Saving...';
+            applyBtn.disabled = true;
+          }
+          try {
+            const res = await fetch(BRIDGE + '/api/edit-source', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                file: textEditTargetFile,
+                component: textEditTargetComponent,
+                originalText: originalText,
+                newText: newText,
+                line: textEditTargetLine,
+              }),
+            });
+            const data = await res.json();
+            if (applyBtn) {
+              applyBtn.textContent = '💾 Commit to Source';
+              applyBtn.disabled = false;
+            }
+            if (data.success) {
+              const fileBase = textEditTargetFile.split('/').pop();
+              showCallout('✓ Saved to ' + fileBase + ' (HMR reloaded)', 'SOURCE');
+              textEditTarget.textContent = newText;
+              closeTextEditor();
+              return;
+            } else {
+              console.warn('[agent-hover] Source edit fallback:', data.error);
+              showCallout('AST: text literal not found — applied to DOM', 'WARNING');
+            }
+          } catch (e) {
+            if (applyBtn) {
+              applyBtn.textContent = '💾 Commit to Source';
+              applyBtn.disabled = false;
+            }
+            console.error('[agent-hover] Error calling /api/edit-source:', e);
+            showCallout('Server error — applied to DOM', 'WARNING');
+          }
+        }
+
+        // Fallback to DOM update (ephemeral / dynamic expression)
         textEditTarget.innerHTML = newHTML;
         textEdits.set(textEditTarget, { originalHTML: textEditOriginalHTML, currentHTML: newHTML });
         updateEditedIndicators();
         saveTextEditsToSession();
-        showCallout('Text updated ✓', 'EDIT');
+        showCallout('DOM updated ✓', 'EDIT');
         closeTextEditor();
       }
 
-      function revertTextEdit() {
+      async function revertTextEdit() {
         if (!textEditTarget) return;
+        const revertBtn = shadow.getElementById('cp-text-revert');
+        if (revertBtn) revertBtn.disabled = true;
+
+        try {
+          const res = await fetch(BRIDGE + '/api/source-undo', { method: 'POST' });
+          const data = await res.json();
+          if (revertBtn) revertBtn.disabled = false;
+          if (data.success) {
+            showCallout('↩ ' + (data.description || 'Source change reverted'), 'UNDO');
+            closeTextEditor();
+            return;
+          }
+        } catch (e) {
+          if (revertBtn) revertBtn.disabled = false;
+        }
+
+        // Fallback DOM revert
         textEditTarget.innerHTML = textEditOriginalHTML;
         textEdits.delete(textEditTarget);
         textEditTarget.removeAttribute('data-ah-edited');
@@ -1985,9 +2201,18 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       });
 
-      // Update char count on input
+      // Update char count on input and keyboard shortcuts (Cmd+Enter to commit, Esc to close)
       if (textEditorContent) {
         textEditorContent.addEventListener('input', updateCharCount);
+        textEditorContent.addEventListener('keydown', function(e) {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            applyTextEdit();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeTextEditor();
+          }
+        });
       }
 
       // Double-click handler for text editing
@@ -2571,21 +2796,195 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
 
           if (ctx.source && ctx.source.code) {
-            html += '<details class="cp-section">';
-            html += '<summary class="cp-section-title">Source Preview</summary>';
-            html += '<div class="cp-code">' + escapeHtml(ctx.source.code) + '</div>';
+            html += '<details class="cp-section" open>';
+            html += '<summary class="cp-section-title" style="display:flex; justify-content:space-between; align-items:center;">';
+            html += '<span>Component Source</span>';
+            html += '<button class="cp-btn-bento" id="cp-toggle-source-editor" style="font-size:10.5px; padding:2px 8px; border-radius:4px; margin-left:auto;">✏️ Edit Source</button>';
+            html += '</summary>';
+            html += '<div id="cp-source-preview-box">';
+            html += '<div class="cp-code" id="cp-source-code-display">' + escapeHtml(ctx.source.code) + '</div>';
+            html += '</div>';
+            html += '<div id="cp-source-editor-box" style="display:none; margin-top:8px;">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">';
+            html += '<span>' + ctx.source.file.split('/').pop() + ' (L' + ctx.source.startLine + '-L' + ctx.source.endLine + ')</span>';
+            html += '<span style="color:var(--accent-cyan); font-weight:500;">Direct Disk Edit</span>';
+            html += '</div>';
+            html += '<textarea id="cp-source-code-editor" spellcheck="false"></textarea>';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">';
+            html += '<div style="display:flex; gap:6px;">';
+            html += '<button class="cp-btn-bento primary" id="cp-source-save-btn" style="padding:5px 12px; font-size:11px; display:flex; align-items:center; gap:4px;">💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd></button>';
+            html += '<button class="cp-btn-bento" id="cp-source-undo-btn" style="padding:5px 10px; font-size:11px;">↩ Undo</button>';
+            html += '</div>';
+            html += '<button class="cp-btn-bento" id="cp-source-cancel-btn" style="padding:5px 8px; font-size:11px;">Close</button>';
+            html += '</div>';
+            html += '<div id="cp-source-save-status" style="font-size:11px; font-family:var(--font-mono); margin-top:6px; min-height:16px;"></div>';
+            html += '</div>';
             html += '</details>';
           }
 
           flyoutContent.innerHTML = html;
+
+          // Wire up in-flyout Component Source Editor
+          const toggleEditorBtn = shadow.getElementById('cp-toggle-source-editor');
+          const previewBox = shadow.getElementById('cp-source-preview-box');
+          const editorBox = shadow.getElementById('cp-source-editor-box');
+          const codeTextarea = shadow.getElementById('cp-source-code-editor');
+          const saveSourceBtn = shadow.getElementById('cp-source-save-btn');
+          const undoSourceBtn = shadow.getElementById('cp-source-undo-btn');
+          const cancelSourceBtn = shadow.getElementById('cp-source-cancel-btn');
+          const saveStatus = shadow.getElementById('cp-source-save-status');
+
+          if (toggleEditorBtn && previewBox && editorBox && codeTextarea) {
+            toggleEditorBtn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const isEditing = editorBox.style.display !== 'none';
+              if (isEditing) {
+                editorBox.style.display = 'none';
+                previewBox.style.display = 'block';
+                toggleEditorBtn.textContent = '✏️ Edit Source';
+              } else {
+                codeTextarea.value = ctx.source.code;
+                editorBox.style.display = 'block';
+                previewBox.style.display = 'none';
+                toggleEditorBtn.textContent = '👁️ Preview';
+                if (saveStatus) saveStatus.textContent = '';
+                setTimeout(() => codeTextarea.focus(), 50);
+              }
+            };
+
+            if (cancelSourceBtn) {
+              cancelSourceBtn.onclick = (e) => {
+                e.preventDefault();
+                editorBox.style.display = 'none';
+                previewBox.style.display = 'block';
+                toggleEditorBtn.textContent = '✏️ Edit Source';
+              };
+            }
+
+            const handleSaveSource = async () => {
+              if (!saveSourceBtn || saveSourceBtn.disabled) return;
+              const newSource = codeTextarea.value;
+              saveSourceBtn.disabled = true;
+              saveSourceBtn.innerHTML = 'Saving...';
+              if (saveStatus) {
+                saveStatus.style.color = 'var(--accent-cyan)';
+                saveStatus.textContent = 'Writing to disk & compiling...';
+              }
+
+              try {
+                const res = await fetch(BRIDGE + '/api/save-source', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    file: ctx.source.file,
+                    component: infoName,
+                    newSource: newSource,
+                    startLine: ctx.source.startLine,
+                    endLine: ctx.source.endLine,
+                  }),
+                });
+                const data = await res.json();
+                saveSourceBtn.disabled = false;
+                saveSourceBtn.innerHTML = '💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd>';
+
+                if (data.success) {
+                  ctx.source.code = newSource;
+                  const displayEl = shadow.getElementById('cp-source-code-display');
+                  if (displayEl) displayEl.textContent = newSource;
+                  if (saveStatus) {
+                    saveStatus.style.color = '#34d399';
+                    saveStatus.textContent = '✓ Saved to disk & HMR reloaded!';
+                  }
+                  showCallout('✓ ' + infoName + ' saved to disk — HMR reloaded', 'SOURCE');
+                } else {
+                  if (saveStatus) {
+                    saveStatus.style.color = '#fb7185';
+                    saveStatus.textContent = 'Syntax error: ' + (data.error || 'Failed to save');
+                  }
+                  showCallout('Save failed: ' + (data.error || 'Syntax error'), 'WARNING');
+                }
+              } catch (err) {
+                saveSourceBtn.disabled = false;
+                saveSourceBtn.innerHTML = '💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd>';
+                if (saveStatus) {
+                  saveStatus.style.color = '#fb7185';
+                  saveStatus.textContent = 'Error: ' + err.message;
+                }
+              }
+            };
+
+            if (saveSourceBtn) {
+              saveSourceBtn.onclick = (e) => {
+                e.preventDefault();
+                handleSaveSource();
+              };
+            }
+
+            // Keyboard shortcut Cmd+S / Ctrl+S inside textarea
+            codeTextarea.addEventListener('keydown', (e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSaveSource();
+              }
+              // Tab key indents by 2 spaces
+              if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeTextarea.selectionStart;
+                const end = codeTextarea.selectionEnd;
+                codeTextarea.value = codeTextarea.value.substring(0, start) + '  ' + codeTextarea.value.substring(end);
+                codeTextarea.selectionStart = codeTextarea.selectionEnd = start + 2;
+              }
+            });
+
+            if (undoSourceBtn) {
+              undoSourceBtn.onclick = async (e) => {
+                e.preventDefault();
+                undoSourceBtn.disabled = true;
+                if (saveStatus) {
+                  saveStatus.style.color = 'var(--accent-cyan)';
+                  saveStatus.textContent = 'Reverting...';
+                }
+                try {
+                  const res = await fetch(BRIDGE + '/api/source-undo', { method: 'POST' });
+                  const data = await res.json();
+                  undoSourceBtn.disabled = false;
+                  if (data.success) {
+                    if (saveStatus) {
+                      saveStatus.style.color = '#34d399';
+                      saveStatus.textContent = '↩ ' + (data.description || 'Reverted');
+                    }
+                    showCallout('↩ ' + (data.description || 'Reverted change'), 'UNDO');
+                    // Reload component context to refresh source snippet
+                    loadComponentContext(infoName, resolved, computedStyles);
+                  } else {
+                    if (saveStatus) {
+                      saveStatus.style.color = '#fb7185';
+                      saveStatus.textContent = data.error || 'Nothing to undo';
+                    }
+                  }
+                } catch (err) {
+                  undoSourceBtn.disabled = false;
+                  if (saveStatus) {
+                    saveStatus.style.color = '#fb7185';
+                    saveStatus.textContent = 'Undo error: ' + err.message;
+                  }
+                }
+              };
+            }
+          }
         } catch(err) {
           flyoutContent.innerHTML = '<p style="color:#fb7185;">Failed to load context: ' + err.message + '</p>';
         }
       }
 
       async function resolveComponent(info) {
-        if (info.source) {
-          return { file: info.source.fileName, line: info.source.lineNumber };
+        if (info.source && info.source.fileName) {
+          const fn = info.source.fileName.split('/').pop().replace(/\.[jt]sx?$/, '');
+          if (fn.toLowerCase() === info.name.toLowerCase()) {
+            return { file: info.source.fileName, line: info.source.lineNumber };
+          }
         }
         try {
           // Send ancestor names so bridge can prefer the right file
@@ -2732,6 +3131,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               refreshState();
             } else if (payload.type === 'pins-update') {
               refreshState();
+            } else if (payload.type === 'source-updated') {
+              showCallout('Source updated: ' + (payload.data.file ? payload.data.file.split('/').pop() : 'file'), 'HMR');
+            } else if (payload.type === 'source-reverted') {
+              showCallout('Source reverted: ' + (payload.data.description || 'change'), 'UNDO');
             } else if (payload.type === 'capture-screenshot') {
               const { requestId, file, component, label, componentId } = payload.data;
               const el = findComponentElement(component);
