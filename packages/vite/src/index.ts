@@ -18,7 +18,7 @@ const UI_HTML = `
           :host {
             pointer-events: none;
           }
-          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal {
+          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal, #cp-text-editor {
             pointer-events: auto;
           }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
@@ -341,20 +341,22 @@ const UI_HTML = `
             box-shadow: 0 0 16px var(--accent-cyan-glow);
           }
 
-          .cp-section { margin-bottom: 18px; }
+          .cp-section { margin-bottom: 20px; }
           .cp-section-title {
             font-family: var(--font-mono);
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            color: #8b9dc3;
+            margin-bottom: 10px;
+            padding: 6px 0;
             cursor: pointer;
             user-select: none;
             display: flex;
             align-items: center;
             gap: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
           }
 
           .cp-section-title:hover { color: var(--text-primary); }
@@ -370,16 +372,16 @@ const UI_HTML = `
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--border-glass);
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 14px 16px;
             font-family: var(--font-mono);
-            font-size: 11.5px;
+            font-size: 12px;
             overflow-x: auto;
             white-space: pre;
-            max-height: 240px;
+            max-height: 260px;
             overflow-y: auto;
-            line-height: 1.5;
+            line-height: 1.6;
             margin-top: 8px;
-            color: #cbd5e1;
+            color: #d1d9e6;
           }
 
           .cp-props-table {
@@ -389,22 +391,31 @@ const UI_HTML = `
             margin-top: 8px;
           }
           .cp-props-table th {
-            text-align: left; padding: 6px 8px; color: var(--text-muted);
-            border-bottom: 1px solid var(--border-glass); font-weight: 500;
+            text-align: left; padding: 8px 10px; color: #8b9dc3;
+            border-bottom: 1px solid var(--border-glass); font-weight: 600;
             font-family: var(--font-mono); font-size: 11px;
+            background: rgba(0, 0, 0, 0.15);
           }
           .cp-props-table td {
-            padding: 6px 8px; border-bottom: 1px solid var(--border-glass);
-            font-family: var(--font-mono); font-size: 11px;
+            padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-family: var(--font-mono); font-size: 11.5px;
+            line-height: 1.4;
+          }
+          .cp-props-table tr:nth-child(even) td {
+            background: rgba(255, 255, 255, 0.02);
+          }
+          .cp-props-table tr:hover td {
+            background: rgba(255, 255, 255, 0.04);
           }
 
           .cp-badge {
-            display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px;
+            display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px;
             font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2px;
+            min-height: 24px; line-height: 1;
           }
           .cp-badge-cyan { background: rgba(0, 240, 255, 0.12); color: var(--accent-cyan); border: 1px solid rgba(0, 240, 255, 0.3); }
           .cp-badge-emerald { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-          .cp-badge-muted { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid var(--border-glass); }
+          .cp-badge-muted { background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid var(--border-glass); }
           .cp-badge-rose { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
 
           .cp-box-model {
@@ -584,6 +595,173 @@ const UI_HTML = `
             background: var(--bg-dock-panel); border: 1px solid var(--border-glass); border-radius: 20px;
             display: flex; flex-direction: column; box-shadow: var(--shadow-dock); max-width: 90vw; max-height: 90vh; width: 100%;
           }
+
+          /* --- Inline Text Editor Popover --- */
+          #cp-text-editor {
+            display: none;
+            position: fixed;
+            z-index: 999999;
+            width: 340px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: var(--blur);
+            border: 1px solid var(--border-cyan);
+            border-radius: 14px;
+            box-shadow: var(--shadow-dock), 0 0 20px rgba(0, 240, 255, 0.12);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            overflow: hidden;
+            pointer-events: auto;
+          }
+          #cp-text-editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-glass);
+            background: rgba(0, 0, 0, 0.2);
+          }
+          #cp-text-editor-header > span {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+          }
+          #cp-text-editor-toolbar {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+          }
+          .cp-text-tb-btn {
+            width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            border-radius: 5px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: var(--font-sans);
+            transition: all 0.15s;
+          }
+          .cp-text-tb-btn:hover {
+            background: rgba(0, 240, 255, 0.12);
+            color: var(--accent-cyan);
+            border-color: var(--border-cyan);
+          }
+          .cp-text-tb-btn.active {
+            background: rgba(0, 240, 255, 0.2);
+            color: var(--accent-cyan);
+            border-color: var(--border-cyan);
+          }
+          #cp-text-editor-content {
+            min-height: 60px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            color: var(--text-primary);
+            outline: none;
+            word-break: break-word;
+            border: none;
+            background: transparent;
+          }
+          #cp-text-editor-content:focus {
+            background: rgba(0, 240, 255, 0.02);
+          }
+          #cp-text-editor-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border-glass);
+            background: rgba(0, 0, 0, 0.15);
+          }
+          .cp-text-action-btn {
+            padding: 5px 14px;
+            border-radius: 7px;
+            font-size: 11.5px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            border: 1px solid var(--border-glass);
+            transition: all 0.15s;
+          }
+          .cp-text-action-btn.apply {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(2, 132, 199, 0.3));
+            color: var(--accent-cyan);
+            border-color: var(--border-cyan);
+          }
+          .cp-text-action-btn.apply:hover {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(2, 132, 199, 0.4));
+            box-shadow: 0 0 12px var(--accent-cyan-glow);
+          }
+          .cp-text-action-btn.revert {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+          }
+          .cp-text-action-btn.revert:hover {
+            background: rgba(244, 63, 94, 0.12);
+            color: #fb7185;
+            border-color: rgba(244, 63, 94, 0.3);
+          }
+          #cp-text-char-count {
+            margin-left: auto;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+          }
+          #cp-text-editor-close {
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            background: none; border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: all 0.15s;
+          }
+          #cp-text-editor-close:hover {
+            color: #fb7185;
+            background: rgba(244, 63, 94, 0.12);
+          }
+
+          /* --- Measurement Distance Guides --- */
+          #cp-distance-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999991;
+          }
+          .cp-dist-line {
+            position: absolute;
+            background: rgba(255, 107, 53, 0.55);
+          }
+          .cp-dist-line.horizontal {
+            height: 1px;
+            border-top: 1px dashed rgba(255, 107, 53, 0.7);
+            background: none;
+          }
+          .cp-dist-line.vertical {
+            width: 1px;
+            border-left: 1px dashed rgba(255, 107, 53, 0.7);
+            background: none;
+          }
+          .cp-dist-pill {
+            position: absolute;
+            background: #FF6B35;
+            color: #fff;
+            font-size: 9px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 9999px;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+          }
         </style>
 
         <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -639,7 +817,7 @@ const UI_HTML = `
               </div>
               <button class="cp-dock-tile" id="cp-flyout-close" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
-            <div id="cp-flyout-breadcrumb" style="display:none; padding:8px 20px; background:rgba(0,0,0,0.15); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11px; overflow-x:auto; white-space:nowrap;">
+            <div id="cp-flyout-breadcrumb" style="display:none; padding:10px 20px; background:rgba(0,0,0,0.18); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11.5px; overflow-x:auto; white-space:nowrap;">
             </div>
 
             <div id="cp-flyout-content">
@@ -689,6 +867,25 @@ const UI_HTML = `
         <div id="cp-margin-band"></div>
         <div id="cp-padding-band"></div>
         <div id="cp-dim-label"></div>
+        <div id="cp-distance-layer"></div>
+
+        <div id="cp-text-editor">
+          <div id="cp-text-editor-header">
+            <span>✏️ Edit Text</span>
+            <div id="cp-text-editor-toolbar">
+              <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
+              <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
+              <button class="cp-text-tb-btn" data-cmd="underline" title="Underline (⌘U)"><u>U</u></button>
+            </div>
+            <button id="cp-text-editor-close">✕</button>
+          </div>
+          <div id="cp-text-editor-content" contenteditable="true" spellcheck="false"></div>
+          <div id="cp-text-editor-footer">
+            <button class="cp-text-action-btn apply" id="cp-text-apply">Apply</button>
+            <button class="cp-text-action-btn revert" id="cp-text-revert">Revert</button>
+            <span id="cp-text-char-count"></span>
+          </div>
+        </div>
 
         <div id="cp-tracker">
           <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent-cyan); font-family:var(--font-mono);"></span></div>
@@ -790,8 +987,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const flyout = shadow.getElementById('cp-flyout');
       const flyoutTitle = shadow.getElementById('cp-flyout-title');
       const flyoutContent = shadow.getElementById('cp-flyout-content');
-
-
+      const distanceLayer = shadow.getElementById('cp-distance-layer');
+      const textEditor = shadow.getElementById('cp-text-editor');
+      const textEditorContent = shadow.getElementById('cp-text-editor-content');
+      const textCharCount = shadow.getElementById('cp-text-char-count');
 
       function updateDockOrientation() {
         const rect = dockWrapper.getBoundingClientRect();
@@ -882,6 +1081,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           dockToggle.classList.remove('active');
           highlight.style.display = 'none';
           hideBands();
+          clearDistanceGuides();
+          closeTextEditor();
+          selectedRect = null;
           callout.classList.remove('show');
           currentComponentInfo = null;
           currentElement = null;
@@ -1338,6 +1540,367 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (dimLabel) dimLabel.style.display = 'none';
       }
 
+      // --- Measurement Distance Guides ---
+      let selectedRect = null; // Stores the rect of the currently selected (clicked) element
+
+      function clearDistanceGuides() {
+        if (distanceLayer) distanceLayer.innerHTML = '';
+      }
+
+      function renderDistanceGuides(selRect, hovRect) {
+        clearDistanceGuides();
+        if (!distanceLayer || !selRect || !hovRect) return;
+
+        // Check if rects are the same element (skip)
+        if (Math.abs(selRect.top - hovRect.top) < 2 && Math.abs(selRect.left - hovRect.left) < 2 &&
+            Math.abs(selRect.width - hovRect.width) < 2 && Math.abs(selRect.height - hovRect.height) < 2) return;
+
+        const selBottom = selRect.top + selRect.height;
+        const selRight = selRect.left + selRect.width;
+        const hovBottom = hovRect.top + hovRect.height;
+        const hovRight = hovRect.left + hovRect.width;
+
+        const overlapX = selRect.left < hovRight && selRight > hovRect.left;
+        const overlapY = selRect.top < hovBottom && selBottom > hovRect.top;
+
+        function addLine(cls, top, left, w, h) {
+          const el = document.createElement('div');
+          el.className = 'cp-dist-line ' + cls;
+          el.style.top = top + 'px';
+          el.style.left = left + 'px';
+          if (w) el.style.width = w + 'px';
+          if (h) el.style.height = h + 'px';
+          distanceLayer.appendChild(el);
+        }
+
+        function addPill(text, top, left) {
+          const el = document.createElement('div');
+          el.className = 'cp-dist-pill';
+          el.textContent = text;
+          el.style.top = top + 'px';
+          el.style.left = left + 'px';
+          distanceLayer.appendChild(el);
+        }
+
+        // Vertical gap (elements don't overlap vertically)
+        if (!overlapY) {
+          const isAbove = selRect.top > hovBottom;
+          const gapTop = isAbove ? hovBottom : selBottom;
+          const gapBottom = isAbove ? selRect.top : hovRect.top;
+          const gap = Math.round(gapBottom - gapTop);
+          if (gap > 0) {
+            const midX = Math.max(selRect.left + selRect.width / 2, hovRect.left + hovRect.width / 2);
+            addLine('vertical', gapTop, midX, null, gap);
+            addPill(gap + 'px', gapTop + gap / 2, midX);
+          }
+        }
+
+        // Horizontal gap (elements don't overlap horizontally)
+        if (!overlapX) {
+          const isLeft = selRect.left > hovRight;
+          const gapLeft = isLeft ? hovRight : selRight;
+          const gapRight = isLeft ? selRect.left : hovRect.left;
+          const gap = Math.round(gapRight - gapLeft);
+          if (gap > 0) {
+            const midY = Math.max(selRect.top + selRect.height / 2, hovRect.top + hovRect.height / 2);
+            addLine('horizontal', midY, gapLeft, gap, null);
+            addPill(gap + 'px', midY, gapLeft + gap / 2);
+          }
+        }
+
+        // Both overlap (nested/containment) — show edge inset distances
+        if (overlapX && overlapY) {
+          const topGap = Math.round(Math.abs(hovRect.top - selRect.top));
+          const leftGap = Math.round(Math.abs(hovRect.left - selRect.left));
+          const bottomGap = Math.round(Math.abs(selBottom - hovBottom));
+          const rightGap = Math.round(Math.abs(selRight - hovRight));
+
+          const innerLeft = Math.max(selRect.left, hovRect.left);
+          const innerRight = Math.min(selRight, hovRight);
+          const innerTop = Math.max(selRect.top, hovRect.top);
+          const innerBottom = Math.min(selBottom, hovBottom);
+          const midX = (innerLeft + innerRight) / 2;
+          const midY = (innerTop + innerBottom) / 2;
+
+          if (topGap > 4) {
+            const t = Math.min(selRect.top, hovRect.top);
+            addLine('vertical', t, midX, null, topGap);
+            addPill(topGap + 'px', t + topGap / 2, midX);
+          }
+          if (leftGap > 4) {
+            const l = Math.min(selRect.left, hovRect.left);
+            addLine('horizontal', midY, l, leftGap, null);
+            addPill(leftGap + 'px', midY, l + leftGap / 2);
+          }
+          if (bottomGap > 4 && bottomGap !== topGap) {
+            const bTop = Math.min(selBottom, hovBottom);
+            addLine('vertical', bTop, midX, null, bottomGap);
+            addPill(bottomGap + 'px', bTop + bottomGap / 2, midX);
+          }
+          if (rightGap > 4 && rightGap !== leftGap) {
+            const rLeft = Math.min(selRight, hovRight);
+            addLine('horizontal', midY, rLeft, rightGap, null);
+            addPill(rightGap + 'px', midY, rLeft + rightGap / 2);
+          }
+        }
+      }
+
+      // --- Inline Text Editor ---
+      let textEditTarget = null;
+      let textEditOriginalHTML = '';
+      let textEdits = new Map(); // element -> { originalHTML, currentHTML }
+      let textEditorVisible = false;
+
+      // Managed stylesheet for edited element indicators
+      let editedStyleEl = null;
+      function getEditedStylesheet() {
+        if (!editedStyleEl) {
+          editedStyleEl = document.createElement('style');
+          editedStyleEl.id = 'agent-hover-edits';
+          document.head.appendChild(editedStyleEl);
+        }
+        return editedStyleEl;
+      }
+
+      function updateEditedIndicators() {
+        const sheet = getEditedStylesheet();
+        let css = '';
+        let idx = 0;
+        textEdits.forEach(function(val, el) {
+          const attrVal = 'ah-edited-' + idx;
+          el.setAttribute('data-ah-edited', attrVal);
+          css += '[data-ah-edited=\"' + attrVal + '\"] { outline: 1px dashed rgba(0, 240, 255, 0.35) !important; outline-offset: 2px !important; }\\n';
+          idx++;
+        });
+        sheet.textContent = css;
+      }
+
+      function isLeafTextElement(el) {
+        if (!el || !el.textContent || !el.textContent.trim()) return false;
+        // Check that it has mostly text content (no complex children)
+        const children = el.children;
+        if (children.length === 0) return true;
+        // Allow elements with only inline formatting children (b, i, u, em, strong, span, a, br)
+        const inlineTags = new Set(['B', 'I', 'U', 'EM', 'STRONG', 'SPAN', 'A', 'BR', 'SMALL', 'SUB', 'SUP', 'MARK', 'CODE']);
+        for (let i = 0; i < children.length; i++) {
+          if (!inlineTags.has(children[i].tagName)) return false;
+        }
+        return true;
+      }
+
+      function isFormElement(el) {
+        if (!el) return false;
+        const tag = el.tagName;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION';
+      }
+
+      function positionTextEditor(targetEl) {
+        if (!textEditor || !targetEl) return;
+        const rect = targetEl.getBoundingClientRect();
+        const edW = 340;
+        const edH = 240; // approximate
+        const gap = 8;
+        let top, left;
+
+        // Prefer below the element
+        if (rect.bottom + gap + edH < window.innerHeight) {
+          top = rect.bottom + gap;
+        } else if (rect.top - gap - edH > 0) {
+          // Above the element
+          top = rect.top - gap - edH;
+        } else {
+          // Fallback: center of viewport
+          top = Math.max(12, (window.innerHeight - edH) / 2);
+        }
+
+        // Horizontally align with element left, clamped to viewport
+        left = Math.max(12, Math.min(rect.left, window.innerWidth - edW - 12));
+
+        textEditor.style.top = top + 'px';
+        textEditor.style.left = left + 'px';
+      }
+
+      function openTextEditor(el) {
+        if (!textEditor || !textEditorContent || !el) return;
+        textEditTarget = el;
+        textEditOriginalHTML = el.innerHTML;
+
+        // If this element was previously edited, show the current edited version
+        const prev = textEdits.get(el);
+        textEditorContent.innerHTML = el.innerHTML;
+
+        positionTextEditor(el);
+        textEditor.style.display = 'block';
+        textEditorVisible = true;
+
+        // Focus the editor
+        setTimeout(function() { textEditorContent.focus(); }, 50);
+
+        // Update char count
+        updateCharCount();
+        showCallout('Double-clicked: editing text', 'EDIT');
+      }
+
+      function closeTextEditor() {
+        if (textEditor) textEditor.style.display = 'none';
+        textEditorVisible = false;
+        textEditTarget = null;
+      }
+
+      function applyTextEdit() {
+        if (!textEditTarget || !textEditorContent) return;
+        const newHTML = textEditorContent.innerHTML;
+        textEditTarget.innerHTML = newHTML;
+        textEdits.set(textEditTarget, { originalHTML: textEditOriginalHTML, currentHTML: newHTML });
+        updateEditedIndicators();
+        saveTextEditsToSession();
+        showCallout('Text updated ✓', 'EDIT');
+        closeTextEditor();
+      }
+
+      function revertTextEdit() {
+        if (!textEditTarget) return;
+        textEditTarget.innerHTML = textEditOriginalHTML;
+        textEdits.delete(textEditTarget);
+        textEditTarget.removeAttribute('data-ah-edited');
+        updateEditedIndicators();
+        saveTextEditsToSession();
+        showCallout('Text reverted', 'UNDO');
+        closeTextEditor();
+      }
+
+      function updateCharCount() {
+        if (!textCharCount || !textEditorContent) return;
+        const len = textEditorContent.textContent ? textEditorContent.textContent.length : 0;
+        textCharCount.textContent = len + ' chars';
+      }
+
+      // --- sessionStorage persistence for text edits ---
+      function buildCSSSelector(el) {
+        if (!el || el === document.body || el === document.documentElement) return '';
+        const parts = [];
+        let curr = el;
+        while (curr && curr !== document.body && parts.length < 6) {
+          let sel = curr.tagName.toLowerCase();
+          if (curr.id) {
+            sel += '#' + curr.id;
+            parts.unshift(sel);
+            break; // ID is unique enough
+          }
+          if (curr.parentElement) {
+            const siblings = Array.from(curr.parentElement.children).filter(function(c) { return c.tagName === curr.tagName; });
+            if (siblings.length > 1) {
+              const idx = siblings.indexOf(curr) + 1;
+              sel += ':nth-of-type(' + idx + ')';
+            }
+          }
+          parts.unshift(sel);
+          curr = curr.parentElement;
+        }
+        return parts.join(' > ');
+      }
+
+      function saveTextEditsToSession() {
+        try {
+          const data = [];
+          textEdits.forEach(function(val, el) {
+            const selector = buildCSSSelector(el);
+            if (selector) {
+              data.push({ selector: selector, originalHTML: val.originalHTML, currentHTML: val.currentHTML });
+            }
+          });
+          sessionStorage.setItem('agent-hover-text-edits', JSON.stringify(data));
+        } catch(e) { }
+      }
+
+      function restoreTextEditsFromSession() {
+        try {
+          const raw = sessionStorage.getItem('agent-hover-text-edits');
+          if (!raw) return;
+          const data = JSON.parse(raw);
+          if (!Array.isArray(data)) return;
+          data.forEach(function(item) {
+            try {
+              const el = document.querySelector(item.selector);
+              if (el && el.innerHTML !== item.currentHTML) {
+                el.innerHTML = item.currentHTML;
+                textEdits.set(el, { originalHTML: item.originalHTML, currentHTML: item.currentHTML });
+              }
+            } catch(e) { }
+          });
+          if (textEdits.size > 0) {
+            updateEditedIndicators();
+            console.log('[agent-hover] Restored ' + textEdits.size + ' text edit(s) from session');
+          }
+        } catch(e) { }
+      }
+
+      // Restore edits after a short delay (let React render first)
+      setTimeout(restoreTextEditsFromSession, 800);
+
+      // --- Text Editor Event Handlers ---
+      // Apply button
+      shadow.getElementById('cp-text-apply').onclick = applyTextEdit;
+
+      // Revert button
+      shadow.getElementById('cp-text-revert').onclick = revertTextEdit;
+
+      // Close button
+      shadow.getElementById('cp-text-editor-close').onclick = closeTextEditor;
+
+      // Toolbar buttons (bold, italic, underline)
+      shadow.querySelectorAll('.cp-text-tb-btn').forEach(function(btn) {
+        btn.onclick = function(e) {
+          e.preventDefault();
+          const cmd = btn.getAttribute('data-cmd');
+          if (cmd && textEditorContent) {
+            // Need to refocus the contenteditable before executing command
+            textEditorContent.focus();
+            document.execCommand(cmd, false, null);
+          }
+        };
+      });
+
+      // Update char count on input
+      if (textEditorContent) {
+        textEditorContent.addEventListener('input', updateCharCount);
+      }
+
+      // Double-click handler for text editing
+      window.addEventListener('dblclick', function(e) {
+        if (!isPointerMode) return;
+        if (e.target && e.target.closest && e.target.closest('#agent-hover-root')) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el) return;
+        if (el.closest && el.closest('#agent-hover-root')) return;
+        if (isFormElement(el)) return;
+        if (!isLeafTextElement(el)) {
+          showCallout('Element has complex children — select a text element', 'TIP');
+          return;
+        }
+
+        openTextEditor(el);
+      }, true);
+
+      // Close text editor on Escape (handled in keydown handler below)
+      // Close text editor on click outside
+      window.addEventListener('mousedown', function(e) {
+        if (!textEditorVisible) return;
+        // Check if click is inside the text editor (Shadow DOM)
+        const path = e.composedPath ? e.composedPath() : [];
+        let insideEditor = false;
+        for (let i = 0; i < path.length; i++) {
+          if (path[i] === textEditor) { insideEditor = true; break; }
+        }
+        if (!insideEditor) {
+          closeTextEditor();
+        }
+      }, true);
+
       // Update highlight box to match a specific item in currentStack
       function highlightComponent(info, useUnionRect) {
         if (!info) return;
@@ -1440,8 +2003,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           togglePointerMode();
         }
         if (e.key === 'Escape') {
+          if (textEditorVisible) {
+            closeTextEditor();
+            return;
+          }
           flyout.classList.remove('open');
           highlight.classList.remove('selected');
+          selectedRect = null;
+          clearDistanceGuides();
           shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
@@ -1478,6 +2047,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
           currentStack = buildHierarchyStack(el);
           currentStackIndex = 0; // Default to exact element under cursor!
+
+          // If a selection is active, show measurement guides between selected and hovered
+          if (selectedRect && highlight.classList.contains('selected')) {
+            const hoveredRect = el.getBoundingClientRect();
+            renderDistanceGuides(selectedRect, hoveredRect);
+          } else {
+            clearDistanceGuides();
+          }
+
           highlight.classList.remove('selected');
           highlightComponent(currentStack[0], false);
         });
@@ -1655,6 +2233,16 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const item = currentStack[index];
         currentComponentInfo = item;
         highlightComponent(item, index > 0);
+
+        // Store the selected element's rect for measurement guides
+        if (item.isDomElement && item.element) {
+          selectedRect = item.element.getBoundingClientRect();
+        } else if (item.fiber) {
+          selectedRect = getComponentBoundingRect(item.fiber);
+        } else if (currentElement) {
+          selectedRect = currentElement.getBoundingClientRect();
+        }
+        clearDistanceGuides();
 
         flyout.classList.add('open');
         highlight.classList.add('selected');
