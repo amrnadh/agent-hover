@@ -34,7 +34,7 @@ export function App() {
               </svg>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-white">Agent Hover</span>
+              <span className="font-bold tracking-tight text-white">Agent Hover demomdeomoeme</span>
               <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
                 Demo
               </span>
