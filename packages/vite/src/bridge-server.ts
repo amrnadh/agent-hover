@@ -261,9 +261,10 @@ export class BridgeServer {
           this.pins = [];
         } else if (action === 'add' && file && line !== undefined) {
           // Check if already pinned
-          const exists = this.pins.some(
-            (p) => p.context.source.file === file
-          );
+          const exists = this.pins.some((p) => {
+            const src = p.context.source;
+            return src.file === file || src.absolutePath === file || (src.file && file.endsWith(src.file)) || (src.file && src.file.endsWith(file));
+          });
           if (!exists) {
             const context = await this.contextBuilder.getContext(
               file,
@@ -272,10 +273,16 @@ export class BridgeServer {
             );
             this.pins.push({ id: context.id, context });
           }
-        } else if (action === 'remove' && file) {
-          this.pins = this.pins.filter(
-            (p) => p.context.source.file !== file
-          );
+        } else if (action === 'remove' && (file || req.body.id)) {
+          const targetId = req.body.id;
+          this.pins = this.pins.filter((p) => {
+            if (targetId && (p.id === targetId || p.context.id === targetId)) return false;
+            if (file) {
+              const src = p.context.source;
+              if (src.file === file || src.absolutePath === file || (src.file && file.endsWith(src.file)) || (src.file && src.file.endsWith(file))) return false;
+            }
+            return true;
+          });
         } else {
           res
             .status(400)

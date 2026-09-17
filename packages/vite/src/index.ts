@@ -1637,7 +1637,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const compName = target.name;
 
         // Sync Pin Button
-        const isPinned = currentPins.some(p => (p.context && p.context.source && p.context.source.file === file) || p.id === (file + ':' + compName));
+        const pinnedItem = currentPins.find(p => {
+          if (!p || !p.context) return false;
+          const pFile = p.context.source.file;
+          const pAbs = p.context.source.absolutePath;
+          return pFile === file || pAbs === file || (file && (pFile.endsWith(file) || file.endsWith(pFile))) || (p.context.component && p.context.component.name === compName);
+        });
+        const isPinned = !!pinnedItem;
         const pinLabel = shadow.getElementById('cp-pin-btn-label');
         if (isPinned) {
           pinBtn.classList.add('primary');
@@ -1650,7 +1656,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
 
         // Sync Freeze Button
-        const isFrozen = frozenEntries.some(f => (file && f.file === file && f.component === compName) || f.component === compName);
+        const isFrozen = frozenEntries.some(f => {
+          if (!f) return false;
+          return (file && (f.file === file || (f.file && (file.endsWith(f.file) || f.file.endsWith(file))))) || f.component === compName;
+        });
         const freezeLabel = shadow.getElementById('cp-freeze-btn-label');
         if (isFrozen) {
           freezeBtn.style.background = 'rgba(244, 63, 94, 0.2)';
@@ -1671,15 +1680,20 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       async function pinOrUnpin(file, line, compName) {
         if (!file) return;
-        const isPinned = currentPins.some(p => (p.context && p.context.source && p.context.source.file === file) || p.id === (file + ':' + compName));
-        const action = isPinned ? 'remove' : 'add';
+        const pinnedItem = currentPins.find(p => {
+          if (!p || !p.context) return false;
+          const pFile = p.context.source.file;
+          const pAbs = p.context.source.absolutePath;
+          return pFile === file || pAbs === file || (file && (pFile.endsWith(file) || file.endsWith(pFile))) || (p.context.component && p.context.component.name === compName);
+        });
+        const action = pinnedItem ? 'remove' : 'add';
         try {
           await fetch(BRIDGE + '/api/pin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, file, line: line || 1 })
+            body: JSON.stringify({ action, file, id: pinnedItem?.id, line: line || 1 })
           });
-          showCallout(isPinned ? 'Unpinned ' + compName : 'Pinned ' + compName, 'PIN');
+          showCallout(pinnedItem ? 'Unpinned ' + compName : 'Pinned ' + compName, 'PIN');
           await refreshState();
         } catch(e) {
           console.error('[agent-hover] Pin error:', e);
@@ -1688,7 +1702,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       async function freezeOrUnfreeze(file, line, compName) {
         if (!file) return;
-        const isCurrentlyFrozen = frozenEntries.some(f => (f.file === file && f.component === compName) || f.component === compName);
+        const isCurrentlyFrozen = frozenEntries.some(f => {
+          if (!f) return false;
+          return (file && (f.file === file || (f.file && (file.endsWith(f.file) || f.file.endsWith(file))))) || f.component === compName;
+        });
         const action = isCurrentlyFrozen ? 'remove' : 'add';
         try {
           const res = await fetch(BRIDGE + '/api/freeze', {
