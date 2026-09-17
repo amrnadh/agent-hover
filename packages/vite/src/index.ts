@@ -18,10 +18,10 @@ const UI_HTML = `
           :host {
             pointer-events: none;
           }
-          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal, #cp-text-editor {
+          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal, #cp-text-editor, #cp-shortcuts-modal {
             pointer-events: auto;
           }
-          :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
+          :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal, #cp-shortcuts-modal {
             --font-sans: 'Geist', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'JetBrains Mono', 'Geist Mono', 'Fira Code', SFMono-Regular, monospace;
             
@@ -665,6 +665,29 @@ const UI_HTML = `
             display: flex; flex-direction: column; box-shadow: var(--shadow-dock); max-width: 90vw; max-height: 90vh; width: 100%;
           }
 
+          #cp-shortcuts-modal {
+            display: none; position: fixed; inset: 0; z-index: 10002; background: rgba(4, 7, 14, 0.82);
+            backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px;
+            pointer-events: auto;
+          }
+          #cp-shortcuts-box {
+            background: var(--bg-dock-panel); border: 1px solid var(--border-glass); border-radius: 18px;
+            display: flex; flex-direction: column; box-shadow: var(--shadow-dock); max-width: 500px; width: 100%;
+            overflow: hidden;
+          }
+          .cp-shortcut-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 7px 12px;
+            border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .cp-shortcut-keys {
+            display: flex; gap: 4px; align-items: center;
+          }
+          .cp-kbd {
+            font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-glass); color: #38bdf8;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+          }
+
           /* --- Inline Text Editor Popover --- */
           #cp-text-editor {
             display: none;
@@ -844,26 +867,21 @@ const UI_HTML = `
 
         <div id="cp-dock-wrapper">
           <div id="cp-dock">
-            
             <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </div>
 
-            <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
+            <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack (Alt+P)">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
               <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
             </div>
 
-            <div class="cp-dock-tile" id="cp-dock-diff" title="Track Visual Diff">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            </div>
-
-            <div class="cp-dock-tile" id="cp-dock-export" title="Export Context for AI">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-            </div>
-
-            <div class="cp-dock-tile" id="cp-dock-open" title="Jump to Source in IDE">
+            <div class="cp-dock-tile" id="cp-dock-open" title="Jump to Source in IDE (Alt+O)">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+
+            <div class="cp-dock-tile" id="cp-dock-help" title="Keyboard Shortcuts (?)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
 
             <!-- Bottom Drag Handle -->
@@ -882,9 +900,13 @@ const UI_HTML = `
             <div id="cp-flyout-header">
               <div id="cp-flyout-title-wrap">
                 <span class="cp-badge cp-badge-cyan" id="cp-flyout-badge">LENS</span>
+                <span class="cp-badge" id="cp-flyout-frozen-badge" style="display:none; background:rgba(244,63,94,0.15); color:#fb7185; border:1px solid rgba(244,63,94,0.3); font-size:9.5px; padding:1px 6px;">FROZEN</span>
                 <h3 id="cp-flyout-title">Component Inspector</h3>
               </div>
               <div style="display:flex; align-items:center; gap:4px;">
+                <button class="cp-dock-tile" id="cp-flyout-help" title="Keyboard Shortcuts (?)" style="width:30px; height:30px; border-radius:8px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </button>
                 <button class="cp-dock-tile" id="cp-flyout-mode-toggle" title="Toggle Sidebar / Float mode" style="width:30px; height:30px; border-radius:8px;">
                   <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
                   <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -926,9 +948,10 @@ const UI_HTML = `
               </button>
               <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-copy" title="Copy structured component spec (Markdown table)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> 📋 Copy Spec</button>
-              <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-track-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
-              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
+              <button class="cp-btn-bento" id="cp-pin-btn" title="Pin component to task bundle (Alt+P)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> <span id="cp-pin-btn-label">Pin Component</span></button>
+              <button class="cp-btn-bento" id="cp-freeze-btn" title="Freeze component (lock against AI modifications) (Alt+F)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span id="cp-freeze-btn-label">Freeze Component</span></button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" title="Toggle spacing overlay (Alt+S)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
+              <button class="cp-btn-bento" id="cp-track-btn" title="Track visual diff"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
             </div>
 
             <div id="cp-pin-bar">
@@ -1019,6 +1042,69 @@ const UI_HTML = `
               </div>
             </div>
           </div>
+        <div id="cp-shortcuts-modal">
+          <div id="cp-shortcuts-box">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="cp-badge cp-badge-cyan">HUD</span>
+                <h2 style="margin:0; font-size:15px; font-weight:600; color:var(--text-primary);">Keyboard Shortcuts & Quick Actions</h2>
+              </div>
+              <button class="cp-dock-tile" id="cp-shortcuts-close" style="width:30px; height:30px; border-radius:8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div style="padding: 16px 20px; display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto;">
+              <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Navigation & Inspector</div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Toggle Inspector / Pointer Mode</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Inspect Element / Open Lens</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Click</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Climb / Descend Component Stack</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">↑</span> <span style="color:var(--text-muted); font-size:11px;">/</span> <span class="cp-kbd">↓</span></div>
+              </div>
+
+              <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:8px; margin-bottom:2px;">Component Actions</div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Pin Component to Task Bundle</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span> <span class="cp-kbd">P</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Quick Pin from Canvas</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span> <span class="cp-kbd">Shift</span> <span class="cp-kbd">Click</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Freeze Component (Lock Against AI Edits)</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span> <span class="cp-kbd">F</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Quick Freeze from Canvas</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Ctrl/Cmd</span> <span class="cp-kbd">Click</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Open Component in IDE Editor</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span> <span class="cp-kbd">O</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Toggle Box Model Spacing Overlay</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Alt</span> <span class="cp-kbd">S</span></div>
+              </div>
+
+              <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:8px; margin-bottom:2px;">General</div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Show / Hide Shortcuts HUD</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">?</span></div>
+              </div>
+              <div class="cp-shortcut-row">
+                <span style="color:var(--text-secondary); font-size:12.5px;">Dismiss Lens / Close Active Modals</span>
+                <div class="cp-shortcut-keys"><span class="cp-kbd">Esc</span></div>
+              </div>
+            </div>
+          </div>
         </div>
 `;
 
@@ -1031,13 +1117,15 @@ const ICONS = {
   camera: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`,
   x: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
   lock: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
-  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`
+  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+  help: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
 };
 
 function generateOverlayBootstrap(port: number, editor: string): string {
   return `
     (() => {
-      const BRIDGE = 'http://localhost:${port}';
+      try {
+        const BRIDGE = 'http://localhost:${port}';
       let ws;
       try {
         ws = new WebSocket('ws://localhost:${port}');
@@ -1050,6 +1138,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let isPointerMode = false;
       let currentElement = null;
       let currentComponentInfo = null;
+      let currentPins = [];
       let frozenEntries = [];
       let screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null };
 
@@ -1074,9 +1163,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
       const dockToggle = shadow.getElementById('cp-dock-toggle');
       const dockPins = shadow.getElementById('cp-dock-pins');
-      const dockDiff = shadow.getElementById('cp-dock-diff');
-      const dockExport = shadow.getElementById('cp-dock-export');
       const dockOpen = shadow.getElementById('cp-dock-open');
+      const dockHelp = shadow.getElementById('cp-dock-help');
       const dockHandle = shadow.getElementById('cp-dock-handle');
       const dockPinBadge = shadow.getElementById('cp-dock-pin-badge');
       const callout = shadow.getElementById('cp-dock-callout');
@@ -1212,17 +1300,28 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         pinBar.scrollIntoView({ behavior: 'smooth' });
       };
 
-      dockDiff.onclick = () => {
-        if (!lastCopiedContext || !currentElement) {
-          showCallout('Select a component first', 'TIP');
-          return;
-        }
-        shadow.getElementById('cp-track-btn').click();
-      };
+      function toggleShortcutsModal() {
+        const sm = shadow.getElementById('cp-shortcuts-modal');
+        if (!sm) return;
+        sm.style.display = (sm.style.display === 'flex') ? 'none' : 'flex';
+      }
 
-      dockExport.onclick = () => {
-        shadow.getElementById('cp-gen-task').click();
+      if (dockHelp) dockHelp.onclick = toggleShortcutsModal;
+      const flyoutHelp = shadow.getElementById('cp-flyout-help');
+      if (flyoutHelp) flyoutHelp.onclick = toggleShortcutsModal;
+      const shortcutsClose = shadow.getElementById('cp-shortcuts-close');
+      if (shortcutsClose) shortcutsClose.onclick = () => {
+        const sm = shadow.getElementById('cp-shortcuts-modal');
+        if (sm) sm.style.display = 'none';
       };
+      const shortcutsModal = shadow.getElementById('cp-shortcuts-modal');
+      if (shortcutsModal) {
+        shortcutsModal.onclick = (e) => {
+          if (e.target === shortcutsModal) {
+            shortcutsModal.style.display = 'none';
+          }
+        };
+      }
 
       shadow.getElementById('cp-flyout-close').onclick = () => {
         flyout.classList.remove('open');
@@ -1506,21 +1605,158 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         shadow.getElementById('cp-modal-handle').style.left = val + '%';
       };
 
-      shadow.getElementById('cp-pin-btn').onclick = async () => {
-        if (lastCopiedContext) {
+      function updateActionButtonsState() {
+        const pinBtn = shadow.getElementById('cp-pin-btn');
+        const freezeBtn = shadow.getElementById('cp-freeze-btn');
+        const frozenBadge = shadow.getElementById('cp-flyout-frozen-badge');
+
+        if (!pinBtn || !freezeBtn) return;
+
+        const target = (currentStack && currentStack[currentStackIndex]) || currentComponentInfo;
+        const isDom = !target || target.isDomElement;
+
+        if (isDom) {
+          pinBtn.style.opacity = '0.5';
+          pinBtn.style.pointerEvents = 'none';
+          pinBtn.title = 'DOM elements cannot be pinned';
+          freezeBtn.style.opacity = '0.5';
+          freezeBtn.style.pointerEvents = 'none';
+          freezeBtn.title = 'DOM elements cannot be frozen';
+          if (frozenBadge) frozenBadge.style.display = 'none';
+          return;
+        }
+
+        pinBtn.style.opacity = '1';
+        pinBtn.style.pointerEvents = 'auto';
+        freezeBtn.style.opacity = '1';
+        freezeBtn.style.pointerEvents = 'auto';
+
+        const file = (lastCopiedContext && lastCopiedContext.source && lastCopiedContext.source.file) || (lastResolved && lastResolved.file) || (target.source && target.source.fileName) || '';
+        const compName = target.name;
+
+        // Sync Pin Button
+        const isPinned = currentPins.some(p => (p.context && p.context.source && p.context.source.file === file) || p.id === (file + ':' + compName));
+        const pinLabel = shadow.getElementById('cp-pin-btn-label');
+        if (isPinned) {
+          pinBtn.classList.add('primary');
+          if (pinLabel) pinLabel.textContent = '✓ Pinned';
+          pinBtn.title = 'Unpin ' + compName + ' from task bundle (Alt+P)';
+        } else {
+          pinBtn.classList.remove('primary');
+          if (pinLabel) pinLabel.textContent = 'Pin Component';
+          pinBtn.title = 'Pin ' + compName + ' to task bundle (Alt+P)';
+        }
+
+        // Sync Freeze Button
+        const isFrozen = frozenEntries.some(f => (file && f.file === file && f.component === compName) || f.component === compName);
+        const freezeLabel = shadow.getElementById('cp-freeze-btn-label');
+        if (isFrozen) {
+          freezeBtn.style.background = 'rgba(244, 63, 94, 0.2)';
+          freezeBtn.style.borderColor = '#fb7185';
+          freezeBtn.style.color = '#fb7185';
+          if (freezeLabel) freezeLabel.textContent = '⛔ Frozen';
+          freezeBtn.title = 'Unfreeze ' + compName + ' (allow AI modifications) (Alt+F)';
+          if (frozenBadge) frozenBadge.style.display = 'inline-block';
+        } else {
+          freezeBtn.style.background = '';
+          freezeBtn.style.borderColor = '';
+          freezeBtn.style.color = '';
+          if (freezeLabel) freezeLabel.textContent = 'Freeze Component';
+          freezeBtn.title = 'Freeze ' + compName + ' (prevent AI modifications) (Alt+F)';
+          if (frozenBadge) frozenBadge.style.display = 'none';
+        }
+      }
+
+      async function pinOrUnpin(file, line, compName) {
+        if (!file) return;
+        const isPinned = currentPins.some(p => (p.context && p.context.source && p.context.source.file === file) || p.id === (file + ':' + compName));
+        const action = isPinned ? 'remove' : 'add';
+        try {
           await fetch(BRIDGE + '/api/pin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'add',
-              file: lastCopiedContext.source.file,
-              line: lastCopiedContext.source.startLine
-            })
+            body: JSON.stringify({ action, file, line: line || 1 })
           });
-          showCallout('Pinned ' + lastCopiedContext.component.name, 'PIN');
-          refreshPins();
+          showCallout(isPinned ? 'Unpinned ' + compName : 'Pinned ' + compName, 'PIN');
+          await refreshState();
+        } catch(e) {
+          console.error('[agent-hover] Pin error:', e);
         }
-      };
+      }
+
+      async function freezeOrUnfreeze(file, line, compName) {
+        if (!file) return;
+        const isCurrentlyFrozen = frozenEntries.some(f => (f.file === file && f.component === compName) || f.component === compName);
+        const action = isCurrentlyFrozen ? 'remove' : 'add';
+        try {
+          const res = await fetch(BRIDGE + '/api/freeze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, file, component: compName, line: line || 1 })
+          });
+          const data = await res.json();
+          if (data && data.frozenEntries) {
+            frozenEntries = data.frozenEntries;
+          }
+          showCallout(isCurrentlyFrozen ? 'Unfrozen ' + compName : '🔒 Frozen ' + compName, 'LOCK');
+          const target = (currentStack && currentStack[currentStackIndex]) || currentComponentInfo;
+          if (target) {
+            highlightComponent(target, currentStackIndex > 0);
+          }
+          updateActionButtonsState();
+          refreshState();
+        } catch(e) {
+          console.error('[agent-hover] Freeze error:', e);
+        }
+      }
+
+      const pinBtn = shadow.getElementById('cp-pin-btn');
+      if (pinBtn) {
+        pinBtn.onclick = async () => {
+          const target = (currentStack && currentStack[currentStackIndex]) || currentComponentInfo;
+          if (!target || target.isDomElement) return;
+
+          let file = (lastCopiedContext && lastCopiedContext.source && lastCopiedContext.source.file) || (lastResolved && lastResolved.file) || '';
+          let line = (lastCopiedContext && lastCopiedContext.source && lastCopiedContext.source.startLine) || (lastResolved && lastResolved.line) || 1;
+          const compName = target.name;
+
+          if (!file) {
+            showCallout('Resolving component...', 'WAIT');
+            const resolved = await resolveComponent(target);
+            if (!resolved) {
+              showCallout('Could not resolve ' + compName, 'ERR');
+              return;
+            }
+            file = resolved.file;
+            line = resolved.line;
+          }
+          await pinOrUnpin(file, line, compName);
+        };
+      }
+
+      const freezeBtn = shadow.getElementById('cp-freeze-btn');
+      if (freezeBtn) {
+        freezeBtn.onclick = async () => {
+          const target = (currentStack && currentStack[currentStackIndex]) || currentComponentInfo;
+          if (!target || target.isDomElement) return;
+
+          let file = (lastCopiedContext && lastCopiedContext.source && lastCopiedContext.source.file) || (lastResolved && lastResolved.file) || '';
+          let line = (lastCopiedContext && lastCopiedContext.source && lastCopiedContext.source.startLine) || (lastResolved && lastResolved.line) || 1;
+          const compName = target.name;
+
+          if (!file) {
+            showCallout('Resolving component...', 'WAIT');
+            const resolved = await resolveComponent(target);
+            if (!resolved) {
+              showCallout('Could not resolve ' + compName, 'ERR');
+              return;
+            }
+            file = resolved.file;
+            line = resolved.line;
+          }
+          await freezeOrUnfreeze(file, line, compName);
+        };
+      }
 
       const genTaskBtn = shadow.getElementById('cp-gen-task');
       if (genTaskBtn) {
@@ -2360,11 +2596,52 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- Keyboard Shortcuts ---
       window.addEventListener('keydown', (e) => {
+        const isEditing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+
+        if (e.key === '?' && !isEditing) {
+          e.preventDefault();
+          toggleShortcutsModal();
+          return;
+        }
+
         if (e.key === 'Alt' && !isPointerMode) {
           e.preventDefault();
           togglePointerMode();
+          return;
         }
+
+        if (e.altKey && !isEditing) {
+          if (e.key === 'p' || e.key === 'P') {
+            e.preventDefault();
+            const btn = shadow.getElementById('cp-pin-btn');
+            if (btn) btn.click();
+            return;
+          }
+          if (e.key === 'f' || e.key === 'F') {
+            e.preventDefault();
+            const btn = shadow.getElementById('cp-freeze-btn');
+            if (btn) btn.click();
+            return;
+          }
+          if (e.key === 'o' || e.key === 'O') {
+            e.preventDefault();
+            openInEditor();
+            return;
+          }
+          if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            const btn = shadow.getElementById('cp-toggle-spacing');
+            if (btn) btn.click();
+            return;
+          }
+        }
+
         if (e.key === 'Escape') {
+          const shortcutsModal = shadow.getElementById('cp-shortcuts-modal');
+          if (shortcutsModal && shortcutsModal.style.display === 'flex') {
+            shortcutsModal.style.display = 'none';
+            return;
+          }
           if (textEditorVisible) {
             closeTextEditor();
             return;
@@ -2376,8 +2653,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           clearDistanceGuides();
           shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
+
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
-        if (isPointerMode && currentStack.length > 1) {
+        if (isPointerMode && currentStack.length > 1 && !isEditing) {
           if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (currentStackIndex < currentStack.length - 1) {
@@ -2566,14 +2844,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           if (e.ctrlKey || e.metaKey) {
             const resolved = await resolveComponent(target);
             if (resolved) {
-              const isCurrentlyFrozen = frozenEntries.some(f => f.file === resolved.file && f.component === target.name);
-              await fetch(BRIDGE + '/api/freeze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: isCurrentlyFrozen ? 'remove' : 'add', file: resolved.file, component: target.name, line: resolved.line })
-              });
-              showCallout(isCurrentlyFrozen ? 'Unfrozen ' + target.name : 'Frozen ' + target.name, 'LOCK');
-              refreshState();
+              await freezeOrUnfreeze(resolved.file, resolved.line, target.name);
             }
             return;
           }
@@ -2581,13 +2852,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           if (e.shiftKey) {
             const resolved = await resolveComponent(target);
             if (resolved) {
-              await fetch(BRIDGE + '/api/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
-              });
-              showCallout('Pinned ' + target.name, 'PIN');
-              refreshState();
+              await pinOrUnpin(resolved.file, resolved.line, target.name);
             }
             return;
           }
@@ -2646,6 +2911,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
 
         const computedStyles = currentElement ? extractComputedStyles(currentElement) : {};
+        updateActionButtonsState();
 
         if (item.isDomElement) {
           flyoutTitle.textContent = item.name;
@@ -2769,6 +3035,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           lastResolved = resolved;
           lastInfoName = infoName;
           lastComputedStyles = computedStyles;
+          updateActionButtonsState();
 
           // Update Live Token Meter
           const tokenCountEl = shadow.getElementById('cp-token-count');
@@ -3133,7 +3400,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         try {
           const resPins = await fetch(BRIDGE + '/api/pins');
           const dataPins = await resPins.json();
-          const count = dataPins.pins ? dataPins.pins.length : 0;
+          currentPins = (dataPins && dataPins.pins) || [];
+          const count = currentPins.length;
           shadow.getElementById('cp-pin-count').textContent = count;
 
           const composerEl = shadow.getElementById('cp-task-composer');
@@ -3201,6 +3469,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           } else {
             savingsDiv.style.display = 'none';
           }
+          updateActionButtonsState();
         } catch(e) { }
       }
 
@@ -3295,7 +3564,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       })
       .catch(e => refreshState());
 
-      console.log('[agent-hover] ✓ High-End Tactical Dock UI initialized');
+        console.log('[agent-hover] ✓ High-End Tactical Dock UI initialized');
+      } catch (err) {
+        console.error('[agent-hover] Overlay initialization error:', err);
+      }
     })();
   `;
 }

@@ -557,7 +557,7 @@ export class BridgeServer {
     // Open in editor
     this.app.post('/api/open-editor', (req, res) => {
       try {
-        console.log("OPEN-EDITOR REQ:", req.body); const { file, line, editor } = req.body;
+        const { file, line, editor } = req.body;
         if (!file) {
           res.status(400).json({ error: 'Missing file' });
           return;
