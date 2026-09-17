@@ -1042,6 +1042,8 @@ const UI_HTML = `
               </div>
             </div>
           </div>
+        </div>
+
         <div id="cp-shortcuts-modal">
           <div id="cp-shortcuts-box">
             <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
