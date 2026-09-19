@@ -22,28 +22,58 @@ const UI_HTML = `
             pointer-events: auto;
           }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
-            --font-sans: 'Geist', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --font-mono: 'JetBrains Mono', 'Geist Mono', 'Fira Code', SFMono-Regular, monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
             
-            --bg-dock: rgba(10, 16, 26, 0.9);
-            --bg-dock-panel: rgba(11, 18, 32, 0.96);
-            --bg-tile: rgba(255, 255, 255, 0.04);
-            --bg-tile-hover: rgba(255, 255, 255, 0.09);
-            --bg-tile-active: rgba(0, 240, 255, 0.16);
-            --border-glass: rgba(255, 255, 255, 0.12);
-            --border-highlight: rgba(255, 255, 255, 0.22);
-            --border-cyan: rgba(0, 240, 255, 0.55);
-            --accent-cyan: #00F0FF;
-            --accent-cyan-glow: rgba(0, 240, 255, 0.4);
-            --accent-blue: #0284c7;
-            --accent-emerald: #10b981;
-            --accent-rose: #f43f5e;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --blur: blur(28px) saturate(190%) contrast(1.05);
-            --shadow-dock: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.6), 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 240, 255, 0.08);
-            --shadow-tile: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
+            /* Dark mode (default) */
+            --bg-dock: rgba(24, 24, 27, 0.92);
+            --bg-dock-panel: rgba(24, 24, 27, 0.97);
+            --bg-tile: rgba(255, 255, 255, 0.05);
+            --bg-tile-hover: rgba(255, 255, 255, 0.10);
+            --bg-tile-active: rgba(99, 102, 241, 0.15);
+            --border-glass: rgba(255, 255, 255, 0.10);
+            --border-highlight: rgba(255, 255, 255, 0.18);
+            --border-accent: rgba(99, 102, 241, 0.45);
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-subtle: rgba(99, 102, 241, 0.12);
+            --accent-emerald: #34d399;
+            --accent-rose: #fb7185;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --blur: blur(16px) saturate(130%);
+            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 1px rgba(255, 255, 255, 0.1);
+            --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --frame-color: #6366f1;
+            --frame-raw: #a78bfa;
+            --measure-color: #a78bfa;
+          }
+          
+          /* Light mode */
+          :host(.light-mode), :host(.light-mode) #cp-dock-wrapper, :host(.light-mode) #cp-dock, :host(.light-mode) #cp-flyout, :host(.light-mode) #cp-highlight, :host(.light-mode) #cp-slider-modal {
+            --bg-dock: rgba(255, 255, 255, 0.92);
+            --bg-dock-panel: rgba(255, 255, 255, 0.97);
+            --bg-tile: rgba(0, 0, 0, 0.04);
+            --bg-tile-hover: rgba(0, 0, 0, 0.08);
+            --bg-tile-active: rgba(99, 102, 241, 0.10);
+            --border-glass: rgba(0, 0, 0, 0.10);
+            --border-highlight: rgba(0, 0, 0, 0.18);
+            --border-accent: rgba(99, 102, 241, 0.5);
+            --accent: #4f46e5;
+            --accent-hover: #6366f1;
+            --accent-subtle: rgba(79, 70, 229, 0.08);
+            --accent-emerald: #059669;
+            --accent-rose: #e11d48;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+            --blur: blur(16px) saturate(120%);
+            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08);
+            --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --frame-color: #4f46e5;
+            --frame-raw: #7c3aed;
+            --measure-color: #7c3aed;
           }
 
           /* --- Vertical Dock Container --- */
@@ -64,7 +94,7 @@ const UI_HTML = `
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
-            border-radius: 34px;
+            border-radius: 24px;
             padding: 10px 7px 8px 7px;
             display: flex;
             flex-direction: column;
@@ -101,18 +131,16 @@ const UI_HTML = `
             background: var(--bg-tile-hover);
             color: var(--text-primary);
             border-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.05);
           }
 
           .cp-dock-tile:active {
-            transform: scale(0.96);
+            opacity: 0.8;
           }
 
           .cp-dock-tile.active {
-            color: var(--accent-cyan);
-            border-color: var(--accent-cyan);
-            background: rgba(0, 240, 255, 0.12);
-            box-shadow: 0 0 16px var(--accent-cyan-glow), inset 0 0 10px rgba(0, 240, 255, 0.15);
+            color: var(--accent);
+            border-color: var(--border-accent);
+            background: var(--accent-subtle);
           }
 
           /* Bottom Drag & Snap Handle */
@@ -127,19 +155,18 @@ const UI_HTML = `
           }
 
           .cp-dock-handle:hover {
-            background: var(--accent-cyan);
+            background: var(--accent);
             width: 32px;
-            box-shadow: 0 0 8px var(--accent-cyan-glow);
           }
 
           .cp-badge-pill {
             position: absolute;
             top: -3px;
             right: -3px;
-            background: var(--accent-cyan);
+            background: var(--accent);
             color: #04101e;
             font-family: var(--font-mono);
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
             line-height: 1;
             padding: 2px 5px;
@@ -154,7 +181,7 @@ const UI_HTML = `
             top: 22px;
             opacity: 0;
             pointer-events: none;
-            background: rgba(11, 18, 32, 0.95);
+            background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
@@ -189,7 +216,7 @@ const UI_HTML = `
             height: 0;
             border-top: 6px solid transparent;
             border-bottom: 6px solid transparent;
-            border-right: 7px solid rgba(11, 18, 32, 0.95);
+            border-right: 7px solid var(--bg-dock-panel);
           }
 
           .cp-callout-message {
@@ -200,12 +227,12 @@ const UI_HTML = `
           .cp-callout-time {
             font-family: var(--font-mono);
             font-size: 11px;
-            color: var(--accent-cyan);
+            color: var(--accent);
             margin-left: 6px;
-            background: rgba(0, 240, 255, 0.1);
+            background: var(--accent-subtle);
             padding: 2px 7px;
             border-radius: 6px;
-            border: 1px solid rgba(0, 240, 255, 0.25);
+            border: 1px solid var(--border-accent);
           }
 
           /* --- Full Context Lens Flyout --- */
@@ -276,7 +303,7 @@ const UI_HTML = `
             left: auto;
             right: -7px;
             border-right: none;
-            border-left: 7px solid rgba(11, 18, 32, 0.95);
+            border-left: 7px solid var(--bg-dock-panel);
           }
 
           #cp-dock-wrapper.cp-dock-right #cp-flyout:not(.is-sidebar) {
@@ -360,14 +387,14 @@ const UI_HTML = `
           }
 
           .cp-btn-bento.primary {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.18) 0%, rgba(2, 132, 199, 0.25) 100%);
-            border-color: var(--border-cyan);
-            color: var(--accent-cyan);
+            background: var(--accent-subtle);
+            border-color: var(--border-accent);
+            color: var(--accent);
           }
 
           .cp-btn-bento.primary:hover {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.28) 0%, rgba(2, 132, 199, 0.35) 100%);
-            box-shadow: 0 0 16px var(--accent-cyan-glow);
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent);
           }
 
           .cp-section { margin-bottom: 20px; }
@@ -377,7 +404,7 @@ const UI_HTML = `
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #8b9dc3;
+            color: var(--text-muted);
             margin-bottom: 10px;
             padding: 6px 0;
             cursor: pointer;
@@ -393,7 +420,7 @@ const UI_HTML = `
           details.cp-section > summary { list-style: none; }
           details.cp-section > summary::-webkit-details-marker { display: none; }
           details.cp-section > summary::before {
-            content: '▶'; font-size: 8px; display: inline-block; transition: transform 0.2s; color: var(--accent-cyan);
+            content: '▶'; font-size: 8px; display: inline-block; transition: transform 0.2s; color: var(--accent);
           }
           details.cp-section[open] > summary::before { transform: rotate(90deg); }
 
@@ -410,12 +437,12 @@ const UI_HTML = `
             overflow-y: auto;
             line-height: 1.6;
             margin-top: 8px;
-            color: #d1d9e6;
+            color: var(--text-primary);
           }
 
           #cp-source-code-editor {
             background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(14, 165, 233, 0.3);
+            border: 1px solid var(--border-accent);
             border-radius: 8px;
             color: #f1f5f9;
             font-family: var(--font-mono);
@@ -432,8 +459,8 @@ const UI_HTML = `
             transition: border-color 0.2s, box-shadow 0.2s;
           }
           #cp-source-code-editor:focus {
-            border-color: #0ea5e9;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-subtle);
           }
 
           .cp-props-table {
@@ -443,7 +470,7 @@ const UI_HTML = `
             margin-top: 8px;
           }
           .cp-props-table th {
-            text-align: left; padding: 8px 10px; color: #8b9dc3;
+            text-align: left; padding: 8px 10px; color: var(--text-muted);
             border-bottom: 1px solid var(--border-glass); font-weight: 600;
             font-family: var(--font-mono); font-size: 11px;
             background: rgba(0, 0, 0, 0.15);
@@ -465,7 +492,7 @@ const UI_HTML = `
             font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2px;
             min-height: 24px; line-height: 1;
           }
-          .cp-badge-cyan { background: rgba(0, 240, 255, 0.12); color: var(--accent-cyan); border: 1px solid rgba(0, 240, 255, 0.3); }
+          .cp-badge-cyan { background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--border-accent); }
           .cp-badge-emerald { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
           .cp-badge-muted { background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid var(--border-glass); }
           .cp-badge-rose { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
@@ -477,7 +504,7 @@ const UI_HTML = `
             padding: 12px;
             font-family: var(--font-mono);
             font-size: 11px;
-            color: #cbd5e1;
+            color: var(--text-secondary);
             text-align: center;
           }
 
@@ -486,7 +513,7 @@ const UI_HTML = `
             position: fixed;
             pointer-events: none;
             z-index: 999997;
-            border: 1.5px solid #0284c7;
+            border: 1.5px solid var(--frame-color);
             background: transparent;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
             border-radius: 2px;
@@ -495,40 +522,12 @@ const UI_HTML = `
             box-sizing: border-box;
           }
           #cp-highlight.selected {
-            border-color: #0ea5e9;
-            box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.4);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--border-accent);
           }
           #cp-highlight.is-raw {
-            border-color: #38bdf8;
+            border-color: var(--frame-raw);
           }
-
-          /* 8 Selection Handles (Figma Minimal Style) */
-          .cp-handle {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            background: #ffffff;
-            border: 1.5px solid #0284c7;
-            border-radius: 1px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            display: none;
-          }
-          #cp-highlight.selected .cp-handle {
-            display: block;
-          }
-          #cp-highlight.is-raw .cp-handle {
-            border-color: #38bdf8;
-          }
-          .cp-handle-nw { top: 0; left: 0; }
-          .cp-handle-n  { top: 0; left: 50%; }
-          .cp-handle-ne { top: 0; left: 100%; }
-          .cp-handle-e  { top: 50%; left: 100%; }
-          .cp-handle-se { top: 100%; left: 100%; }
-          .cp-handle-s  { top: 100%; left: 50%; }
-          .cp-handle-sw { top: 100%; left: 0; }
-          .cp-handle-w  { top: 50%; left: 0; }
 
           /* Box-model dashed frame bands (Design-Mode style) */
           #cp-margin-band {
@@ -567,25 +566,20 @@ const UI_HTML = `
             left: 0;
             width: 100vw;
             height: 0;
-            border-top: 1px dashed rgba(14, 165, 233, 0.45);
+            border-top: 1px dashed rgba(99, 102, 241, 0.35);
           }
           .cp-axis-v {
             top: 0;
             height: 100vh;
             width: 0;
-            border-left: 1px dashed rgba(14, 165, 233, 0.45);
+            border-left: 1px dashed rgba(99, 102, 241, 0.35);
           }
           .cp-layout-child-frame {
             position: fixed;
             pointer-events: none;
             box-sizing: border-box;
-            border: 1px dashed rgba(56, 189, 248, 0.4);
-            background: rgba(56, 189, 248, 0.03);
-          }
-
-          /* Dimension label chip (merged into cp-label) */
-          #cp-dim-label {
-            display: none !important;
+            border: 1px dashed rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.04);
           }
 
           /* Clean, Single-Line Compact Pill (#cp-label) */
@@ -593,9 +587,9 @@ const UI_HTML = `
             position: absolute;
             top: -24px;
             left: -1px;
-            background: #090d16;
-            border: 1px solid #0284c7;
-            color: #38bdf8;
+            background: var(--bg-dock-panel);
+            border: 1px solid var(--frame-color);
+            color: var(--accent);
             font-family: var(--font-mono);
             font-size: 10.5px;
             font-weight: 600;
@@ -646,7 +640,7 @@ const UI_HTML = `
             bottom: 30px;
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
-            border: 1px solid var(--border-cyan);
+            border: 1px solid var(--border-accent);
             border-radius: 16px;
             padding: 14px 18px;
             color: var(--text-primary);
@@ -673,9 +667,9 @@ const UI_HTML = `
             width: 340px;
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
-            border: 1px solid var(--border-cyan);
+            border: 1px solid var(--border-accent);
             border-radius: 14px;
-            box-shadow: var(--shadow-dock), 0 0 20px rgba(0, 240, 255, 0.12);
+            box-shadow: var(--shadow-dock);
             color: var(--text-primary);
             font-family: var(--font-sans);
             overflow: hidden;
@@ -692,7 +686,7 @@ const UI_HTML = `
           #cp-text-editor-header > span {
             font-size: 12px;
             font-weight: 600;
-            color: var(--accent-cyan);
+            color: var(--accent);
             font-family: var(--font-mono);
           }
           #cp-text-editor-toolbar {
@@ -714,14 +708,14 @@ const UI_HTML = `
             transition: all 0.15s;
           }
           .cp-text-tb-btn:hover {
-            background: rgba(0, 240, 255, 0.12);
-            color: var(--accent-cyan);
-            border-color: var(--border-cyan);
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--border-accent);
           }
           .cp-text-tb-btn.active {
-            background: rgba(0, 240, 255, 0.2);
-            color: var(--accent-cyan);
-            border-color: var(--border-cyan);
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--border-accent);
           }
           #cp-text-editor-content {
             min-height: 60px;
@@ -738,7 +732,7 @@ const UI_HTML = `
             background: transparent;
           }
           #cp-text-editor-content:focus {
-            background: rgba(0, 240, 255, 0.02);
+            background: rgba(99, 102, 241, 0.03);
           }
           #cp-text-editor-footer {
             display: flex;
@@ -759,13 +753,12 @@ const UI_HTML = `
             transition: all 0.15s;
           }
           .cp-text-action-btn.apply {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(2, 132, 199, 0.3));
-            color: var(--accent-cyan);
-            border-color: var(--border-cyan);
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--border-accent);
           }
           .cp-text-action-btn.apply:hover {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(2, 132, 199, 0.4));
-            box-shadow: 0 0 12px var(--accent-cyan-glow);
+            background: rgba(99, 102, 241, 0.2);
           }
           .cp-text-action-btn.revert {
             background: rgba(255, 255, 255, 0.04);
@@ -806,23 +799,23 @@ const UI_HTML = `
           }
           .cp-dist-line {
             position: absolute;
-            background: rgba(255, 107, 53, 0.55);
+            background: rgba(167, 139, 250, 0.45);
           }
           .cp-dist-line.horizontal {
             height: 1px;
-            border-top: 1px dashed rgba(255, 107, 53, 0.7);
+            border-top: 1px dashed rgba(167, 139, 250, 0.6);
             background: none;
           }
           .cp-dist-line.vertical {
             width: 1px;
-            border-left: 1px dashed rgba(255, 107, 53, 0.7);
+            border-left: 1px dashed rgba(167, 139, 250, 0.6);
             background: none;
           }
           .cp-dist-pill {
             position: absolute;
-            background: #FF6B35;
+            background: var(--measure-color);
             color: #fff;
-            font-size: 9px;
+            font-size: 10px;
             font-family: var(--font-mono);
             font-weight: 700;
             padding: 1px 6px;
@@ -832,15 +825,6 @@ const UI_HTML = `
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
           }
         </style>
-
-        <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="cp-liquid-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.85"/>
-              <stop offset="100%" stop-color="#0284C7" stop-opacity="0.95"/>
-            </linearGradient>
-          </defs>
-        </svg>
 
         <div id="cp-dock-wrapper">
           <div id="cp-dock">
@@ -864,6 +848,11 @@ const UI_HTML = `
 
             <div class="cp-dock-tile" id="cp-dock-open" title="Jump to Source in IDE">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+
+            <div class="cp-dock-tile" id="cp-dock-theme" title="Toggle Light/Dark Mode" style="width:36px; height:36px; border-radius:12px;">
+              <svg id="cp-theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <svg id="cp-theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </div>
 
             <!-- Bottom Drag Handle -->
@@ -946,25 +935,16 @@ const UI_HTML = `
 
         <div id="cp-highlight">
           <div id="cp-label"></div>
-          <div class="cp-handle cp-handle-nw"></div>
-          <div class="cp-handle cp-handle-n"></div>
-          <div class="cp-handle cp-handle-ne"></div>
-          <div class="cp-handle cp-handle-e"></div>
-          <div class="cp-handle cp-handle-se"></div>
-          <div class="cp-handle cp-handle-s"></div>
-          <div class="cp-handle cp-handle-sw"></div>
-          <div class="cp-handle cp-handle-w"></div>
         </div>
         <div id="cp-margin-band"></div>
         <div id="cp-padding-band"></div>
         <div id="cp-axis-guides"></div>
-        <div id="cp-dim-label"></div>
         <div id="cp-distance-layer"></div>
 
         <div id="cp-text-editor">
           <div id="cp-text-editor-header">
             <span>✏️ Edit Source Text</span>
-            <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--accent-cyan); background:rgba(14,165,233,0.1); padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid rgba(14,165,233,0.2); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+            <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--accent); background:var(--accent-subtle); padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid var(--border-accent); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
             <div id="cp-text-editor-toolbar">
               <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
               <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
@@ -981,7 +961,7 @@ const UI_HTML = `
         </div>
 
         <div id="cp-tracker">
-          <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent-cyan); font-family:var(--font-mono);"></span></div>
+          <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent); font-family:var(--font-mono);"></span></div>
           <button class="cp-btn-bento primary" id="cp-tracker-capture">📸 Capture After & Diff</button>
           <button class="cp-btn-bento" id="cp-tracker-cancel" style="font-size: 11px; padding: 4px 8px;">Cancel</button>
         </div>
@@ -989,7 +969,7 @@ const UI_HTML = `
         <div id="cp-slider-modal">
           <div id="cp-slider-box">
             <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-              <h2 style="margin:0; font-size:15px; font-weight:600; color:var(--text-primary);">Visual Diff: <span id="cp-modal-name" style="color:var(--accent-cyan); font-family:var(--font-mono);"></span></h2>
+              <h2 style="margin:0; font-size:15px; font-weight:600; color:var(--text-primary);">Visual Diff: <span id="cp-modal-name" style="color:var(--accent); font-family:var(--font-mono);"></span></h2>
               <div style="display:flex; gap:12px; align-items:center;">
                 <div id="cp-modal-badge"></div>
                 <button class="cp-dock-tile" id="cp-modal-close" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -999,8 +979,8 @@ const UI_HTML = `
               <div style="position: relative; user-select: none; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); overflow: hidden; max-width: 100%;">
                 <img id="cp-modal-after" style="display: block; max-width: 100%; max-height: 70vh;" />
                 <img id="cp-modal-before" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);" />
-                <div id="cp-modal-handle" style="position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent-cyan); pointer-events: none; transform: translateX(-50%); box-shadow: 0 0 10px var(--accent-cyan);">
-                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; background: #0a0f1a; border: 1.5px solid var(--accent-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); box-shadow: 0 0 12px var(--accent-cyan-glow);">
+                <div id="cp-modal-handle" style="position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent); pointer-events: none; transform: translateX(-50%);">
+                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; background: var(--bg-dock-panel); border: 1.5px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent);">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   </div>
                 </div>
@@ -1077,7 +1057,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const marginBand = shadow.getElementById('cp-margin-band');
       const paddingBand = shadow.getElementById('cp-padding-band');
       const axisGuides = shadow.getElementById('cp-axis-guides');
-      const dimLabel = shadow.getElementById('cp-dim-label');
       const flyout = shadow.getElementById('cp-flyout');
       const flyoutTitle = shadow.getElementById('cp-flyout-title');
       const flyoutContent = shadow.getElementById('cp-flyout-content');
@@ -1211,6 +1190,33 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       dockExport.onclick = () => {
         shadow.getElementById('cp-gen-task').click();
+      };
+
+      // Theme toggle (dark/light mode)
+      const themeToggle = shadow.getElementById('cp-dock-theme');
+      const themeIconDark = shadow.getElementById('cp-theme-icon-dark');
+      const themeIconLight = shadow.getElementById('cp-theme-icon-light');
+      let isLightMode = false;
+      try { isLightMode = localStorage.getItem('agent-hover-theme') === 'light'; } catch(e) {}
+      
+      function applyTheme() {
+        if (isLightMode) {
+          shadow.host.classList.add('light-mode');
+          themeIconDark.style.display = 'none';
+          themeIconLight.style.display = 'block';
+        } else {
+          shadow.host.classList.remove('light-mode');
+          themeIconDark.style.display = 'block';
+          themeIconLight.style.display = 'none';
+        }
+      }
+      applyTheme();
+
+      themeToggle.onclick = () => {
+        isLightMode = !isLightMode;
+        applyTheme();
+        try { localStorage.setItem('agent-hover-theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
+        showCallout(isLightMode ? 'Light mode' : 'Dark mode', 'THEME');
       };
 
       shadow.getElementById('cp-flyout-close').onclick = () => {
@@ -1729,26 +1735,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       }
 
-      // Show dimension label chip below the highlight
-      function showDimLabel(rect, isRaw) {
-        if (!dimLabel) return;
-        const w = Math.round(rect.width);
-        const h = Math.round(rect.height);
-        dimLabel.textContent = w + ' × ' + h;
-        dimLabel.style.display = 'block';
-        dimLabel.style.top = (rect.top + rect.height + 4) + 'px';
-        dimLabel.style.left = rect.left + 'px';
-        if (isRaw) {
-          dimLabel.classList.add('is-raw');
-        } else {
-          dimLabel.classList.remove('is-raw');
-        }
-      }
-
       function hideBands() {
         if (marginBand) marginBand.style.display = 'none';
         if (paddingBand) paddingBand.style.display = 'none';
-        if (dimLabel) dimLabel.style.display = 'none';
         if (axisGuides) axisGuides.innerHTML = '';
       }
 
@@ -2585,7 +2574,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const c = currentStack[i];
             const isActive = i === currentStackIndex;
             const style = isActive
-              ? 'color:var(--accent-cyan); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:rgba(0,240,255,0.1);'
+              ? 'color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:var(--accent-subtle);'
               : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
             crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + c.name + '</span>');
           }
@@ -2626,9 +2615,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           // If inside a React component, link to the parent component
           if (currentStack.length > 1) {
             const parentComp = currentStack[1];
-            html += '<div class="cp-section" style="background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.15); border-radius:8px; padding:10px 14px; margin-bottom:14px;">';
+            html += '<div class="cp-section" style="background:var(--accent-subtle); border:1px solid var(--border-accent); border-radius:8px; padding:10px 14px; margin-bottom:14px;">';
             html += '<div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;">Rendered In Component</div>';
-            html += '<div style="font-size:13px; font-weight:600; color:var(--accent-cyan); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
+            html += '<div style="font-size:13px; font-weight:600; color:var(--accent); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
             if (parentComp.source) {
               html += '<div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-top:4px;">' + parentComp.source.fileName + ':' + parentComp.source.lineNumber + '</div>';
               lastResolved = { file: parentComp.source.fileName, line: parentComp.source.lineNumber };
@@ -2653,7 +2642,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Value</th></tr>';
             attrs.forEach(function(a) {
               const val = a.value.length > 60 ? a.value.substring(0, 60) + '...' : a.value;
-              html += '<tr><td style="color:var(--accent-cyan);">' + a.name + '</td><td style="color:#cbd5e1;">' + escapeHtml(val) + '</td></tr>';
+              html += '<tr><td style="color:var(--accent);">' + a.name + '</td><td style="color:var(--text-secondary);">' + escapeHtml(val) + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -2666,9 +2655,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">margin: ' + computedStyles.margin + '</div>';
             html += '<div style="border:1px dashed #475569; padding:8px; margin:4px; display:inline-block; border-radius:6px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
-            html += '<div style="border:1px solid #334155; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
+            html += '<div style="border:1px solid var(--border-glass); padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
-            html += '<div style="background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.4); padding:8px 12px; display:inline-block; color:#fff; border-radius:4px; font-weight:600;">';
+            html += '<div style="background:var(--accent-subtle); border:1px solid var(--border-accent); padding:8px 12px; display:inline-block; color:var(--text-primary); border-radius:4px; font-weight:600;">';
             html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
             html += '</div></div></div></div>';
             html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; font-family:var(--font-mono);">';
@@ -2755,7 +2744,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<summary class="cp-section-title">Props (' + ctx.interface.props.length + ')</summary>';
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Type</th><th>Req</th></tr>';
             ctx.interface.props.forEach(function(p) {
-              html += '<tr><td style="color:var(--accent-cyan);">' + p.name + '</td><td style="color:#cbd5e1;">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '✓' : '—') + '</td></tr>';
+              html += '<tr><td style="color:var(--accent);">' + p.name + '</td><td style="color:var(--text-secondary);">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '✓' : '—') + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -2763,7 +2752,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           if (ctx.interface && ctx.interface.hooks && ctx.interface.hooks.length > 0) {
             html += '<details class="cp-section" open>';
             html += '<summary class="cp-section-title">Hooks</summary>';
-            html += '<div style="font-family:var(--font-mono); font-size:12px; color:#cbd5e1; margin-top:6px;">' + ctx.interface.hooks.join(', ') + '</div>';
+            html += '<div style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); margin-top:6px;">' + ctx.interface.hooks.join(', ') + '</div>';
             html += '</details>';
           }
 
@@ -2785,9 +2774,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">margin: ' + computedStyles.margin + '</div>';
             html += '<div style="border:1px dashed #475569; padding:8px; margin:4px; display:inline-block; border-radius:6px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
-            html += '<div style="border:1px solid #334155; padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
+            html += '<div style="border:1px solid var(--border-glass); padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
-            html += '<div style="background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.4); padding:8px 12px; display:inline-block; color:#fff; border-radius:4px; font-weight:600;">';
+            html += '<div style="background:var(--accent-subtle); border:1px solid var(--border-accent); padding:8px 12px; display:inline-block; color:var(--text-primary); border-radius:4px; font-weight:600;">';
             html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
             html += '</div></div></div></div>';
             
@@ -2815,7 +2804,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div id="cp-source-editor-box" style="display:none; margin-top:8px;">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">';
             html += '<span>' + ctx.source.file.split('/').pop() + ' (L' + ctx.source.startLine + '-L' + ctx.source.endLine + ')</span>';
-            html += '<span style="color:var(--accent-cyan); font-weight:500;">Direct Disk Edit</span>';
+            html += '<span style="color:var(--accent); font-weight:500;">Direct Disk Edit</span>';
             html += '</div>';
             html += '<textarea id="cp-source-code-editor" spellcheck="false"></textarea>';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">';
@@ -2876,7 +2865,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               saveSourceBtn.disabled = true;
               saveSourceBtn.innerHTML = 'Saving...';
               if (saveStatus) {
-                saveStatus.style.color = 'var(--accent-cyan)';
+                saveStatus.style.color = 'var(--accent)';
                 saveStatus.textContent = 'Writing to disk & compiling...';
               }
 
@@ -2951,7 +2940,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 e.preventDefault();
                 undoSourceBtn.disabled = true;
                 if (saveStatus) {
-                  saveStatus.style.color = 'var(--accent-cyan)';
+                  saveStatus.style.color = 'var(--accent)';
                   saveStatus.textContent = 'Reverting...';
                 }
                 try {
@@ -3217,7 +3206,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       })
       .catch(e => refreshState());
 
-      console.log('[agent-hover] ✓ High-End Tactical Dock UI initialized');
+      console.log('[agent-hover] ✓ Ready');
     })();
   `;
 }
