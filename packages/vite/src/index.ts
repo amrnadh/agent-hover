@@ -925,7 +925,7 @@ const UI_HTML = `
                 ⚡ Copy for AI Prompt
               </button>
               <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> Open in IDE</button>
-              <button class="cp-btn-bento" id="cp-copy" title="Copy structured component spec (Markdown table)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> 📋 Copy Spec</button>
+              <button class="cp-btn-bento" id="cp-copy"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy Context</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
               <button class="cp-btn-bento" id="cp-track-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
               <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
@@ -934,22 +934,11 @@ const UI_HTML = `
             <div id="cp-pin-bar">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Pinned Stack (<span id="cp-pin-count">0</span>)</span>
-                <button id="cp-pin-clear-btn" style="background:none; border:none; color:var(--text-muted); font-size:10.5px; cursor:pointer; padding:2px 6px; border-radius:4px; font-family:var(--font-mono); display:none;" title="Clear all pinned components">Clear All</button>
               </div>
               <div id="cp-pin-list"></div>
-
-              <div id="cp-pin-empty" style="padding:14px 0; text-align:center; color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">
-                No pinned components.<br>Click "Pin Component" or Alt+Shift+Click to bundle.
-              </div>
-
-              <!-- Inline Task Brief Composer (No Native Prompts) -->
-              <div id="cp-task-composer" style="margin-top: 10px; display: none; flex-direction: column; gap: 8px;">
-                <textarea id="cp-task-input" rows="2" placeholder="Task instruction for AI (e.g. Unify card borders, sync padding, add skeleton loader)..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-glass); border-radius:8px; padding:8px 10px; font-size:11.5px; font-family:var(--font-sans); color:var(--text-primary); resize:vertical; outline:none; transition:border-color 0.2s;"></textarea>
-                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%; font-weight:600; font-size:12px; padding:9px 12px; background:linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(2, 132, 199, 0.35) 100%); border-color:#0ea5e9; color:#38bdf8;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                  <span>⚡ Copy Task Brief for AI</span>
-                </button>
-                <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-mono); text-align:center;">Bundles pinned components + relationships + frozen locks</div>
+              
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Generate Task Context</button>
               </div>
             </div>
           </div>
@@ -1330,11 +1319,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const text = formatContextForClipboard(lastCopiedContext);
           await navigator.clipboard.writeText(text);
           const btn = shadow.getElementById('cp-copy');
-          btn.innerHTML = '✓ Copied Spec!';
-          showCallout('Component Spec Copied', '✓');
-          setTimeout(() => btn.innerHTML = ICONS.copy + ' 📋 Copy Spec', 1600);
-        } else {
-          showCallout('Select a component first', 'TIP');
+          btn.innerHTML = '✓ Copied!';
+          showCallout('Context Copied to Clipboard', '✓');
+          setTimeout(() => btn.innerHTML = ICONS.copy + ' Copy Context', 1600);
         }
       };
 
@@ -1522,53 +1509,24 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       };
 
-      const genTaskBtn = shadow.getElementById('cp-gen-task');
-      if (genTaskBtn) {
-        genTaskBtn.onclick = async () => {
-          const inputEl = shadow.getElementById('cp-task-input');
-          const instruction = (inputEl && inputEl.value.trim()) || 'Implement requested changes across the pinned component set.';
-          const level = shadow.getElementById('cp-context-level')?.value || 'standard';
-          try {
-            const originalHtml = genTaskBtn.innerHTML;
-            genTaskBtn.innerHTML = '<span>⚡ Generating Brief...</span>';
-            const res = await fetch(BRIDGE + '/api/task', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ instruction, level })
-            });
-            const data = await res.json();
-            const textToCopy = data.context || JSON.stringify(data, null, 2);
-            await navigator.clipboard.writeText(textToCopy);
-            const costStr = data.tokenCost ? data.tokenCost.toLocaleString() + ' tok' : 'Ready';
-            genTaskBtn.innerHTML = '<span>✓ Task Brief Copied! (' + costStr + ')</span>';
-            showCallout('Task Brief Copied (' + costStr + ')', '✓');
-            setTimeout(() => { genTaskBtn.innerHTML = originalHtml; }, 2000);
-          } catch(e) {
-            console.error('[agent-hover] Task brief error:', e);
-            showCallout('Failed to generate task brief', 'ERR');
-            setTimeout(() => {
-              genTaskBtn.innerHTML = ICONS.sparkles + ' <span>⚡ Copy Task Brief for AI</span>';
-            }, 1800);
-          }
-        };
-      }
-
-      const clearPinsBtn = shadow.getElementById('cp-pin-clear-btn');
-      if (clearPinsBtn) {
-        clearPinsBtn.onclick = async () => {
-          try {
-            await fetch(BRIDGE + '/api/pin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'clear' })
-            });
-            showCallout('Cleared pinned stack', 'PIN');
-            refreshPins();
-          } catch(e) {
-            console.error('[agent-hover] Clear pins error:', e);
-          }
-        };
-      }
+      shadow.getElementById('cp-gen-task').onclick = async () => {
+        const instruction = prompt('Describe the task for your AI agent:');
+        if (!instruction) return;
+        const level = shadow.getElementById('cp-context-level')?.value || 'standard';
+        try {
+          const res = await fetch(BRIDGE + '/api/task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ instruction, level })
+          });
+          const data = await res.json();
+          await navigator.clipboard.writeText(data.context || JSON.stringify(data, null, 2));
+          showCallout('Task context copied (' + (data.tokenCost || '?') + ' tokens)', '✓');
+          alert('Task context copied to clipboard! (' + (data.tokenCost || '?') + ' tokens)');
+        } catch(e) {
+          alert('Failed to generate task context');
+        }
+      };
 
       // --- React 19 Fiber Detection ---
       function getFiberNode(el) {
@@ -3057,12 +3015,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       function formatContextForAiPrompt(ctx, stack) {
         const bt = String.fromCharCode(96);
         const nl = String.fromCharCode(10);
-        const compName = ctx.component && ctx.component.name ? ctx.component.name : 'Target Component';
-        let text = '## Task for AI Agent' + nl;
-        text += '<!-- Describe what you want the agent to do with this component, e.g.: -->' + nl;
-        text += '<!-- "Update the card to display a warning badge when change < 0" -->' + nl + nl;
-        text += '### Target Component Directive' + nl;
-        text += '- **Component**: <' + compName + ' />' + nl;
+        let text = '### Component Context (Agent Hover)' + nl;
+        text += '- **Component**: ' + (ctx.component && ctx.component.name ? '<' + ctx.component.name + ' />' : 'Target Component') + nl;
         if (ctx.source && ctx.source.file) {
           text += '- **Location**: ' + bt + ctx.source.file + (ctx.source.startLine ? ':' + ctx.source.startLine + '-' + ctx.source.endLine : '') + bt + nl;
         }
@@ -3078,54 +3032,30 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           text += '- **Hooks**: ' + ctx.interface.hooks.join(', ') + nl;
         }
         if (ctx.source && ctx.source.code) {
-          text += nl + '### Component Source' + nl;
-          text += bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
+          text += nl + bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
         }
-        let parentName = '';
-        if (stack && stack.length > 1) {
-          parentName = stack[1].name;
-        }
-        const guardMsg = parentName ? 'parent component (' + parentName + ') or unrelated files' : 'parent or sibling components';
-        text += nl + '> ⚠️ **Agent Guardrail**: Confine all edits strictly to <' + compName + ' /> in ' + bt + (ctx.source ? ctx.source.file : '') + bt + '. Do NOT refactor ' + guardMsg + ' unless explicitly requested.' + nl;
-        text += '> ⚡ **Token Budget**: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '150') + ' tokens (Zero-search targeted context)' + nl;
+        text += nl + '> Token Budget: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '150') + ' tokens (zero-searching target)' + nl;
         return text;
       }
 
       function formatContextForClipboard(ctx) {
         const bt = String.fromCharCode(96);
         const nl = String.fromCharCode(10);
-        const compName = ctx.component && ctx.component.name ? ctx.component.name : 'Component';
-        let text = '## <' + compName + ' /> Specification' + nl + nl;
-        if (ctx.source && ctx.source.file) {
-          text += '**Source**: ' + bt + ctx.source.file + (ctx.source.startLine ? ':' + ctx.source.startLine + '-' + ctx.source.endLine : '') + bt + nl + nl;
-        }
+        let text = '## ' + ctx.component.name + nl;
+        text += '**Source**: ' + bt + ctx.source.file + ':' + ctx.source.startLine + '-' + ctx.source.endLine + bt + nl + nl;
         if (ctx.interface && ctx.interface.props && ctx.interface.props.length > 0) {
-          text += '### Props Interface' + nl;
-          text += '| Name | Type | Required |' + nl;
-          text += '| :--- | :--- | :--- |' + nl;
-          ctx.interface.props.forEach(function(p) {
-            const cleanType = (p.type || 'any').split('|').join(' \\| ');
-            text += '| ' + p.name + ' | ' + bt + cleanType + bt + ' | ' + (p.required ? '✓' : '✗') + ' |' + nl;
-          });
+          text += '### Props' + nl;
+          ctx.interface.props.forEach(function(p) { text += '- ' + p.name + ': ' + p.type + (p.required ? ' (required)' : '') + nl; });
           text += nl;
         }
-        if (ctx.interface && ctx.interface.hooks && ctx.interface.hooks.length > 0) {
-          text += '### Hooks Used' + nl;
-          ctx.interface.hooks.forEach(function(h) { text += '- ' + bt + h + bt + nl; });
-          text += nl;
+        if (ctx.source.code) {
+          text += '### Source Code' + nl + bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
         }
-        if (ctx.imports && ctx.imports.length > 0) {
+        if (ctx.imports) {
           text += '### Imports' + nl;
-          ctx.imports.forEach(function(imp) {
-            text += '- ' + bt + imp.name + bt + ' from ' + bt + imp.source + bt + (imp.isLocal ? ' (local)' : ' (external)') + nl;
-          });
-          text += nl;
+          ctx.imports.forEach(function(imp) { text += '- ' + imp.name + ' from ' + imp.source + nl; });
         }
-        if (ctx.source && ctx.source.code) {
-          text += '### Source Code' + nl;
-          text += bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
-        }
-        text += nl + '**Token Estimate**: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '?') + ' tokens' + nl;
+        text += nl + '**Tokens**: ' + ctx.tokens.current + nl;
         return text;
       }
 
@@ -3136,21 +3066,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const count = dataPins.pins ? dataPins.pins.length : 0;
           shadow.getElementById('cp-pin-count').textContent = count;
 
-          const composerEl = shadow.getElementById('cp-task-composer');
-          const emptyEl = shadow.getElementById('cp-pin-empty');
-          const clearAllEl = shadow.getElementById('cp-pin-clear-btn');
-
           if (count > 0) {
             dockPinBadge.style.display = 'block';
             dockPinBadge.textContent = count;
-            if (composerEl) composerEl.style.display = 'flex';
-            if (emptyEl) emptyEl.style.display = 'none';
-            if (clearAllEl) clearAllEl.style.display = 'inline-block';
+
           } else {
             dockPinBadge.style.display = 'none';
-            if (composerEl) composerEl.style.display = 'none';
-            if (emptyEl) emptyEl.style.display = 'block';
-            if (clearAllEl) clearAllEl.style.display = 'none';
+
           }
 
 
