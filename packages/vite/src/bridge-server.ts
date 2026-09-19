@@ -261,10 +261,9 @@ export class BridgeServer {
           this.pins = [];
         } else if (action === 'add' && file && line !== undefined) {
           // Check if already pinned
-          const exists = this.pins.some((p) => {
-            const src = p.context.source;
-            return src.file === file || src.absolutePath === file || (src.file && file.endsWith(src.file)) || (src.file && src.file.endsWith(file));
-          });
+          const exists = this.pins.some(
+            (p) => p.context.source.file === file
+          );
           if (!exists) {
             const context = await this.contextBuilder.getContext(
               file,
@@ -273,16 +272,10 @@ export class BridgeServer {
             );
             this.pins.push({ id: context.id, context });
           }
-        } else if (action === 'remove' && (file || req.body.id)) {
-          const targetId = req.body.id;
-          this.pins = this.pins.filter((p) => {
-            if (targetId && (p.id === targetId || p.context.id === targetId)) return false;
-            if (file) {
-              const src = p.context.source;
-              if (src.file === file || src.absolutePath === file || (src.file && file.endsWith(src.file)) || (src.file && src.file.endsWith(file))) return false;
-            }
-            return true;
-          });
+        } else if (action === 'remove' && file) {
+          this.pins = this.pins.filter(
+            (p) => p.context.source.file !== file
+          );
         } else {
           res
             .status(400)
@@ -564,7 +557,7 @@ export class BridgeServer {
     // Open in editor
     this.app.post('/api/open-editor', (req, res) => {
       try {
-        const { file, line, editor } = req.body;
+        console.log("OPEN-EDITOR REQ:", req.body); const { file, line, editor } = req.body;
         if (!file) {
           res.status(400).json({ error: 'Missing file' });
           return;

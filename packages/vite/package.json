@@ -2,18 +2,6 @@
   "name": "@agent-hover/vite",
   "version": "0.1.0",
   "type": "module",
-  "description": "Vite plugin and bridge server for Agent Hover",
-  "license": "MIT",
-  "keywords": [
-    "agent-hover",
-    "vite-plugin",
-    "ai-agent",
-    "devtools",
-    "react"
-  ],
-  "files": [
-    "dist"
-  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

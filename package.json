@@ -13,6 +13,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
+    "build:overlay": "npm run build --workspace=@agent-hover/overlay",
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
     "test": "npm run test --workspaces --if-present",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"

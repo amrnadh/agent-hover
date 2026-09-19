@@ -36,7 +36,8 @@ Then run your dev server and hold `Alt` to enter pointer mode.
 | Package | Description |
 |---------|-------------|
 | `@agent-hover/core` | Context intelligence engine (AST parsing, relationships, token estimation) |
-| `@agent-hover/vite` | Vite plugin + local bridge server + browser overlay |
+| `@agent-hover/vite` | Vite plugin + local bridge server |
+| `@agent-hover/overlay` | Browser overlay UI (Shadow DOM) |
 | `@agent-hover/mcp` | MCP server for AI agent integration |
 
 ## MCP Setup
