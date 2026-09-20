@@ -89,7 +89,7 @@ const UI_HTML = `
           }
 
           #cp-dock {
-            width: 66px;
+            width: 52px;
             background: var(--bg-dock);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
@@ -111,7 +111,7 @@ const UI_HTML = `
           /* --- Dock Squircle Tiles --- */
           .cp-dock-tile {
             position: relative;
-            width: 50px;
+            width: 40px;
             border-radius: 16px;
             background: var(--bg-tile);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -124,7 +124,7 @@ const UI_HTML = `
             box-shadow: var(--shadow-tile);
             transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
-            height: 50px;
+            height: 40px;
           }
 
           .cp-dock-tile:hover {
@@ -838,18 +838,6 @@ const UI_HTML = `
               <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
             </div>
 
-            <div class="cp-dock-tile" id="cp-dock-diff" title="Track Visual Diff">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            </div>
-
-            <div class="cp-dock-tile" id="cp-dock-export" title="Export Context for AI">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-            </div>
-
-            <div class="cp-dock-tile" id="cp-dock-open" title="Jump to Source in IDE">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            </div>
-
             <div class="cp-dock-tile" id="cp-dock-theme" title="Toggle Light/Dark Mode" style="width:36px; height:36px; border-radius:12px;">
               <svg id="cp-theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
               <svg id="cp-theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -878,6 +866,7 @@ const UI_HTML = `
                   <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
                   <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 </button>
+                <button class="cp-dock-tile" id="cp-track-btn" title="Track Visual Diff" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
                 <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </div>
@@ -887,7 +876,7 @@ const UI_HTML = `
             <!-- Live Token Meter & Context Level Bar -->
             <div id="cp-token-meter" style="padding: 7px 18px; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <span style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                   ⚡ <span id="cp-token-count">0</span> tokens
                 </span>
                 <span id="cp-token-savings" class="cp-badge cp-badge-emerald" style="min-height: 18px; font-size: 9.5px; padding: 1px 6px;">
@@ -909,14 +898,9 @@ const UI_HTML = `
             </div>
 
             <div class="cp-flyout-actions">
-              <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(2, 132, 199, 0.35) 100%); border-color: #0ea5e9; color: #38bdf8;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                ⚡ Copy for AI Prompt
-              </button>
-              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> Open in IDE</button>
-              <button class="cp-btn-bento" id="cp-copy"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy Context</button>
+              <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ⚡ Copy AI Context</button>
+              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-track-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Track Visuals</button>
               <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
             </div>
 
@@ -926,8 +910,9 @@ const UI_HTML = `
               </div>
               <div id="cp-pin-list"></div>
               
-              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Generate Task Context</button>
+              <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="cp-task-input" placeholder="Describe what to change, e.g. 'Unify all card borders'" style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.04); border:1px solid var(--border-glass); border-radius:8px; padding:8px 12px; color:var(--text-primary); font-family:var(--font-sans); font-size:12px; outline:none; transition: border-color 0.2s;" />
+                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ⚡ Copy Task Brief</button>
               </div>
             </div>
           </div>
@@ -1043,9 +1028,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
       const dockToggle = shadow.getElementById('cp-dock-toggle');
       const dockPins = shadow.getElementById('cp-dock-pins');
-      const dockDiff = shadow.getElementById('cp-dock-diff');
-      const dockExport = shadow.getElementById('cp-dock-export');
-      const dockOpen = shadow.getElementById('cp-dock-open');
       const dockHandle = shadow.getElementById('cp-dock-handle');
       const dockPinBadge = shadow.getElementById('cp-dock-pin-badge');
       const callout = shadow.getElementById('cp-dock-callout');
@@ -1180,17 +1162,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         pinBar.scrollIntoView({ behavior: 'smooth' });
       };
 
-      dockDiff.onclick = () => {
-        if (!lastCopiedContext || !currentElement) {
-          showCallout('Select a component first', 'TIP');
-          return;
-        }
-        shadow.getElementById('cp-track-btn').click();
-      };
-
-      dockExport.onclick = () => {
-        shadow.getElementById('cp-gen-task').click();
-      };
 
       // Theme toggle (dark/light mode)
       const themeToggle = shadow.getElementById('cp-dock-theme');
@@ -1283,14 +1254,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
-      dockOpen.onclick = async () => {
-        if (!lastCopiedContext || !lastCopiedContext.source) {
-          showCallout('Select a component first', 'TIP');
-          return;
-        }
-        await openInEditor();
-      };
-
       let lastCopiedContext = null;
       let lastResolved = null;
       let lastInfoName = null;
@@ -1311,7 +1274,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
             await navigator.clipboard.writeText(promptText);
             const originalHtml = copyAiBtn.innerHTML;
-            copyAiBtn.innerHTML = '✓ Copied AI Prompt!';
+            copyAiBtn.innerHTML = '✓ Copied!';
             showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', '✓');
             setTimeout(() => { copyAiBtn.innerHTML = originalHtml; }, 1600);
           } else {
@@ -1319,17 +1282,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
         };
       }
-
-      shadow.getElementById('cp-copy').onclick = async () => {
-        if (lastCopiedContext) {
-          const text = formatContextForClipboard(lastCopiedContext);
-          await navigator.clipboard.writeText(text);
-          const btn = shadow.getElementById('cp-copy');
-          btn.innerHTML = '✓ Copied!';
-          showCallout('Context Copied to Clipboard', '✓');
-          setTimeout(() => btn.innerHTML = ICONS.copy + ' Copy Context', 1600);
-        }
-      };
 
       async function openInEditor() {
         if (lastCopiedContext && lastCopiedContext.source) {
@@ -1349,15 +1301,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             });
             const data = await res.json();
             if (!res.ok || data.error) {
-              alert('Failed to open editor: ' + (data.error || res.statusText));
+              showCallout('Failed to open editor', '✗');
             } else {
               showCallout('Opened in IDE', '✓');
             }
             btn.innerHTML = originalContent;
           } catch(e) {
             console.error('[agent-hover] Failed to open editor:', e);
-            alert('Failed to connect to agent-hover bridge server.');
-            shadow.getElementById('cp-editor-btn').innerHTML = ICONS.crosshair + ' Open in Editor';
+            showCallout('Bridge server connection failed', '✗');
+            shadow.getElementById('cp-editor-btn').innerHTML = ICONS.code + ' Open in IDE';
           }
         }
       }
@@ -1515,10 +1467,28 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       };
 
+      const taskInput = shadow.getElementById('cp-task-input');
+      if (taskInput) {
+        taskInput.addEventListener('focus', () => {
+          taskInput.style.borderColor = 'var(--border-accent)';
+        });
+        taskInput.addEventListener('blur', () => {
+          taskInput.style.borderColor = '';
+        });
+      }
+
       shadow.getElementById('cp-gen-task').onclick = async () => {
-        const instruction = prompt('Describe the task for your AI agent:');
-        if (!instruction) return;
+        const instruction = taskInput ? taskInput.value.trim() : '';
+        if (!instruction) {
+          showCallout('Enter a task description first', 'TIP');
+          if (taskInput) taskInput.focus();
+          return;
+        }
         const level = shadow.getElementById('cp-context-level')?.value || 'standard';
+        const btn = shadow.getElementById('cp-gen-task');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '⏳ Generating...';
+        btn.disabled = true;
         try {
           const res = await fetch(BRIDGE + '/api/task', {
             method: 'POST',
@@ -1527,10 +1497,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           });
           const data = await res.json();
           await navigator.clipboard.writeText(data.context || JSON.stringify(data, null, 2));
-          showCallout('Task context copied (' + (data.tokenCost || '?') + ' tokens)', '✓');
-          alert('Task context copied to clipboard! (' + (data.tokenCost || '?') + ' tokens)');
+          showCallout('Task brief copied (' + (data.tokenCost || '?') + ' tokens)', '✓');
+          btn.innerHTML = '✓ Copied!';
+          if (taskInput) taskInput.value = '';
+          setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 1600);
         } catch(e) {
-          alert('Failed to generate task context');
+          showCallout('Failed to generate task context', '✗');
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
         }
       };
 
