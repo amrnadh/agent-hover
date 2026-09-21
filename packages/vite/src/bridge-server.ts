@@ -9,7 +9,6 @@ import {
   formatContextMarkdown,
   formatPinSetMarkdown,
   formatTaskContext,
-  formatScreenshotDiff,
   SourceEditor,
 } from '@agent-hover/core';
 import type {
@@ -294,11 +293,12 @@ export class BridgeServer {
     });
 
     // Get all pins
-    this.app.get('/api/pins', (_req, res) => {
+    this.app.get('/api/pins', (req, res) => {
       try {
         const pinSet = this.getPinSet();
+        const level = (req.query.level as ContextLevel) || 'standard';
         const formatted = formatPinSetMarkdown(pinSet);
-        res.json({ ...pinSet, formatted });
+        res.json({ ...pinSet, level, formatted });
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to fetch pins';
@@ -557,7 +557,7 @@ export class BridgeServer {
     // Open in editor
     this.app.post('/api/open-editor', (req, res) => {
       try {
-        console.log("OPEN-EDITOR REQ:", req.body); const { file, line, editor } = req.body;
+        const { file, line, editor } = req.body;
         if (!file) {
           res.status(400).json({ error: 'Missing file' });
           return;
@@ -744,11 +744,6 @@ export class BridgeServer {
         res.status(500).json({ error: e.message });
       }
     });
-
-    // Get undo stack
-    this.app.get('/api/source-history', (_req, res) => {
-      res.json({ history: this.sourceEditor.getUndoStack() });
-    });
   }
 
   public start() {
@@ -757,24 +752,6 @@ export class BridgeServer {
 
     this.wss.on('connection', (ws) => {
       this.clients.add(ws);
-
-      ws.on('message', async (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          if (data.type === 'request-context') {
-            const context = await this.contextBuilder.getContext(
-              data.file,
-              data.line,
-              (data.level as ContextLevel) || 'standard'
-            );
-            ws.send(
-              JSON.stringify({ type: 'context-update', data: context })
-            );
-          }
-        } catch (error) {
-          console.error('[agent-hover] WS error:', error);
-        }
-      });
 
       ws.on('close', () => {
         this.clients.delete(ws);

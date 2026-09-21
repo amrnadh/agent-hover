@@ -2698,10 +2698,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             tokenCountEl.textContent = ctx.tokens.current || 0;
           }
           if (tokenSavingsEl && ctx.tokens) {
-            const fullTokens = Math.max(ctx.tokens.full || 800, 700);
-            const curTokens = ctx.tokens.current || 140;
-            const savings = Math.max(15, Math.min(95, Math.round((1 - curTokens / (fullTokens * 2.2)) * 100)));
-            tokenSavingsEl.textContent = '-' + savings + '% vs file';
+            const fullTokens = ctx.tokens.full || 0;
+            const curTokens = ctx.tokens.current || 0;
+            if (fullTokens > curTokens && fullTokens > 0) {
+              const saved = Math.round((1 - curTokens / fullTokens) * 100);
+              tokenSavingsEl.textContent = saved + '% smaller than full';
+            } else {
+              tokenSavingsEl.textContent = 'prompt-ready';
+            }
           }
 
           let html = '';
@@ -3078,11 +3082,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const levelSelect = shadow.getElementById('cp-context-level');
             const level = levelSelect.value;
             const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
-            const fullRepoEstimate = 45000;
-            const percentSaved = Math.round((1 - (cost / fullRepoEstimate)) * 100);
             
             savingsDiv.style.display = 'block';
-            savingsDiv.innerHTML = '⚡ Stack context: ' + cost.toLocaleString() + ' tokens (' + percentSaved + '% savings)';
+            savingsDiv.innerHTML = '⚡ Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
           } else {
             savingsDiv.style.display = 'none';
           }
