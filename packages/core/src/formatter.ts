@@ -9,7 +9,7 @@ export function formatContextMarkdown(context: ComponentContext, level: ContextL
     md += `| Name | Type | Required | Default |\n`;
     md += `|------|------|----------|--------|\n`;
     for (const prop of context.interface.props) {
-      md += `| ${prop.name} | \`${prop.type.replace(/\|/g, '\\|')}\` | ${prop.required ? '✓' : '✗'} | ${prop.defaultValue ?? ''} |\n`;
+      md += `| ${prop.name} | \`${prop.type.replace(/\|/g, '\\|')}\` | ${prop.required ? 'true' : 'false'} | ${prop.defaultValue ?? ''} |\n`;
     }
     md += `\n`;
   }
@@ -91,11 +91,11 @@ export function formatTaskContext(
 
   let fullContext = contextMd;
   if (frozenFiles.length > 0) {
-    fullContext += `\n\n## ⛔ FROZEN COMPONENTS — DO NOT MODIFY\n\n`;
+    fullContext += `\n\n## [LOCKED] FROZEN COMPONENTS — DO NOT MODIFY\n\n`;
     fullContext += `The following components have been explicitly locked by the developer. `;
     fullContext += `They are working correctly and **MUST NOT be edited, moved, renamed, or have their imports changed**:\n\n`;
     for (const f of frozenFiles) {
-      fullContext += `- ⛔ **${f.component}** (\`${f.file}\`) — ${f.reason}\n`;
+      fullContext += `- [LOCKED] **${f.component}** (\`${f.file}\`) — ${f.reason}\n`;
     }
     fullContext += `\n**Any changes to the above files will be rejected.**\n`;
   }
@@ -159,13 +159,13 @@ export function formatScreenshotDiff(diff: ScreenshotDiff): string {
   const pct = diff.changedPixelPercent;
   let status: string;
   if (pct === 0) {
-    status = '✅ NO VISUAL CHANGE — the component looks identical before and after.';
+    status = 'NO VISUAL CHANGE — the component looks identical before and after.';
   } else if (pct < 0.5) {
-    status = `⚠️ MINIMAL CHANGE — only ${pct}% of pixels differ (likely sub-pixel rendering or anti-aliasing).`;
+    status = `MINIMAL CHANGE — only ${pct}% of pixels differ (likely sub-pixel rendering or anti-aliasing).`;
   } else if (pct < 10) {
-    status = `🔄 MODERATE CHANGE — ${pct}% of pixels differ. This appears to be an intentional UI change.`;
+    status = `MODERATE CHANGE — ${pct}% of pixels differ. This appears to be an intentional UI change.`;
   } else {
-    status = `🔴 SIGNIFICANT CHANGE — ${pct}% of pixels differ. Please verify this is intentional.`;
+    status = `SIGNIFICANT CHANGE — ${pct}% of pixels differ. Please verify this is intentional.`;
   }
 
   md += `### Result\n${status}\n\n`;

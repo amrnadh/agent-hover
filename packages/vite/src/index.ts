@@ -110,18 +110,21 @@ const UI_HTML = `
             align-items: center;
           }
 
+          @keyframes cp-spin { to { transform: rotate(360deg); } }
+          .cp-spin { animation: cp-spin 0.8s linear infinite; }
+
           #cp-dock {
             width: 52px;
             background: var(--bg-dock);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
-            border-radius: 14px;
-            padding: 10px 7px 8px 7px;
+            border-radius: 20px;
+            padding: 8px 6px 6px 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             box-shadow: var(--shadow-dock);
             transition: border-color 0.25s ease, box-shadow 0.25s ease;
           }
@@ -266,12 +269,11 @@ const UI_HTML = `
 
           /* --- Full Context Lens Flyout --- */
           #cp-flyout {
-            position: absolute;
-            left: 68px;
-            top: 0;
+            position: fixed;
             opacity: 0;
             pointer-events: none;
-            width: 460px;
+            width: 440px;
+            max-width: calc(100vw - 32px);
             max-height: calc(100vh - 60px);
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
@@ -280,17 +282,34 @@ const UI_HTML = `
             border-radius: 16px;
             color: var(--text-primary);
             font-family: var(--font-sans);
-            box-shadow: var(--shadow-dock);
-            z-index: 1000000;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-glass);
+            z-index: 999995;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           #cp-flyout.open {
             opacity: 1;
             pointer-events: auto;
+          }
+
+          /* Floating Detached Mode Styling */
+          #cp-flyout:not(.is-sidebar) {
+            top: 60px;
+            right: 24px;
+            height: min(760px, calc(100vh - 80px));
+            border-radius: 16px;
+          }
+
+          #cp-flyout:not(.is-sidebar) #cp-flyout-header {
+            cursor: grab;
+            user-select: none;
+          }
+
+          #cp-flyout:not(.is-sidebar) #cp-flyout-header:active {
+            cursor: grabbing;
           }
 
           /* Flyout Sidebar Mode (Right-Docked) */
@@ -318,8 +337,9 @@ const UI_HTML = `
 
           /* Shift dock slightly away from sidebar edge when open on right */
           #cp-dock-wrapper.sidebar-open.cp-dock-right {
+            left: auto !important;
             right: 456px !important;
-            transition: right 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: right 0.24s cubic-bezier(0.16, 1, 0.3, 1), left 0.24s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           /* Dynamic Dock Orientation: Flip to Left Side when on Right */
@@ -333,16 +353,6 @@ const UI_HTML = `
             right: -7px;
             border-right: none;
             border-left: 7px solid var(--bg-dock-panel);
-          }
-
-          #cp-dock-wrapper.cp-dock-right #cp-flyout:not(.is-sidebar) {
-            left: auto;
-            right: 68px;
-          }
-
-          #cp-dock-wrapper.cp-dock-bottom #cp-flyout:not(.is-sidebar) {
-            top: auto;
-            bottom: 0;
           }
 
           #cp-flyout-header {
@@ -449,7 +459,16 @@ const UI_HTML = `
           details.cp-section > summary { list-style: none; }
           details.cp-section > summary::-webkit-details-marker { display: none; }
           details.cp-section > summary::before {
-            content: '▶'; font-size: 8px; display: inline-block; transition: transform 0.2s; color: var(--accent);
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 5px solid var(--accent);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-right: 3px;
+            transform-origin: 2px 4px;
           }
           details.cp-section[open] > summary::before { transform: rotate(90deg); }
 
@@ -637,6 +656,111 @@ const UI_HTML = `
           #cp-label.inside-top {
             top: 2px;
             left: 2px;
+          }
+
+          /* --- Persistent Selection Frame & Near-Component Action Pill --- */
+          #cp-selection-frame {
+            position: fixed;
+            z-index: 999998;
+            pointer-events: none;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 4px 20px rgba(0, 0, 0, 0.35);
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: none;
+          }
+          #cp-selection-chip {
+            position: absolute;
+            top: -32px;
+            left: -2px;
+            pointer-events: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            box-shadow: var(--shadow-dock);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 10;
+          }
+          #cp-selection-chip.inside-top {
+            top: 4px;
+            left: 4px;
+          }
+          #cp-sel-name {
+            font-weight: 700;
+            color: var(--accent);
+          }
+          #cp-sel-file {
+            color: var(--text-muted);
+            font-size: 10px;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          #cp-sel-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 4px;
+            padding-left: 6px;
+            border-left: 1px solid var(--border-glass);
+          }
+          #cp-sel-actions button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 7px;
+            border-radius: 5px;
+            border: 1px solid var(--border-glass);
+            background: var(--bg-surface-input);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+          #cp-sel-actions button:hover {
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--border-accent);
+          }
+          #cp-sel-copy-btn {
+            font-weight: 600;
+            background: var(--accent-subtle) !important;
+            color: var(--accent) !important;
+            border-color: var(--border-accent) !important;
+          }
+          #cp-sel-copy-btn:hover {
+            background: var(--accent) !important;
+            color: #fff !important;
+          }
+
+          .cp-vibe-chip {
+            padding: 4px 9px;
+            background: var(--bg-surface-input);
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+          }
+          .cp-vibe-chip:hover {
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--border-accent);
           }
 
           #cp-pin-bar {
@@ -898,37 +1022,74 @@ const UI_HTML = `
             border-bottom: none;
           }
 
+          #cp-dock-tiles {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+          }
+
           /* --- Horizontal Dock Mode --- */
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock {
-            flex-direction: row;
+            flex-direction: column;
+            align-items: center;
             width: auto;
-            height: 52px;
-            padding: 6px 10px 6px 8px;
-            gap: 8px;
+            height: auto;
+            padding: 7px 9px 5px 9px;
+            gap: 5px;
+            border-radius: 20px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-glass);
+          }
+          #cp-dock-wrapper.cp-dock-horizontal #cp-dock-tiles {
+            flex-direction: row;
+            gap: 6px;
+            align-items: center;
+          }
+          #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile {
+            width: 38px;
+            height: 38px;
+            border-radius: 13px;
+          }
+          #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile svg {
+            width: 19px;
+            height: 19px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle {
-            width: 4px;
-            height: 24px;
-            margin-top: 0;
-            margin-left: 2px;
+            width: 30px;
+            height: 4px;
+            margin: 2px auto 1px auto;
+            border-radius: 999px;
+            background: var(--handle-color);
+            cursor: grab;
+            transition: all 0.2s ease;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle:hover {
-            height: 30px;
-            width: 4px;
+            width: 36px;
+            background: var(--accent);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-callout {
-            top: -46px;
+            top: 54px;
             left: 50%;
             transform: translateX(-50%);
             right: auto;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-callout-tail {
             left: 50%;
-            top: auto;
-            bottom: -6px;
+            top: -6px;
+            bottom: auto;
             transform: translateX(-50%);
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
+            border-bottom: 6px solid var(--bg-dock-panel);
+            border-top: none;
+          }
+          #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom #cp-dock-callout {
+            top: -46px;
+            bottom: auto;
+          }
+          #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom .cp-callout-tail {
+            top: auto;
+            bottom: -6px;
             border-top: 6px solid var(--bg-dock-panel);
             border-bottom: none;
           }
@@ -936,14 +1097,15 @@ const UI_HTML = `
 
         <div id="cp-dock-wrapper">
           <div id="cp-dock">
-            
-            <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-            </div>
+            <div id="cp-dock-tiles">
+              <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+              </div>
 
-            <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-              <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
+              <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
+              </div>
             </div>
 
             <!-- Bottom Drag Handle -->
@@ -956,69 +1118,84 @@ const UI_HTML = `
             <span class="cp-callout-message" id="cp-callout-text">Ready to point</span>
             <span class="cp-callout-time" id="cp-callout-meta">Alt</span>
           </div>
+        </div>
 
-          <!-- Lens Flyout -->
-          <div id="cp-flyout">
-            <div id="cp-flyout-header">
-              <div id="cp-flyout-title-wrap">
-                <button class="cp-dock-tile" id="cp-settings-back" title="Back to Inspector" style="display:none; width:28px; height:28px; border-radius:8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
-                <span class="cp-badge cp-badge-accent" id="cp-flyout-badge">LENS</span>
-                <h3 id="cp-flyout-title">Component Inspector</h3>
+        <!-- Lens Flyout (Floating window / Attached sidebar) -->
+        <div id="cp-flyout">
+          <div id="cp-flyout-header">
+            <div id="cp-flyout-title-wrap">
+              <button class="cp-dock-tile" id="cp-settings-back" title="Back to Inspector" style="display:none; width:28px; height:28px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <span class="cp-badge cp-badge-accent" id="cp-flyout-badge">LENS</span>
+              <h3 id="cp-flyout-title">Component Inspector</h3>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button class="cp-dock-tile" id="cp-flyout-theme" title="Toggle Light/Dark Mode" style="width:30px; height:30px; border-radius:8px;">
+                <svg id="cp-theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg id="cp-theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              </button>
+              <button class="cp-dock-tile" id="cp-flyout-settings" title="Settings" style="width:30px; height:30px; border-radius:8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <button class="cp-dock-tile" id="cp-flyout-mode-toggle" title="Detach Sidebar (Float Window)" style="width:30px; height:30px; border-radius:8px;">
+                <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><polyline points="10 9 7 12 10 15"/></svg>
+                <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              </button>
+              <button class="cp-dock-tile" id="cp-track-btn" title="Track Visual Diff" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+              <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Inspector View (Default) -->
+          <div id="cp-view-inspector" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            <div id="cp-flyout-breadcrumb" style="display:none; padding:10px 20px; background:var(--bg-surface-sunken); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11.5px; overflow-x:auto; white-space:nowrap;">
+            </div>
+
+            <!-- Live Token Meter & Context Level Bar -->
+            <div id="cp-token-meter" style="padding: 7px 18px; background: var(--bg-surface-sunken); border-bottom: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span id="cp-token-count">0</span> tokens
+                </span>
+                <span id="cp-token-savings" class="cp-badge cp-badge-emerald" style="min-height: 18px; font-size: 10px; padding: 1px 6px;">
+                  prompt-ready
+                </span>
               </div>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <button class="cp-dock-tile" id="cp-flyout-theme" title="Toggle Light/Dark Mode" style="width:30px; height:30px; border-radius:8px;">
-                  <svg id="cp-theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                  <svg id="cp-theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
-                <button class="cp-dock-tile" id="cp-flyout-settings" title="Settings" style="width:30px; height:30px; border-radius:8px;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                <button class="cp-dock-tile" id="cp-flyout-mode-toggle" title="Toggle Sidebar / Float mode" style="width:30px; height:30px; border-radius:8px;">
-                  <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/></svg>
-                  <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m14 9 3 3-3 3"/></svg>
-                </button>
-                <button class="cp-dock-tile" id="cp-track-btn" title="Track Visual Diff" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
-                <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-muted); font-size: 10px;">Context:</span>
+                <select id="cp-context-level" style="background: var(--bg-surface-input); color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 4px; font-size: 10.5px; font-family: var(--font-mono); padding: 2px 6px; cursor: pointer;">
+                  <option value="minimal">Compact (Prompt-Ready)</option>
+                  <option value="standard" selected>Standard (+Source)</option>
+                  <option value="full">Deep (+Styles)</option>
+                </select>
               </div>
             </div>
 
-            <!-- Inspector View (Default) -->
-            <div id="cp-view-inspector" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
-              <div id="cp-flyout-breadcrumb" style="display:none; padding:10px 20px; background:var(--bg-surface-sunken); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11.5px; overflow-x:auto; white-space:nowrap;">
-              </div>
+            <div id="cp-flyout-content">
+              <p style="color:var(--text-secondary); margin:0;">Point and click any element on the page, or press <kbd style="font-family:var(--font-mono); background:var(--bg-surface-raised); padding:2px 5px; border-radius:4px;">Alt</kbd> to inspect.</p>
+            </div>
 
-              <!-- Live Token Meter & Context Level Bar -->
-              <div id="cp-token-meter" style="padding: 7px 18px; background: var(--bg-surface-sunken); border-bottom: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                    ⚡ <span id="cp-token-count">0</span> tokens
-                  </span>
-                  <span id="cp-token-savings" class="cp-badge cp-badge-emerald" style="min-height: 18px; font-size: 10px; padding: 1px 6px;">
-                    prompt-ready
-                  </span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="color: var(--text-muted); font-size: 10px;">Context:</span>
-                  <select id="cp-context-level" style="background: var(--bg-surface-input); color: var(--text-primary); border: 1px solid var(--border-glass); border-radius: 4px; font-size: 10.5px; font-family: var(--font-mono); padding: 2px 6px; cursor: pointer;">
-                    <option value="minimal">Compact (Prompt-Ready)</option>
-                    <option value="standard" selected>Standard (+Source)</option>
-                    <option value="full">Deep (+Styles)</option>
-                  </select>
-                </div>
-              </div>
+            <div class="cp-flyout-actions">
+              <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy AI Context</button>
+              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
+              <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
+            </div>
 
-              <div id="cp-flyout-content">
-                <p style="color:var(--text-secondary); margin:0;">Point and click any element on the page, or press <kbd style="font-family:var(--font-mono); background:var(--bg-surface-raised); padding:2px 5px; border-radius:4px;">Alt</kbd> to inspect.</p>
+            <!-- Vibe Prompt Starters -->
+            <div style="padding:10px 20px; border-top:1px solid var(--border-glass); background:var(--bg-surface-sunken);">
+              <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Vibe Prompts</span>
+                <span style="font-size:9.5px; color:var(--accent);">1-Click Copy</span>
               </div>
-
-              <div class="cp-flyout-actions">
-                <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy AI Context</button>
-                <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
-                <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-                <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;" id="cp-vibe-prompts">
+                <button class="cp-vibe-chip" data-vibe="redesign" title="Prompt AI to modernize and redesign this component"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Redesign</button>
+                <button class="cp-vibe-chip" data-vibe="responsive" title="Prompt AI to make this responsive on mobile"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg> Mobile Polish</button>
+                <button class="cp-vibe-chip" data-vibe="theme" title="Prompt AI to restyle colors, spacing, typography"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Style & Colors</button>
+                <button class="cp-vibe-chip" data-vibe="refactor" title="Prompt AI to clean up code and add TypeScript safety"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Clean Code</button>
               </div>
+            </div>
 
               <div id="cp-pin-bar">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1073,7 +1250,7 @@ const UI_HTML = `
                   </div>
                   <div class="cp-shortcut-row">
                     <span>Text Edit (Bold / Italic)</span>
-                    <kbd style="background:var(--bg-surface-raised); padding:2px 6px; border-radius:4px; color:var(--text-primary); font-size:10px;">⌘B / ⌘I</kbd>
+                    <kbd style="background:var(--bg-surface-raised); padding:2px 6px; border-radius:4px; color:var(--text-primary); font-size:10px;">Cmd+B / Cmd+I</kbd>
                   </div>
                 </div>
               </div>
@@ -1084,10 +1261,32 @@ const UI_HTML = `
               </div>
             </div>
           </div>
-        </div>
 
         <div id="cp-highlight">
           <div id="cp-label"></div>
+        </div>
+
+        <!-- Persistent Selection Frame (Locks on clicked component) -->
+        <div id="cp-selection-frame" style="display:none;">
+          <div id="cp-selection-chip">
+            <span id="cp-sel-name">&lt;Component /&gt;</span>
+            <span id="cp-sel-file"></span>
+            <div id="cp-sel-actions">
+              <button id="cp-sel-copy-btn" title="Copy AI Prompt (Click to copy)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                <span id="cp-sel-copy-label">Copy Prompt</span>
+              </button>
+              <button id="cp-sel-ide-btn" title="Open in IDE">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </button>
+              <button id="cp-sel-pin-btn" title="Pin Component">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+              </button>
+              <button id="cp-sel-close-btn" title="Deselect">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
         <div id="cp-margin-band"></div>
         <div id="cp-padding-band"></div>
@@ -1101,9 +1300,9 @@ const UI_HTML = `
             </span>
             <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--accent); background:var(--accent-subtle); padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid var(--border-accent); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
             <div id="cp-text-editor-toolbar">
-              <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (⌘B)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H6v-8Zm0 0V4h8a4 4 0 0 1 0 8H6Z"/></svg></button>
-              <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (⌘I)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg></button>
-              <button class="cp-text-tb-btn" data-cmd="underline" title="Underline (⌘U)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/></svg></button>
+              <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (Cmd+B)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H6v-8Zm0 0V4h8a4 4 0 0 1 0 8H6Z"/></svg></button>
+              <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (Cmd+I)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg></button>
+              <button class="cp-text-tb-btn" data-cmd="underline" title="Underline (Cmd+U)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/></svg></button>
             </div>
             <button id="cp-text-editor-close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
@@ -1117,7 +1316,7 @@ const UI_HTML = `
 
         <div id="cp-tracker">
           <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent); font-family:var(--font-mono);"></span></div>
-          <button class="cp-btn-bento primary" id="cp-tracker-capture">📸 Capture After & Diff</button>
+          <button class="cp-btn-bento primary" id="cp-tracker-capture" style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff</button>
           <button class="cp-btn-bento" id="cp-tracker-cancel" style="font-size: 11px; padding: 4px 8px;">Cancel</button>
         </div>
 
@@ -1164,7 +1363,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let ws;
       try {
         ws = new WebSocket('ws://localhost:${port}');
-        ws.onopen = () => console.log('[agent-hover] ✓ Connected to bridge');
+        ws.onopen = () => console.log('[agent-hover] Connected to bridge');
         ws.onerror = () => console.warn('[agent-hover] WebSocket connection failed');
       } catch(e) {
         console.warn('[agent-hover] Could not connect WebSocket');
@@ -1300,7 +1499,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           currentEditorPref = 'cursor';
           try { localStorage.setItem('agent-hover-pref-editor', 'cursor'); } catch(e) {}
           updateEditorPrefUI();
-          showCallout('Editor: Cursor', '✓');
+          showCallout('Editor: Cursor', 'SET');
         };
       }
       if (prefEditorVscode) {
@@ -1308,7 +1507,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           currentEditorPref = 'vscode';
           try { localStorage.setItem('agent-hover-pref-editor', 'vscode'); } catch(e) {}
           updateEditorPrefUI();
-          showCallout('Editor: VS Code', '✓');
+          showCallout('Editor: VS Code', 'SET');
         };
       }
       if (prefEditorWindsurf) {
@@ -1316,7 +1515,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           currentEditorPref = 'windsurf';
           try { localStorage.setItem('agent-hover-pref-editor', 'windsurf'); } catch(e) {}
           updateEditorPrefUI();
-          showCallout('Editor: Windsurf', '✓');
+          showCallout('Editor: Windsurf', 'SET');
         };
       }
 
@@ -1344,13 +1543,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       if (dockOrientVert) {
         dockOrientVert.onclick = () => {
           applyDockOrientation('vertical');
-          showCallout('Dock: Vertical', '✓');
+          showCallout('Dock: Vertical', 'DOCK');
         };
       }
       if (dockOrientHoriz) {
         dockOrientHoriz.onclick = () => {
           applyDockOrientation('horizontal');
-          showCallout('Dock: Horizontal', '✓');
+          showCallout('Dock: Horizontal', 'DOCK');
         };
       }
 
@@ -1388,8 +1587,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        const newTop = Math.max(10, Math.min(window.innerHeight - 380, initialTop + (e.clientY - dragStartY)));
-        const newLeft = Math.max(10, Math.min(window.innerWidth - 80, initialLeft + (e.clientX - dragStartX)));
+        const dockH = dockWrapper.offsetHeight || 90;
+        const dockW = dockWrapper.offsetWidth || 50;
+        const newTop = Math.max(10, Math.min(window.innerHeight - dockH - 10, initialTop + (e.clientY - dragStartY)));
+        const newLeft = Math.max(10, Math.min(window.innerWidth - dockW - 10, initialLeft + (e.clientX - dragStartX)));
         dockWrapper.style.top = newTop + 'px';
         dockWrapper.style.left = newLeft + 'px';
         updateDockOrientation();
@@ -1429,6 +1630,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           dockToggle.classList.remove('active');
           showCallout('Inspector Paused', 'OFF', 1500);
           highlight.style.display = 'none';
+          if (typeof clearSelection === 'function') clearSelection();
           hideBands();
           clearDistanceGuides();
           closeTextEditor();
@@ -1544,36 +1746,70 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         dockWrapper.classList.remove('sidebar-open');
       };
 
-      // Flyout Sidebar Mode Switcher
+      // Flyout Sidebar Mode Switcher & Draggable Floating Panel
       const flyoutModeToggle = shadow.getElementById('cp-flyout-mode-toggle');
       const modeSidebarIcon = shadow.getElementById('cp-mode-sidebar-icon');
       const modeFloatIcon = shadow.getElementById('cp-mode-float-icon');
+      const flyoutHeader = shadow.getElementById('cp-flyout-header');
 
+      // Requirement 4: The sidebar by default should be attached for now.
       let flyoutMode = 'sidebar';
       try {
-        flyoutMode = localStorage.getItem('agent-hover-flyout-mode') || 'sidebar';
+        flyoutMode = localStorage.getItem('agent-hover-flyout-mode-v2') || 'sidebar';
       } catch(e) {}
 
       function applyFlyoutMode(mode) {
         flyoutMode = mode;
         try {
-          localStorage.setItem('agent-hover-flyout-mode', mode);
+          localStorage.setItem('agent-hover-flyout-mode-v2', mode);
         } catch(e) {}
 
         if (mode === 'sidebar') {
           flyout.classList.add('is-sidebar');
+          flyout.style.left = '';
+          flyout.style.top = '';
+          flyout.style.right = '';
+          flyout.style.bottom = '';
+          if (flyoutHeader) flyoutHeader.style.cursor = 'default';
           if (modeSidebarIcon) modeSidebarIcon.style.display = 'none';
           if (modeFloatIcon) modeFloatIcon.style.display = 'block';
-          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Switch to Floating Mode');
+          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Detach Sidebar (Float Window)');
           if (flyout.classList.contains('open')) {
             dockWrapper.classList.add('sidebar-open');
           }
         } else {
           flyout.classList.remove('is-sidebar');
+          if (flyoutHeader) flyoutHeader.style.cursor = 'grab';
           if (modeSidebarIcon) modeSidebarIcon.style.display = 'block';
           if (modeFloatIcon) modeFloatIcon.style.display = 'none';
-          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Switch to Sidebar Mode');
+          if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Attach Sidebar (Dock to Edge)');
           dockWrapper.classList.remove('sidebar-open');
+
+          // Position screen-friendly within viewport
+          try {
+            const savedFlyoutPos = localStorage.getItem('agent_hover_flyout_pos');
+            if (savedFlyoutPos) {
+              const parsed = JSON.parse(savedFlyoutPos);
+              const fW = 440;
+              const fH = 600;
+              const maxLeft = Math.max(12, window.innerWidth - fW - 12);
+              const maxTop = Math.max(12, window.innerHeight - fH - 12);
+              const clampedLeft = Math.max(12, Math.min(maxLeft, parseInt(parsed.left, 10) || maxLeft));
+              const clampedTop = Math.max(12, Math.min(maxTop, parseInt(parsed.top, 10) || 60));
+              flyout.style.left = clampedLeft + 'px';
+              flyout.style.top = clampedTop + 'px';
+              flyout.style.right = 'auto';
+            } else {
+              const defaultLeft = Math.max(12, window.innerWidth - 440 - 24);
+              flyout.style.left = defaultLeft + 'px';
+              flyout.style.top = '60px';
+              flyout.style.right = 'auto';
+            }
+          } catch(e) {
+            flyout.style.left = Math.max(12, window.innerWidth - 440 - 24) + 'px';
+            flyout.style.top = '60px';
+            flyout.style.right = 'auto';
+          }
         }
       }
 
@@ -1582,8 +1818,77 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       if (flyoutModeToggle) {
         flyoutModeToggle.onclick = () => {
           applyFlyoutMode(flyoutMode === 'sidebar' ? 'float' : 'sidebar');
+          showCallout(flyoutMode === 'sidebar' ? 'Sidebar: Attached' : 'Sidebar: Detached & Draggable', 'MODE');
         };
       }
+
+      // Detached Draggable Flyout Mechanics (Requirements 2 & 5)
+      let isFlyoutDragging = false;
+      let flyoutDragStartX = 0;
+      let flyoutDragStartY = 0;
+      let flyoutInitialTop = 0;
+      let flyoutInitialLeft = 0;
+
+      if (flyoutHeader) {
+        flyoutHeader.addEventListener('mousedown', (e) => {
+          if (flyout.classList.contains('is-sidebar')) return;
+          if (e.target.closest('button') || e.target.closest('.cp-dock-tile') || e.target.closest('select') || e.target.closest('input')) return;
+
+          isFlyoutDragging = true;
+          flyoutDragStartX = e.clientX;
+          flyoutDragStartY = e.clientY;
+          const rect = flyout.getBoundingClientRect();
+          flyoutInitialTop = rect.top;
+          flyoutInitialLeft = rect.left;
+          flyoutHeader.style.cursor = 'grabbing';
+          e.preventDefault();
+        });
+      }
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isFlyoutDragging || flyout.classList.contains('is-sidebar')) return;
+        const fW = flyout.offsetWidth || 440;
+        const fH = flyout.offsetHeight || 600;
+        const newLeft = flyoutInitialLeft + (e.clientX - flyoutDragStartX);
+        const newTop = flyoutInitialTop + (e.clientY - flyoutDragStartY);
+        const maxLeft = Math.max(12, window.innerWidth - fW - 12);
+        const maxTop = Math.max(12, window.innerHeight - fH - 12);
+        const clampedLeft = Math.max(12, Math.min(maxLeft, newLeft));
+        const clampedTop = Math.max(12, Math.min(maxTop, newTop));
+        flyout.style.left = clampedLeft + 'px';
+        flyout.style.top = clampedTop + 'px';
+        flyout.style.right = 'auto';
+        flyout.style.bottom = 'auto';
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isFlyoutDragging) return;
+        isFlyoutDragging = false;
+        if (flyoutHeader && !flyout.classList.contains('is-sidebar')) {
+          flyoutHeader.style.cursor = 'grab';
+        }
+        try {
+          localStorage.setItem('agent_hover_flyout_pos', JSON.stringify({
+            left: flyout.style.left,
+            top: flyout.style.top
+          }));
+        } catch(e) {}
+      });
+
+      // Window resize bounds keeper
+      window.addEventListener('resize', () => {
+        if (flyout.classList.contains('is-sidebar')) return;
+        const rect = flyout.getBoundingClientRect();
+        const fW = rect.width || 440;
+        const fH = rect.height || 600;
+        const maxLeft = Math.max(12, window.innerWidth - fW - 12);
+        const maxTop = Math.max(12, window.innerHeight - fH - 12);
+        if (rect.left > maxLeft || rect.top > maxTop) {
+          flyout.style.left = Math.max(12, Math.min(maxLeft, rect.left)) + 'px';
+          flyout.style.top = Math.max(12, Math.min(maxTop, rect.top)) + 'px';
+          flyout.style.right = 'auto';
+        }
+      });
 
       // Spacing Overlay Toggle (Opt-in Box Model)
       let showSpacingOverlay = false;
@@ -1608,6 +1913,146 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let lastInfoName = null;
       let lastComputedStyles = null;
 
+      // Selection frame elements (Persistent selection & near-component chip)
+      const selectionFrame = shadow.getElementById('cp-selection-frame');
+      const selectionChip = shadow.getElementById('cp-selection-chip');
+      const selName = shadow.getElementById('cp-sel-name');
+      const selFile = shadow.getElementById('cp-sel-file');
+      const selCopyBtn = shadow.getElementById('cp-sel-copy-btn');
+      const selCopyLabel = shadow.getElementById('cp-sel-copy-label');
+      const selIdeBtn = shadow.getElementById('cp-sel-ide-btn');
+      const selPinBtn = shadow.getElementById('cp-sel-pin-btn');
+      const selCloseBtn = shadow.getElementById('cp-sel-close-btn');
+
+      let selectedTarget = null;
+      let selectedElement = null;
+
+      function clearSelection() {
+        selectedTarget = null;
+        selectedElement = null;
+        selectedRect = null;
+        if (selectionFrame) selectionFrame.style.display = 'none';
+        highlight.classList.remove('selected');
+        clearDistanceGuides();
+      }
+
+      function updateSelectionFrame() {
+        if (!selectedTarget || !selectionFrame) {
+          if (selectionFrame) selectionFrame.style.display = 'none';
+          return;
+        }
+        let rect = null;
+        if (selectedTarget.isDomElement && selectedTarget.element) {
+          rect = selectedTarget.element.getBoundingClientRect();
+        } else if (selectedTarget.fiber) {
+          rect = getComponentBoundingRect(selectedTarget.fiber);
+        } else if (selectedElement) {
+          rect = selectedElement.getBoundingClientRect();
+        }
+        if (!rect || (rect.width === 0 && rect.height === 0)) {
+          selectionFrame.style.display = 'none';
+          return;
+        }
+        selectionFrame.style.display = 'block';
+        selectionFrame.style.top = rect.top + 'px';
+        selectionFrame.style.left = rect.left + 'px';
+        selectionFrame.style.width = rect.width + 'px';
+        selectionFrame.style.height = rect.height + 'px';
+
+        if (rect.top < 36) {
+          selectionChip.classList.add('inside-top');
+        } else {
+          selectionChip.classList.remove('inside-top');
+        }
+
+        if (rect.left < 10) {
+          selectionChip.style.left = '4px';
+          selectionChip.style.right = 'auto';
+        } else if (rect.left + 320 > window.innerWidth) {
+          selectionChip.style.left = 'auto';
+          selectionChip.style.right = '4px';
+        } else {
+          selectionChip.style.left = '-2px';
+          selectionChip.style.right = 'auto';
+        }
+      }
+
+      if (selCloseBtn) {
+        selCloseBtn.onclick = (e) => {
+          e.stopPropagation();
+          clearSelection();
+          flyout.classList.remove('open');
+          dockWrapper.classList.remove('sidebar-open');
+        };
+      }
+
+      if (selCopyBtn) {
+        selCopyBtn.onclick = async (e) => {
+          e.stopPropagation();
+          if (lastCopiedContext) {
+            const promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
+            await navigator.clipboard.writeText(promptText);
+            if (selCopyLabel) selCopyLabel.textContent = 'Copied!';
+            showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', 'COPIED');
+            setTimeout(() => { if (selCopyLabel) selCopyLabel.textContent = 'Copy Prompt'; }, 1600);
+          } else if (selectedTarget) {
+            try {
+              if (selCopyLabel) selCopyLabel.textContent = 'Copying...';
+              const compToResolve = selectedTarget.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
+              const res = await resolveComponent(compToResolve);
+              if (res) {
+                const fetchRes = await fetch(BRIDGE + '/api/context', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ file: res.file, line: res.line, level: 'standard' })
+                });
+                const ctx = await fetchRes.json();
+                lastCopiedContext = ctx;
+                const promptText = formatContextForAiPrompt(ctx, currentStack);
+                await navigator.clipboard.writeText(promptText);
+                if (selCopyLabel) selCopyLabel.textContent = 'Copied!';
+                showCallout('AI Prompt Copied', 'COPIED');
+                setTimeout(() => { if (selCopyLabel) selCopyLabel.textContent = 'Copy Prompt'; }, 1600);
+                return;
+              }
+            } catch(err) {
+              console.error(err);
+            }
+            const fallbackText = 'Target: ' + selectedTarget.name + (lastResolved ? ' (' + lastResolved.file + ':' + lastResolved.line + ')' : '');
+            await navigator.clipboard.writeText(fallbackText);
+            if (selCopyLabel) selCopyLabel.textContent = 'Copied!';
+            showCallout('Copied target', 'COPIED');
+            setTimeout(() => { if (selCopyLabel) selCopyLabel.textContent = 'Copy Prompt'; }, 1600);
+          }
+        };
+      }
+
+      if (selIdeBtn) {
+        selIdeBtn.onclick = (e) => {
+          e.stopPropagation();
+          openInEditor();
+        };
+      }
+
+      if (selPinBtn) {
+        selPinBtn.onclick = async (e) => {
+          e.stopPropagation();
+          const targetToPin = selectedTarget?.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
+          const resolved = lastResolved || (targetToPin ? await resolveComponent(targetToPin) : null);
+          if (resolved) {
+            await fetch(BRIDGE + '/api/pin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
+            });
+            showCallout('Pinned ' + (targetToPin?.name || 'Component'), 'PIN');
+            refreshState();
+          } else {
+            showCallout('Could not resolve file', 'ERROR');
+          }
+        };
+      }
+
       shadow.getElementById('cp-context-level').addEventListener('change', async () => {
         refreshState();
         if (flyout.classList.contains('open') && lastResolved && lastInfoName) {
@@ -1623,8 +2068,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
             await navigator.clipboard.writeText(promptText);
             const originalHtml = copyAiBtn.innerHTML;
-            copyAiBtn.innerHTML = '✓ Copied!';
-            showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', '✓');
+            copyAiBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+            showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', 'COPIED');
             setTimeout(() => { copyAiBtn.innerHTML = originalHtml; }, 1600);
           } else {
             showCallout('Select a component first', 'TIP');
@@ -1632,34 +2077,105 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
+      // Vibe Prompt Starters Click Handler
+      const vibePromptsContainer = shadow.getElementById('cp-vibe-prompts');
+      if (vibePromptsContainer) {
+        vibePromptsContainer.onclick = async (e) => {
+          const btn = e.target.closest('.cp-vibe-chip');
+          if (!btn) return;
+          const vibeType = btn.getAttribute('data-vibe');
+
+          let targetCtx = lastCopiedContext;
+          if (!targetCtx && selectedTarget) {
+            try {
+              const compToResolve = selectedTarget.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
+              const res = await resolveComponent(compToResolve);
+              if (res) {
+                const fetchRes = await fetch(BRIDGE + '/api/context', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ file: res.file, line: res.line, level: 'standard' })
+                });
+                targetCtx = await fetchRes.json();
+                lastCopiedContext = targetCtx;
+              }
+            } catch(err) {}
+          }
+
+          const compName = targetCtx?.component?.name || selectedTarget?.name || 'Component';
+          const filePath = targetCtx?.source?.file || lastResolved?.file || '';
+          const lineNum = targetCtx?.source?.startLine || lastResolved?.line || '';
+          const locStr = filePath ? ' (' + filePath + (lineNum ? ':' + lineNum : '') + ')' : '';
+
+          let taskDesc = '';
+          if (vibeType === 'redesign') {
+            taskDesc = 'Please modernize and redesign <' + compName + ' />' + locStr + ' with a sleek, premium UI aesthetic. Keep existing props and functionality intact while elevating spacing, typography, colors, and micro-interactions.';
+          } else if (vibeType === 'responsive') {
+            taskDesc = 'Please make <' + compName + ' />' + locStr + ' fully responsive across mobile, tablet, and desktop screens. Ensure flex and grid layouts wrap naturally and font sizes adapt seamlessly.';
+          } else if (vibeType === 'theme') {
+            taskDesc = 'Please restyle <' + compName + ' />' + locStr + ' to harmonize colors, contrast, and visual hierarchy. Refine backgrounds, borders, and text contrast.';
+          } else if (vibeType === 'refactor') {
+            taskDesc = 'Please refactor <' + compName + ' />' + locStr + ' for cleaner structure, optimal React rendering performance, and strict TypeScript types while preserving exact behavior.';
+          }
+
+          const nl = String.fromCharCode(10);
+          let promptText = '### Vibe Task: ' + taskDesc + nl + nl;
+          if (targetCtx) {
+            promptText += formatContextForAiPrompt(targetCtx, currentStack);
+          } else {
+            promptText += '- Target: <' + compName + ' />' + locStr;
+          }
+
+          await navigator.clipboard.writeText(promptText);
+          const origHtml = btn.innerHTML;
+          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+          showCallout('Prompt Copied for AI', 'COPIED');
+          setTimeout(() => { btn.innerHTML = origHtml; }, 1600);
+        };
+      }
+
       async function openInEditor() {
-        if (lastCopiedContext && lastCopiedContext.source) {
+        const targetSource = lastCopiedContext?.source || (lastResolved ? { absolutePath: lastResolved.file, startLine: lastResolved.line } : null);
+        if (targetSource) {
           try {
             const btn = shadow.getElementById('cp-editor-btn');
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = 'Opening...';
+            const originalContent = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = 'Opening...';
             showCallout('Opening in IDE...', currentEditorPref || '${editor}');
             const res = await fetch(BRIDGE + '/api/open-editor', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                file: lastCopiedContext.source.absolutePath,
-                line: lastCopiedContext.source.startLine,
+                file: targetSource.absolutePath || targetSource.file,
+                line: targetSource.startLine || targetSource.line || 1,
                 editor: currentEditorPref || '${editor}'
               })
             });
             const data = await res.json();
             if (!res.ok || data.error) {
-              showCallout('Failed to open editor', '✗');
+              showCallout('Failed to open editor', 'ERROR');
             } else {
-              showCallout('Opened in IDE', '✓');
+              showCallout('Opened in IDE', 'IDE');
             }
-            btn.innerHTML = originalContent;
+            if (btn) btn.innerHTML = originalContent;
           } catch(e) {
             console.error('[agent-hover] Failed to open editor:', e);
-            showCallout('Bridge server connection failed', '✗');
-            shadow.getElementById('cp-editor-btn').innerHTML = ICONS.code + ' Open in IDE';
+            showCallout('Bridge server connection failed', 'ERROR');
+            const btn = shadow.getElementById('cp-editor-btn');
+            if (btn) btn.innerHTML = ICONS.code + ' Open in IDE';
           }
+        } else if (selectedTarget) {
+          const compToResolve = selectedTarget.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
+          resolveComponent(compToResolve).then(res => {
+            if (res) {
+              lastResolved = res;
+              openInEditor();
+            } else {
+              showCallout('Could not resolve file', 'ERROR');
+            }
+          });
+        } else {
+          showCallout('Select a component first', 'TIP');
         }
       }
 
@@ -1674,10 +2190,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const compName = lastCopiedContext.component.name;
         const componentId = lastCopiedContext.source.file + ':' + compName;
         
-        btn.innerHTML = '⏳ Capturing...';
+        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Capturing...';
         const dataUrl = await captureElement(currentElement);
         if (!dataUrl) {
-          btn.innerHTML = '❌ Failed';
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Failed';
           setTimeout(() => btn.innerHTML = ICONS.camera + ' Track Visuals', 2000);
           return;
         }
@@ -1727,20 +2243,20 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const btn = shadow.getElementById('cp-tracker-capture');
         const el = findComponentElement(screenshotState.componentName);
         if (!el) {
-          btn.innerHTML = '❌ Component not in DOM';
-          setTimeout(() => btn.innerHTML = '📸 Capture After & Diff', 2000);
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Component not in DOM';
+          setTimeout(() => btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff', 2000);
           return;
         }
         
-        btn.innerHTML = '⏳ Capturing...';
+        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Capturing...';
         const dataUrl = await captureElement(el);
         if (!dataUrl) {
-          btn.innerHTML = '❌ Failed';
-          setTimeout(() => btn.innerHTML = '📸 Capture After & Diff', 2000);
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Failed';
+          setTimeout(() => btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff', 2000);
           return;
         }
         
-        btn.innerHTML = '⏳ Diffing...';
+        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Diffing...';
         const diffResult = await generatePixelDiff(screenshotState.beforeDataUrl, dataUrl);
         const rect = el.getBoundingClientRect();
         const beforeRect = { top: 0, left: 0, width: 0, height: 0 };
@@ -1768,15 +2284,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           })
         }).catch(e => console.error(e));
         
-        btn.innerHTML = '📸 Capture After & Diff';
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff';
         shadow.getElementById('cp-tracker').style.display = 'none';
         
         const pct = diffResult.changedPixelPercent;
         let badgeClass = 'cp-badge-emerald';
-        let badgeText = '✅ No change (0%)';
-        if (pct > 0 && pct < 0.5) { badgeClass = 'cp-badge-muted'; badgeText = '⚠️ Minimal (' + pct + '%)'; }
-        else if (pct >= 0.5 && pct < 10) { badgeClass = 'cp-badge-accent'; badgeText = '🔄 Changed (' + pct + '%)'; }
-        else if (pct >= 10) { badgeClass = 'cp-badge-rose'; badgeText = '🔴 Significant (' + pct + '%)'; }
+        let badgeText = 'No change (0%)';
+        if (pct > 0 && pct < 0.5) { badgeClass = 'cp-badge-muted'; badgeText = 'Minimal (' + pct + '%)'; }
+        else if (pct >= 0.5 && pct < 10) { badgeClass = 'cp-badge-accent'; badgeText = 'Changed (' + pct + '%)'; }
+        else if (pct >= 10) { badgeClass = 'cp-badge-rose'; badgeText = 'Significant (' + pct + '%)'; }
         
         shadow.getElementById('cp-modal-name').innerText = screenshotState.componentName;
         shadow.getElementById('cp-modal-badge').innerHTML = '<span class="cp-badge ' + badgeClass + '">' + badgeText + '</span>';
@@ -1836,7 +2352,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const level = shadow.getElementById('cp-context-level')?.value || 'standard';
         const btn = shadow.getElementById('cp-gen-task');
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '⏳ Generating...';
+        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...';
         btn.disabled = true;
         try {
           const res = await fetch(BRIDGE + '/api/task', {
@@ -1846,12 +2362,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           });
           const data = await res.json();
           await navigator.clipboard.writeText(data.context || JSON.stringify(data, null, 2));
-          showCallout('Task brief copied (' + (data.tokenCost || '?') + ' tokens)', '✓');
-          btn.innerHTML = '✓ Copied!';
+          showCallout('Task brief copied (' + (data.tokenCost || '?') + ' tokens)', 'COPIED');
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
           if (taskInput) taskInput.value = '';
           setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 1600);
         } catch(e) {
-          showCallout('Failed to generate task context', '✗');
+          showCallout('Failed to generate task context', 'ERROR');
           btn.innerHTML = originalHtml;
           btn.disabled = false;
         }
@@ -2361,12 +2877,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             });
             const data = await res.json();
             if (applyBtn) {
-              applyBtn.textContent = '💾 Commit to Source';
+              applyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Save to Code';
               applyBtn.disabled = false;
             }
             if (data.success) {
               const fileBase = textEditTargetFile.split('/').pop();
-              showCallout('✓ Saved to ' + fileBase + ' (HMR reloaded)', 'SOURCE');
+              showCallout('Saved to ' + fileBase + ' (HMR reloaded)', 'SOURCE');
               textEditTarget.textContent = newText;
               closeTextEditor();
               return;
@@ -2376,7 +2892,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             }
           } catch (e) {
             if (applyBtn) {
-              applyBtn.textContent = '💾 Commit to Source';
+              applyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Save to Code';
               applyBtn.disabled = false;
             }
             console.error('[agent-hover] Error calling /api/edit-source:', e);
@@ -2389,7 +2905,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         textEdits.set(textEditTarget, { originalHTML: textEditOriginalHTML, currentHTML: newHTML });
         updateEditedIndicators();
         saveTextEditsToSession();
-        showCallout('DOM updated ✓', 'EDIT');
+        showCallout('DOM updated', 'EDIT');
         closeTextEditor();
       }
 
@@ -2403,7 +2919,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const data = await res.json();
           if (revertBtn) revertBtn.disabled = false;
           if (data.success) {
-            showCallout('↩ ' + (data.description || 'Source change reverted'), 'UNDO');
+            showCallout((data.description || 'Source change reverted'), 'UNDO');
             closeTextEditor();
             return;
           }
@@ -2641,9 +3157,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
           flyout.classList.remove('open');
           dockWrapper.classList.remove('sidebar-open');
-          highlight.classList.remove('selected');
-          selectedRect = null;
-          clearDistanceGuides();
+          if (typeof clearSelection === 'function') clearSelection();
           shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
@@ -2672,9 +3186,23 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         hoverRafPending = true;
         requestAnimationFrame(() => {
           hoverRafPending = false;
+
+          // Check if cursor is over Agent Hover UI
+          const path = e.composedPath ? e.composedPath() : [];
+          const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
+          if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) {
+            highlight.style.display = 'none';
+            hideBands();
+            return;
+          }
+
           const el = document.elementFromPoint(e.clientX, e.clientY);
-          if (!el || el === currentElement) return;
-          if (el.closest && el.closest('#agent-hover-root')) return;
+          if (!el || (el.closest && el.closest('#agent-hover-root'))) {
+            highlight.style.display = 'none';
+            hideBands();
+            return;
+          }
+          if (el === currentElement) return;
           currentElement = el;
 
           // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
@@ -2682,20 +3210,26 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           currentStackIndex = 0; // Default to exact element under cursor!
 
           // If a selection is active, show measurement guides between selected and hovered
-          if (selectedRect && highlight.classList.contains('selected')) {
+          if (selectedRect) {
             const hoveredRect = el.getBoundingClientRect();
             renderDistanceGuides(selectedRect, hoveredRect);
           } else {
             clearDistanceGuides();
           }
 
-          highlight.classList.remove('selected');
-          highlightComponent(currentStack[0], false);
+          // If hovering over the selected element, hide the hover preview so borders don't double
+          if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
+            highlight.style.display = 'none';
+            hideBands();
+          } else {
+            highlightComponent(currentStack[0], false);
+          }
         });
       });
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
+        if (typeof updateSelectionFrame === 'function') updateSelectionFrame();
         if (!currentComponentInfo || highlight.style.display === 'none') return;
         const target = currentStack[currentStackIndex] || currentComponentInfo;
 
@@ -2815,7 +3349,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       // --- Click to Inspect ---
       window.addEventListener('click', async (e) => {
         if (!isPointerMode) return;
-        if (e.target && e.target.closest && e.target.closest('#agent-hover-root')) return;
+        const path = e.composedPath ? e.composedPath() : [];
+        const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
+        if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) return;
         
         e.preventDefault();
         e.stopPropagation();
@@ -2829,7 +3365,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
         }
         if (!currentStack || currentStack.length === 0) return;
-        const target = currentStack[currentStackIndex] || currentStack[0];
+
+        // Default to innermost React component if present (index 1), else DOM element (0)
+        let targetIndex = 0;
+        if (currentStack.length > 1) {
+          targetIndex = 1;
+        }
+        const target = currentStack[targetIndex] || currentStack[0];
 
         // Raw elements can't be frozen/pinned
         if (!target.isDomElement) {
@@ -2863,7 +3405,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
         }
 
-        await renderFlyoutForStackIndex(currentStackIndex >= 0 ? currentStackIndex : 0);
+        await renderFlyoutForStackIndex(targetIndex);
       }, true);
 
       async function renderFlyoutForStackIndex(index) {
@@ -2871,7 +3413,30 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         currentStackIndex = index;
         const item = currentStack[index];
         currentComponentInfo = item;
-        highlightComponent(item, index > 0);
+
+        // Lock persistent selection frame on the selected element/component
+        selectedTarget = item;
+        selectedElement = item.element || currentElement;
+        updateSelectionFrame();
+
+        // Update selection chip text
+        if (selName) {
+          selName.textContent = item.isDomElement ? item.name : '<' + item.name + ' />';
+        }
+        if (selFile) {
+          if (item.source) {
+            const shortFile = item.source.fileName.split('/').slice(-2).join('/');
+            selFile.textContent = shortFile + ':' + item.source.lineNumber;
+          } else if (currentStack.length > 1 && currentStack[1].source) {
+            const shortFile = currentStack[1].source.fileName.split('/').slice(-2).join('/');
+            selFile.textContent = shortFile + ':' + currentStack[1].source.lineNumber;
+          } else {
+            selFile.textContent = '';
+          }
+        }
+
+        // Hide hover highlight because selection frame is now displayed
+        highlight.style.display = 'none';
 
         // Store the selected element's rect for measurement guides
         if (item.isDomElement && item.element) {
@@ -2887,7 +3452,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (flyout.classList.contains('is-sidebar')) {
           dockWrapper.classList.add('sidebar-open');
         }
-        highlight.classList.add('selected');
 
         // Render interactive breadcrumbs
         const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
@@ -2899,7 +3463,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const style = isActive
               ? 'color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:var(--accent-subtle);'
               : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
-            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + c.name + '</span>');
+            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + (c.isDomElement ? c.name : '<' + c.name + ' />') + '</span>');
           }
           breadcrumbEl.innerHTML = crumbs.join('<span style="color:var(--text-muted); margin:0 2px; font-size:10px;">›</span>');
           breadcrumbEl.style.display = 'block';
@@ -2927,7 +3491,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           html += '<span class="cp-badge cp-badge-accent">' + el.tagName.toLowerCase() + '</span> ';
           if (el.id) html += '<span class="cp-badge cp-badge-emerald">#' + el.id + '</span> ';
           if (el.className && typeof el.className === 'string') {
-            const cls = el.className.trim().split(/\\s+/).slice(0, 5);
+            const cls = el.className.trim().split(/\\s+/).slice(0, 6);
             if (cls.length && cls[0]) {
               cls.forEach(function(c) {
                 html += '<span class="cp-badge cp-badge-muted">.' + c + '</span> ';
@@ -2939,23 +3503,40 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           // If inside a React component, link to the parent component
           if (currentStack.length > 1) {
             const parentComp = currentStack[1];
-            html += '<div class="cp-section" style="background:var(--accent-subtle); border:1px solid var(--border-accent); border-radius:8px; padding:10px 14px; margin-bottom:14px;">';
-            html += '<div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;">Rendered In Component</div>';
-            html += '<div style="font-size:13px; font-weight:600; color:var(--accent); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
+            html += '<div class="cp-section" id="cp-parent-comp-card" style="background:var(--accent-subtle); border:1px solid var(--border-accent); border-radius:8px; padding:10px 14px; margin-bottom:14px; cursor:pointer;" title="Click to view component">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+            html += '<span style="font-size:10.5px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;">Rendered In Component</span>';
+            html += '<span style="font-size:10.5px; color:var(--accent); font-weight:600;">Inspect Component ›</span>';
+            html += '</div>';
+            html += '<div style="font-size:14px; font-weight:700; color:var(--accent); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
             if (parentComp.source) {
-              html += '<div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-top:4px;">' + parentComp.source.fileName + ':' + parentComp.source.lineNumber + '</div>';
+              html += '<div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-top:3px;">' + parentComp.source.fileName + ':' + parentComp.source.lineNumber + '</div>';
               lastResolved = { file: parentComp.source.fileName, line: parentComp.source.lineNumber };
             }
             html += '</div>';
           }
 
-          // Text content preview
-          const text = el.textContent ? el.textContent.trim() : '';
+          // Text content preview (leaf or concise direct text only, avoid whole-page dump)
+          let text = '';
+          if (el.children.length === 0) {
+            text = el.textContent ? el.textContent.trim() : '';
+          } else {
+            let directText = '';
+            for (let i = 0; i < el.childNodes.length; i++) {
+              if (el.childNodes[i].nodeType === 3) {
+                directText += el.childNodes[i].textContent.trim() + ' ';
+              }
+            }
+            text = directText.trim();
+          }
           if (text) {
+            if (text.length > 150) text = text.slice(0, 150) + '...';
             html += '<details class="cp-section" open>';
             html += '<summary class="cp-section-title">Text Content</summary>';
-            html += '<div style="margin-top:6px; font-size:12px; color:var(--text-secondary); word-break:break-word; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:6px; font-family:var(--font-mono);">' + escapeHtml(text) + '</div>';
+            html += '<div style="margin-top:6px; font-size:12px; color:var(--text-secondary); word-break:break-word; max-height:100px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:6px; font-family:var(--font-mono);">' + escapeHtml(text) + '</div>';
             html += '</details>';
+          } else if (el.children.length > 0) {
+            html += '<div style="margin-bottom:12px; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">' + el.children.length + ' child element' + (el.children.length > 1 ? 's' : '') + '</div>';
           }
 
           // Attributes
@@ -2971,36 +3552,66 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '</table></details>';
           }
 
-          // Computed styles box model
+          // Compact visual layout metrics
           if (computedStyles && Object.keys(computedStyles).length > 0) {
             html += '<details class="cp-section" open>';
-            html += '<summary class="cp-section-title">Computed Box Model</summary>';
-            html += '<div class="cp-box-model">';
-            html += '<div style="margin-bottom:4px; color:var(--text-muted);">margin: ' + computedStyles.margin + '</div>';
-            html += '<div style="border:1px dashed #475569; padding:8px; margin:4px; display:inline-block; border-radius:6px;">';
-            html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
-            html += '<div style="border:1px solid var(--border-glass); padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
-            html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
-            html += '<div style="background:var(--accent-subtle); border:1px solid var(--border-accent); padding:8px 12px; display:inline-block; color:var(--text-primary); border-radius:4px; font-weight:600;">';
-            html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
-            html += '</div></div></div></div>';
-            html += '<div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; font-family:var(--font-mono);">';
+            html += '<summary class="cp-section-title">Layout & Dimensions</summary>';
+            html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; font-family:var(--font-mono); background:var(--bg-surface-sunken); padding:10px; border-radius:8px; border:1px solid var(--border-subtle);">';
+            html += '<div><span style="color:var(--text-muted);">size:</span> <strong style="color:var(--text-primary);">' + Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height)) + '</strong></div>';
             html += '<div><span style="color:var(--text-muted);">display:</span> ' + computedStyles.display + '</div>';
-            html += '<div><span style="color:var(--text-muted);">position:</span> ' + computedStyles.position + '</div>';
+            html += '<div><span style="color:var(--text-muted);">padding:</span> ' + computedStyles.padding + '</div>';
+            html += '<div><span style="color:var(--text-muted);">margin:</span> ' + computedStyles.margin + '</div>';
             if (computedStyles.display && computedStyles.display.includes('flex')) {
               html += '<div><span style="color:var(--text-muted);">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
               html += '<div><span style="color:var(--text-muted);">gap:</span> ' + computedStyles.gap + '</div>';
             }
-            html += '<div><span style="color:var(--text-muted);">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
-            html += '<div><span style="color:var(--text-muted);">bg:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.backgroundColor + '; margin-right:4px;"></span>' + computedStyles.backgroundColor + '</div>';
+            if (computedStyles.color) {
+              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">color:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.color + '; border:1px solid rgba(255,255,255,0.2);"></span>' + computedStyles.color + '</div>';
+            }
+            if (computedStyles.backgroundColor && computedStyles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">bg:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.backgroundColor + '; border:1px solid rgba(255,255,255,0.2);"></span>' + computedStyles.backgroundColor + '</div>';
+            }
             html += '</div></details>';
           }
 
           flyoutContent.innerHTML = html;
 
-          if (currentStack.length > 1 && !lastResolved) {
-            resolveComponent(currentStack[1]).then(res => {
-              if (res) lastResolved = res;
+          const parentCard = shadow.getElementById('cp-parent-comp-card');
+          if (parentCard) {
+            parentCard.onclick = () => renderFlyoutForStackIndex(1);
+          }
+
+          // Fetch parent component context in background so tokens and copy context are ready!
+          if (currentStack.length > 1) {
+            resolveComponent(currentStack[1]).then(async (resolved) => {
+              if (resolved) {
+                lastResolved = resolved;
+                try {
+                  const level = shadow.getElementById('cp-context-level')?.value || 'standard';
+                  const res = await fetch(BRIDGE + '/api/context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file: resolved.file, line: resolved.line, level })
+                  });
+                  const ctx = await res.json();
+                  lastCopiedContext = ctx;
+                  const tokenCountEl = shadow.getElementById('cp-token-count');
+                  const tokenSavingsEl = shadow.getElementById('cp-token-savings');
+                  if (tokenCountEl && ctx.tokens) {
+                    tokenCountEl.textContent = ctx.tokens.current || 0;
+                  }
+                  if (tokenSavingsEl && ctx.tokens) {
+                    const fullTokens = ctx.tokens.full || 0;
+                    const curTokens = ctx.tokens.current || 0;
+                    if (fullTokens > curTokens && fullTokens > 0) {
+                      const saved = Math.round((1 - curTokens / fullTokens) * 100);
+                      tokenSavingsEl.textContent = saved + '% smaller than full';
+                    } else {
+                      tokenSavingsEl.textContent = 'prompt-ready';
+                    }
+                  }
+                } catch(e) {}
+              }
             });
           }
         } else {
@@ -3072,7 +3683,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<summary class="cp-section-title">Props (' + ctx.interface.props.length + ')</summary>';
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Type</th><th>Req</th></tr>';
             ctx.interface.props.forEach(function(p) {
-              html += '<tr><td style="color:var(--accent);">' + p.name + '</td><td style="color:var(--text-secondary);">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '✓' : '—') + '</td></tr>';
+              html += '<tr><td style="color:var(--accent);">' + p.name + '</td><td style="color:var(--text-secondary);">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '—') + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -3124,7 +3735,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<details class="cp-section" open>';
             html += '<summary class="cp-section-title" style="display:flex; justify-content:space-between; align-items:center;">';
             html += '<span>Component Source</span>';
-            html += '<button class="cp-btn-bento" id="cp-toggle-source-editor" style="font-size:10.5px; padding:2px 8px; border-radius:4px; margin-left:auto;">✏️ Edit Source</button>';
+            html += '<button class="cp-btn-bento" id="cp-toggle-source-editor" style="font-size:10.5px; padding:2px 8px; border-radius:4px; margin-left:auto; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit Source</button>';
             html += '</summary>';
             html += '<div id="cp-source-preview-box">';
             html += '<div class="cp-code" id="cp-source-code-display">' + escapeHtml(ctx.source.code) + '</div>';
@@ -3137,8 +3748,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<textarea id="cp-source-code-editor" spellcheck="false"></textarea>';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">';
             html += '<div style="display:flex; gap:6px;">';
-            html += '<button class="cp-btn-bento primary" id="cp-source-save-btn" style="padding:5px 12px; font-size:11px; display:flex; align-items:center; gap:4px;">💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd></button>';
-            html += '<button class="cp-btn-bento" id="cp-source-undo-btn" style="padding:5px 10px; font-size:11px;">↩ Undo</button>';
+            html += '<button class="cp-btn-bento primary" id="cp-source-save-btn" style="padding:5px 12px; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">Cmd+S</kbd></button>';
+            html += '<button class="cp-btn-bento" id="cp-source-undo-btn" style="padding:5px 10px; font-size:11px; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Undo</button>';
             html += '</div>';
             html += '<button class="cp-btn-bento" id="cp-source-cancel-btn" style="padding:5px 8px; font-size:11px;">Close</button>';
             html += '</div>';
@@ -3167,12 +3778,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               if (isEditing) {
                 editorBox.style.display = 'none';
                 previewBox.style.display = 'block';
-                toggleEditorBtn.textContent = '✏️ Edit Source';
+                toggleEditorBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit Source';
               } else {
                 codeTextarea.value = ctx.source.code;
                 editorBox.style.display = 'block';
                 previewBox.style.display = 'none';
-                toggleEditorBtn.textContent = '👁️ Preview';
+                toggleEditorBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview';
                 if (saveStatus) saveStatus.textContent = '';
                 setTimeout(() => codeTextarea.focus(), 50);
               }
@@ -3183,7 +3794,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 e.preventDefault();
                 editorBox.style.display = 'none';
                 previewBox.style.display = 'block';
-                toggleEditorBtn.textContent = '✏️ Edit Source';
+                toggleEditorBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit Source';
               };
             }
 
@@ -3211,7 +3822,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 });
                 const data = await res.json();
                 saveSourceBtn.disabled = false;
-                saveSourceBtn.innerHTML = '💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd>';
+                saveSourceBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">Cmd+S</kbd>';
 
                 if (data.success) {
                   ctx.source.code = newSource;
@@ -3219,9 +3830,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                   if (displayEl) displayEl.textContent = newSource;
                   if (saveStatus) {
                     saveStatus.style.color = '#34d399';
-                    saveStatus.textContent = '✓ Saved to disk & HMR reloaded!';
+                    saveStatus.textContent = 'Saved to disk & HMR reloaded!';
                   }
-                  showCallout('✓ ' + infoName + ' saved to disk — HMR reloaded', 'SOURCE');
+                  showCallout(infoName + ' saved to disk — HMR reloaded', 'SOURCE');
                 } else {
                   if (saveStatus) {
                     saveStatus.style.color = '#fb7185';
@@ -3231,7 +3842,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 }
               } catch (err) {
                 saveSourceBtn.disabled = false;
-                saveSourceBtn.innerHTML = '💾 Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">⌘S</kbd>';
+                saveSourceBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Component <kbd style="opacity:0.6; font-size:9px; background:rgba(255,255,255,0.15); padding:1px 3px; border-radius:2px;">Cmd+S</kbd>';
                 if (saveStatus) {
                   saveStatus.style.color = '#fb7185';
                   saveStatus.textContent = 'Error: ' + err.message;
@@ -3278,9 +3889,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                   if (data.success) {
                     if (saveStatus) {
                       saveStatus.style.color = '#34d399';
-                      saveStatus.textContent = '↩ ' + (data.description || 'Reverted');
+                      saveStatus.textContent = data.description || 'Reverted';
                     }
-                    showCallout('↩ ' + (data.description || 'Reverted change'), 'UNDO');
+                    showCallout(data.description || 'Reverted change', 'UNDO');
                     // Reload component context to refresh source snippet
                     loadComponentContext(infoName, resolved, computedStyles);
                   } else {
@@ -3432,7 +4043,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
             
             savingsDiv.style.display = 'block';
-            savingsDiv.innerHTML = '⚡ Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
+            savingsDiv.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent); display:inline-block; vertical-align:middle; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
           } else {
             savingsDiv.style.display = 'none';
           }
@@ -3530,7 +4141,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       })
       .catch(e => refreshState());
 
-      console.log('[agent-hover] ✓ Ready');
+      console.log('[agent-hover] Ready');
     })();
   `;
 }
