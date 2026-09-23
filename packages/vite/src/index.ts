@@ -642,15 +642,15 @@ const UI_HTML = `
             border-color: var(--frame-raw);
           }
 
-          /* Box-model dashed frame bands (Design-Mode style) */
+          /* Box-model continuous frame bands (DevTools / Figma style) */
           #cp-margin-band {
             position: fixed;
             pointer-events: none;
             z-index: 999990;
             box-sizing: border-box;
-            background: rgba(244, 63, 94, 0.05);
-            border-style: dashed;
-            border-color: rgba(244, 63, 94, 0.7);
+            background: transparent;
+            border-style: solid;
+            border-color: rgba(244, 63, 94, 0.25);
             border-width: 0;
             display: none;
           }
@@ -659,9 +659,9 @@ const UI_HTML = `
             pointer-events: none;
             z-index: 999990;
             box-sizing: border-box;
-            background: rgba(52, 211, 153, 0.06);
-            border-style: dashed;
-            border-color: rgba(52, 211, 153, 0.7);
+            background: transparent;
+            border-style: solid;
+            border-color: rgba(52, 211, 153, 0.28);
             border-width: 0;
             display: none;
           }
@@ -1866,7 +1866,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (!cursorStyle) {
           cursorStyle = document.createElement('style');
           cursorStyle.id = 'cp-inspector-cursor';
-          cursorStyle.textContent = 'html.cp-inspector-active, html.cp-inspector-active * { cursor: url("data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\' fill=\\'%230d99ff\\' stroke=\\'%23ffffff\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'%3E%3Cpath d=\\'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\\'/%3E%3C/svg%3E") 4 5, crosshair !important; } #agent-hover-root, #agent-hover-root * { cursor: auto; }';
+          cursorStyle.textContent = 'html.cp-inspector-active, html.cp-inspector-active * { cursor: url("data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\' fill=\\'%231e1e1e\\' stroke=\\'%23ffffff\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'%3E%3Cpath d=\\'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\\'/%3E%3C/svg%3E") 4 5, crosshair !important; } #agent-hover-root, #agent-hover-root * { cursor: auto; }';
           document.head.appendChild(cursorStyle);
         }
         if (active) {
