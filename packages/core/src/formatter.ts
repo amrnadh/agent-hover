@@ -81,7 +81,35 @@ export function formatTaskContext(
   instruction: string,
   frozenEntries: FreezeEntry[] = []
 ): TaskContext {
-  const contextMd = formatPinSetMarkdown(pinSet);
+  let fullContext = `# Coordinated Multi-Component Task Brief\n\n`;
+  if (instruction && instruction.trim()) {
+    fullContext += `**Goal**: ${instruction.trim()}\n\n`;
+  }
+
+  fullContext += `Please execute the following tasks in the order listed:\n\n`;
+
+  pinSet.pins.forEach((pin, index) => {
+    const num = index + 1;
+    const name = pin.context.component.name;
+    const src = `${pin.context.source.file}:${pin.context.source.startLine}-${pin.context.source.endLine}`;
+    fullContext += `### ${num}. <${name} /> (\`${src}\`)\n`;
+    if (pin.task && pin.task.trim()) {
+      fullContext += `**Task / Requested Change**:\n> ${pin.task.trim()}\n\n`;
+    } else {
+      fullContext += `**Task / Requested Change**: Refactor/update according to main goal.\n\n`;
+    }
+
+    if (pin.context.interface?.props && pin.context.interface.props.length > 0) {
+      const propStr = pin.context.interface.props
+        .map(p => `${p.name}: \`${p.type}\`${p.required ? ' (req)' : ''}`)
+        .join(', ');
+      fullContext += `- **Props**: ${propStr}\n`;
+    }
+
+    if (pin.context.source.code) {
+      fullContext += `\n\`\`\`tsx\n${pin.context.source.code}\n\`\`\`\n\n`;
+    }
+  });
 
   const frozenFiles: FrozenFileDirective[] = frozenEntries.map(f => ({
     file: f.file,
@@ -89,9 +117,8 @@ export function formatTaskContext(
     reason: 'Developer has explicitly frozen this component — it is working correctly and MUST NOT be modified.',
   }));
 
-  let fullContext = contextMd;
   if (frozenFiles.length > 0) {
-    fullContext += `\n\n## [LOCKED] FROZEN COMPONENTS — DO NOT MODIFY\n\n`;
+    fullContext += `\n## [LOCKED] FROZEN COMPONENTS — DO NOT MODIFY\n\n`;
     fullContext += `The following components have been explicitly locked by the developer. `;
     fullContext += `They are working correctly and **MUST NOT be edited, moved, renamed, or have their imports changed**:\n\n`;
     for (const f of frozenFiles) {

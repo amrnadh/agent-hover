@@ -74,6 +74,20 @@ export interface ComponentContext {
 export interface PinEntry {
   id: string;
   context: ComponentContext;
+  task?: string;
+  order?: number;
+  addedAt?: string;
+}
+
+export interface ElementComment {
+  id: string;
+  file?: string;
+  line?: number;
+  component?: string;
+  selector?: string;
+  text: string;
+  createdAt: string;
+  resolved?: boolean;
 }
 
 export interface PinSet {

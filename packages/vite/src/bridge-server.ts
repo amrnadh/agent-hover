@@ -3,6 +3,9 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import { exec } from 'child_process';
+import path from 'path';
+import fs from 'fs/promises';
+import { readFileSync, existsSync } from 'fs';
 import {
   ContextBuilder,
   RelationshipResolver,
@@ -19,7 +22,8 @@ import type {
   FreezeEntry,
   ComputedStyleInfo,
   ScreenshotSnapshot,
-  ScreenshotDiff
+  ScreenshotDiff,
+  ElementComment
 } from '@agent-hover/core';
 
 export class BridgeServer {
@@ -34,6 +38,7 @@ export class BridgeServer {
   private sourceEditor: SourceEditor;
   private pins: PinEntry[] = [];
   private frozenEntries: FreezeEntry[] = [];
+  private comments: ElementComment[] = [];
   private computedStyles: Map<string, ComputedStyleInfo> = new Map();
   private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
   private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
@@ -49,7 +54,34 @@ export class BridgeServer {
     this.relationshipResolver = new RelationshipResolver(projectRoot);
     this.sourceEditor = new SourceEditor(projectRoot);
 
+    this.loadComments();
     this.setupRoutes();
+  }
+
+  private get commentsFilePath(): string {
+    return path.join(this.projectRoot, '.agent-hover', 'comments.json');
+  }
+
+  private loadComments() {
+    try {
+      if (existsSync(this.commentsFilePath)) {
+        const content = readFileSync(this.commentsFilePath, 'utf-8');
+        this.comments = JSON.parse(content);
+      } else {
+        this.comments = [];
+      }
+    } catch {
+      this.comments = [];
+    }
+  }
+
+  private async saveComments() {
+    try {
+      await fs.mkdir(path.dirname(this.commentsFilePath), { recursive: true });
+      await fs.writeFile(this.commentsFilePath, JSON.stringify(this.comments, null, 2), 'utf-8');
+    } catch (e) {
+      console.error('[agent-hover] Failed to save comments to disk:', e);
+    }
   }
 
   private getPinSet(): PinSet {
@@ -254,31 +286,43 @@ export class BridgeServer {
     // Manage pins
     this.app.post('/api/pin', async (req, res) => {
       try {
-        const { action, file, line } = req.body;
+        const { action, file, line, task, id } = req.body;
 
         if (action === 'clear') {
           this.pins = [];
         } else if (action === 'add' && file && line !== undefined) {
-          // Check if already pinned
-          const exists = this.pins.some(
-            (p) => p.context.source.file === file
-          );
-          if (!exists) {
+          const pinId = id || `pin_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          const existing = id ? this.pins.find((p) => p.id === id) : null;
+          if (existing) {
+            if (task !== undefined) existing.task = task;
+          } else {
             const context = await this.contextBuilder.getContext(
               file,
               line,
               'standard'
             );
-            this.pins.push({ id: context.id, context });
+            this.pins.push({
+              id: pinId,
+              context,
+              task: task || '',
+              order: this.pins.length + 1,
+              addedAt: new Date().toISOString()
+            });
           }
-        } else if (action === 'remove' && file) {
+        } else if (action === 'update-task' && (id || file)) {
+          const p = this.pins.find((x) => id ? x.id === id : x.context.source.file === file);
+          if (p) {
+            p.task = task || '';
+          }
+        } else if (action === 'remove' && (file || id)) {
           this.pins = this.pins.filter(
-            (p) => p.context.source.file !== file
+            (p) => id ? p.id !== id : p.context.source.file !== file
           );
+          this.pins.forEach((p, idx) => { p.order = idx + 1; });
         } else {
           res
             .status(400)
-            .json({ error: 'Invalid action or missing file/line' });
+            .json({ error: 'Invalid action or missing parameters' });
           return;
         }
 
@@ -303,6 +347,69 @@ export class BridgeServer {
         const message =
           error instanceof Error ? error.message : 'Failed to fetch pins';
         res.status(500).json({ error: message });
+      }
+    });
+
+    // Comments endpoints
+    this.app.get('/api/comments', (_req, res) => {
+      this.loadComments();
+      res.json({ comments: this.comments });
+    });
+
+    this.app.post('/api/comments', async (req, res) => {
+      try {
+        this.loadComments();
+        const { action, comment, id, text } = req.body;
+        if (action === 'add' && comment) {
+          const newComment: ElementComment = {
+            id: comment.id || `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            file: comment.file,
+            line: comment.line,
+            component: comment.component,
+            selector: comment.selector,
+            text: comment.text || '',
+            createdAt: comment.createdAt || new Date().toISOString(),
+            resolved: false,
+          };
+          this.comments.push(newComment);
+          await this.saveComments();
+          this.broadcastState();
+          res.json({ success: true, comment: newComment, comments: this.comments });
+        } else if (action === 'update' && id && text !== undefined) {
+          const c = this.comments.find(x => x.id === id);
+          if (c) {
+            c.text = text;
+            await this.saveComments();
+            this.broadcastState();
+            res.json({ success: true, comment: c, comments: this.comments });
+          } else {
+            res.status(404).json({ error: 'Comment not found' });
+          }
+        } else if (action === 'toggle-resolve' && id) {
+          const c = this.comments.find(x => x.id === id);
+          if (c) {
+            c.resolved = !c.resolved;
+            await this.saveComments();
+            this.broadcastState();
+            res.json({ success: true, comment: c, comments: this.comments });
+          } else {
+            res.status(404).json({ error: 'Comment not found' });
+          }
+        } else if (action === 'delete' && id) {
+          this.comments = this.comments.filter(x => x.id !== id);
+          await this.saveComments();
+          this.broadcastState();
+          res.json({ success: true, comments: this.comments });
+        } else if (action === 'clear') {
+          this.comments = [];
+          await this.saveComments();
+          this.broadcastState();
+          res.json({ success: true, comments: this.comments });
+        } else {
+          res.status(400).json({ error: 'Invalid comments action' });
+        }
+      } catch (err: any) {
+        res.status(500).json({ error: err.message || 'Comments error' });
       }
     });
 
@@ -361,11 +468,7 @@ export class BridgeServer {
     // Generate task context
     this.app.post('/api/task', async (req, res) => {
       try {
-        const { instruction, level = 'standard' } = req.body;
-        if (!instruction) {
-          res.status(400).json({ error: 'Missing instruction' });
-          return;
-        }
+        const { instruction = '', level = 'standard' } = req.body;
 
         // Rebuild context at requested level for all pins
         const updatedPins: PinEntry[] = [];
@@ -380,7 +483,13 @@ export class BridgeServer {
           if (this.computedStyles.has(styleId)) {
             context.computedStyles = this.computedStyles.get(styleId);
           }
-          updatedPins.push({ id: context.id, context });
+          updatedPins.push({
+            id: context.id,
+            context,
+            task: pin.task,
+            order: pin.order,
+            addedAt: pin.addedAt
+          });
         }
 
         const pinSet = {
@@ -761,7 +870,7 @@ export class BridgeServer {
       ws.send(
         JSON.stringify({
           type: 'state-update',
-          data: { pins: this.pins, frozenEntries: this.frozenEntries },
+          data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments },
         })
       );
     });
@@ -795,7 +904,7 @@ export class BridgeServer {
   private broadcastState() {
     const data = JSON.stringify({
       type: 'state-update',
-      data: { pins: this.pins, frozenEntries: this.frozenEntries, screenshotCount: this.screenshotStore.size },
+      data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments, screenshotCount: this.screenshotStore.size },
     });
     this.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {

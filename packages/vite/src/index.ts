@@ -18,84 +18,92 @@ const UI_HTML = `
           :host {
             pointer-events: none;
           }
-          #cp-dock-wrapper, #cp-flyout, #cp-tracker, #cp-slider-modal, #cp-text-editor {
+          #cp-dock-wrapper, #cp-flyout, #cp-text-editor {
             pointer-events: auto;
           }
-          :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight, #cp-slider-modal {
+          :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight {
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
             
-            /* Dark mode (default) */
-            --bg-dock: rgba(24, 24, 27, 0.92);
-            --bg-dock-panel: rgba(24, 24, 27, 0.97);
-            --bg-tile: rgba(255, 255, 255, 0.05);
-            --bg-tile-hover: rgba(255, 255, 255, 0.10);
-            --bg-tile-active: rgba(99, 102, 241, 0.15);
-            --border-glass: rgba(255, 255, 255, 0.10);
-            --border-highlight: rgba(255, 255, 255, 0.18);
-            --border-accent: rgba(99, 102, 241, 0.45);
-            --accent: #6366f1;
-            --accent-hover: #818cf8;
-            --accent-subtle: rgba(99, 102, 241, 0.12);
+            /* Dark mode (default) - AAA Neutral Studio Palette */
+            --bg-dock: rgba(23, 20, 39, 0.88);
+            --bg-dock-panel: rgba(23, 20, 39, 0.96);
+            --bg-tile: rgba(41, 38, 55, 0.45);
+            --bg-tile-hover: rgba(71, 69, 83, 0.50);
+            --bg-tile-active: rgba(91, 89, 102, 0.55);
+            --border-glass: rgba(217, 217, 220, 0.12);
+            --border-highlight: rgba(217, 217, 220, 0.25);
+            --border-accent: rgba(217, 217, 220, 0.40);
+            --accent: #fcfcfd;
+            --accent-hover: #ffffff;
+            --accent-subtle: rgba(217, 217, 220, 0.08);
+            --accent-solid: #211f30;
+            --accent-solid-text: #ffffff;
+            --accent-solid-border: rgba(217, 217, 220, 0.22);
+            --accent-solid-hover: #292637;
             --accent-emerald: #34d399;
             --accent-rose: #fb7185;
-            --text-primary: #fafafa;
-            --text-secondary: #a1a1aa;
-            --text-muted: #71717a;
-            --blur: blur(16px) saturate(130%);
-            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 1px rgba(255, 255, 255, 0.1);
-            --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --text-primary: #fcfcfd;
+            --text-secondary: #c0bfc4;
+            --text-muted: #8e8c95;
+            --blur: blur(20px) saturate(180%);
+            --shadow-dock: 0 8px 32px rgba(3, 0, 20, 0.55), 0 0 0 1px rgba(217, 217, 220, 0.10);
+            --shadow-tile: 0 1px 3px rgba(3, 0, 20, 0.35);
             --frame-color: #6366f1;
-            --frame-raw: #a78bfa;
-            --measure-color: #a78bfa;
-            --bg-surface-raised: rgba(255, 255, 255, 0.05);
-            --bg-surface-sunken: rgba(0, 0, 0, 0.25);
-            --bg-surface-overlay: rgba(0, 0, 0, 0.35);
-            --bg-surface-input: rgba(255, 255, 255, 0.04);
-            --bg-surface-header: rgba(255, 255, 255, 0.02);
-            --border-subtle: rgba(255, 255, 255, 0.06);
-            --border-tile: rgba(255, 255, 255, 0.08);
-            --border-tile-hover: rgba(255, 255, 255, 0.2);
-            --scrollbar-thumb: rgba(255, 255, 255, 0.18);
-            --handle-color: rgba(255, 255, 255, 0.22);
-            --overlay-bg: rgba(4, 7, 14, 0.85);
+            --frame-raw: #818cf8;
+            --measure-color: #818cf8;
+            --bg-surface-raised: rgba(41, 38, 55, 0.50);
+            --bg-surface-sunken: rgba(3, 0, 20, 0.55);
+            --bg-surface-overlay: rgba(3, 0, 20, 0.70);
+            --bg-surface-input: rgba(33, 31, 48, 0.60);
+            --bg-surface-header: rgba(23, 20, 39, 0.40);
+            --border-subtle: rgba(217, 217, 220, 0.08);
+            --border-tile: rgba(217, 217, 220, 0.10);
+            --border-tile-hover: rgba(217, 217, 220, 0.25);
+            --scrollbar-thumb: rgba(142, 140, 149, 0.30);
+            --handle-color: rgba(142, 140, 149, 0.45);
+            --overlay-bg: rgba(3, 0, 20, 0.85);
           }
           
-          /* Light mode */
-          :host(.light-mode), :host(.light-mode) #cp-dock-wrapper, :host(.light-mode) #cp-dock, :host(.light-mode) #cp-flyout, :host(.light-mode) #cp-highlight, :host(.light-mode) #cp-slider-modal {
-            --bg-dock: rgba(255, 255, 255, 0.92);
-            --bg-dock-panel: rgba(255, 255, 255, 0.97);
-            --bg-tile: rgba(0, 0, 0, 0.04);
-            --bg-tile-hover: rgba(0, 0, 0, 0.08);
-            --bg-tile-active: rgba(99, 102, 241, 0.10);
-            --border-glass: rgba(0, 0, 0, 0.10);
-            --border-highlight: rgba(0, 0, 0, 0.18);
-            --border-accent: rgba(99, 102, 241, 0.5);
-            --accent: #4f46e5;
-            --accent-hover: #6366f1;
-            --accent-subtle: rgba(79, 70, 229, 0.08);
+          /* Light mode - AAA Neutral Studio Palette */
+          :host(.light-mode), :host(.light-mode) #cp-dock-wrapper, :host(.light-mode) #cp-dock, :host(.light-mode) #cp-flyout, :host(.light-mode) #cp-highlight {
+            --bg-dock: rgba(252, 252, 253, 0.94);
+            --bg-dock-panel: rgba(255, 255, 255, 0.98);
+            --bg-tile: rgba(3, 0, 20, 0.04);
+            --bg-tile-hover: rgba(3, 0, 20, 0.08);
+            --bg-tile-active: rgba(3, 0, 20, 0.14);
+            --border-glass: #d9d9dc;
+            --border-highlight: #c0bfc4;
+            --border-accent: #8e8c95;
+            --accent: #171427;
+            --accent-hover: #030014;
+            --accent-subtle: rgba(23, 20, 39, 0.06);
+            --accent-solid: #171427;
+            --accent-solid-text: #ffffff;
+            --accent-solid-border: #171427;
+            --accent-solid-hover: #030014;
             --accent-emerald: #059669;
             --accent-rose: #e11d48;
-            --text-primary: #18181b;
-            --text-secondary: #52525b;
-            --text-muted: #a1a1aa;
-            --blur: blur(16px) saturate(120%);
-            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08);
-            --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --text-primary: #030014;
+            --text-secondary: #474553;
+            --text-muted: #8e8c95;
+            --blur: blur(20px) saturate(160%);
+            --shadow-dock: 0 8px 32px rgba(3, 0, 20, 0.10), 0 0 0 1px rgba(3, 0, 20, 0.06);
+            --shadow-tile: 0 1px 3px rgba(3, 0, 20, 0.08);
             --frame-color: #4f46e5;
-            --frame-raw: #7c3aed;
-            --measure-color: #7c3aed;
-            --bg-surface-raised: rgba(0, 0, 0, 0.03);
-            --bg-surface-sunken: rgba(0, 0, 0, 0.04);
-            --bg-surface-overlay: rgba(0, 0, 0, 0.06);
-            --bg-surface-input: rgba(0, 0, 0, 0.03);
-            --bg-surface-header: rgba(0, 0, 0, 0.02);
-            --border-subtle: rgba(0, 0, 0, 0.08);
-            --border-tile: rgba(0, 0, 0, 0.10);
-            --border-tile-hover: rgba(0, 0, 0, 0.18);
-            --scrollbar-thumb: rgba(0, 0, 0, 0.18);
-            --handle-color: rgba(0, 0, 0, 0.20);
-            --overlay-bg: rgba(255, 255, 255, 0.85);
+            --frame-raw: #6366f1;
+            --measure-color: #6366f1;
+            --bg-surface-raised: #f5f5f6;
+            --bg-surface-sunken: #f0f0f1;
+            --bg-surface-overlay: rgba(3, 0, 20, 0.06);
+            --bg-surface-input: #ffffff;
+            --bg-surface-header: #fafafb;
+            --border-subtle: #d9d9dc;
+            --border-tile: rgba(3, 0, 20, 0.08);
+            --border-tile-hover: rgba(3, 0, 20, 0.18);
+            --scrollbar-thumb: rgba(142, 140, 149, 0.40);
+            --handle-color: rgba(91, 89, 102, 0.40);
+            --overlay-bg: rgba(255, 255, 255, 0.88);
           }
 
           /* --- Vertical Dock Container --- */
@@ -426,14 +434,17 @@ const UI_HTML = `
           }
 
           .cp-btn-bento.primary {
-            background: var(--accent-subtle);
-            border-color: var(--border-accent);
-            color: var(--accent);
+            background: var(--accent-solid);
+            border: 1px solid var(--accent-solid-border);
+            color: var(--accent-solid-text);
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
           }
 
           .cp-btn-bento.primary:hover {
-            background: rgba(99, 102, 241, 0.2);
-            border-color: var(--accent);
+            background: var(--accent-solid-hover);
+            border-color: var(--border-accent);
+            color: var(--accent-solid-text);
           }
 
           .cp-section { margin-bottom: 20px; }
@@ -563,15 +574,15 @@ const UI_HTML = `
             z-index: 999997;
             border: 1.5px solid var(--frame-color);
             background: transparent;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25), 0 0 12px rgba(99, 102, 241, 0.12);
             border-radius: 2px;
             display: none;
             transition: all 60ms ease-out;
             box-sizing: border-box;
           }
           #cp-highlight.selected {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 1px var(--border-accent);
+            border-color: var(--frame-color);
+            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 0 16px rgba(99, 102, 241, 0.20);
           }
           #cp-highlight.is-raw {
             border-color: var(--frame-raw);
@@ -614,20 +625,20 @@ const UI_HTML = `
             left: 0;
             width: 100vw;
             height: 0;
-            border-top: 1px dashed rgba(99, 102, 241, 0.35);
+            border-top: 1px dashed var(--border-accent);
           }
           .cp-axis-v {
             top: 0;
             height: 100vh;
             width: 0;
-            border-left: 1px dashed rgba(99, 102, 241, 0.35);
+            border-left: 1px dashed var(--border-accent);
           }
           .cp-layout-child-frame {
             position: fixed;
             pointer-events: none;
             box-sizing: border-box;
-            border: 1px dashed rgba(99, 102, 241, 0.3);
-            background: rgba(99, 102, 241, 0.04);
+            border: 1px dashed var(--border-accent);
+            background: var(--accent-subtle);
           }
 
           /* Clean, Single-Line Compact Pill (#cp-label) */
@@ -663,8 +674,8 @@ const UI_HTML = `
             position: fixed;
             z-index: 999998;
             pointer-events: none;
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 4px 20px rgba(0, 0, 0, 0.35);
+            border: 2px solid var(--frame-color);
+            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.30), 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(99, 102, 241, 0.15);
             border-radius: 4px;
             box-sizing: border-box;
             display: none;
@@ -681,7 +692,7 @@ const UI_HTML = `
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--accent);
+            border: 1px solid rgba(99, 102, 241, 0.45);
             border-radius: 8px;
             box-shadow: var(--shadow-dock);
             color: var(--text-primary);
@@ -696,7 +707,7 @@ const UI_HTML = `
           }
           #cp-sel-name {
             font-weight: 700;
-            color: var(--accent);
+            color: var(--frame-color);
           }
           #cp-sel-file {
             color: var(--text-muted);
@@ -734,13 +745,126 @@ const UI_HTML = `
           }
           #cp-sel-copy-btn {
             font-weight: 600;
-            background: var(--accent-subtle) !important;
-            color: var(--accent) !important;
-            border-color: var(--border-accent) !important;
+            background: var(--frame-color) !important;
+            color: #ffffff !important;
+            border-color: var(--frame-color) !important;
           }
           #cp-sel-copy-btn:hover {
-            background: var(--accent) !important;
-            color: #fff !important;
+            opacity: 0.9 !important;
+          }
+
+          /* --- Inline Comment Pin Markers on Page --- */
+          .cp-comment-marker {
+            position: fixed;
+            z-index: 999997;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            background: var(--accent-solid);
+            color: var(--accent-solid-text);
+            border-radius: 999px;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--bg-dock-panel);
+            cursor: pointer;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+          }
+          .cp-comment-marker:hover {
+            transform: translate(-50%, -50%) scale(1.12);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--border-highlight);
+          }
+          .cp-comment-marker.resolved {
+            opacity: 0.55;
+            background: var(--text-muted);
+          }
+
+          /* --- Pinned Stack Cards --- */
+          .cp-pin-card {
+            background: var(--bg-surface-raised);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            transition: border-color 0.2s;
+          }
+          .cp-pin-card:hover {
+            border-color: var(--border-highlight);
+          }
+          .cp-pin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+          }
+          .cp-pin-title {
+            font-weight: 600;
+            font-size: 11.5px;
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .cp-pin-badge {
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border: 1px solid var(--border-accent);
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            padding: 1px 5px;
+            border-radius: 4px;
+          }
+          .cp-pin-file {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+          }
+          .cp-pin-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--bg-surface-input);
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            padding: 6px 8px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 11.5px;
+            line-height: 1.4;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 6px;
+          }
+          .cp-pin-textarea:focus {
+            border-color: var(--border-accent);
+          }
+          .cp-pin-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+          }
+
+          /* --- Notes Items in Sidebar --- */
+          .cp-note-item {
+            background: var(--bg-surface-header);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: border-color 0.2s;
+          }
+          .cp-note-item:hover {
+            border-color: var(--border-highlight);
+          }
+          .cp-note-item.resolved {
+            opacity: 0.55;
           }
 
           .cp-vibe-chip {
@@ -785,32 +909,6 @@ const UI_HTML = `
             background: none; border: none; color: var(--accent-rose); cursor: pointer; padding: 3px; opacity: 0.7;
           }
           .cp-pin-remove:hover { opacity: 1; }
-
-          #cp-tracker {
-            display: none;
-            position: fixed;
-            left: 100px;
-            bottom: 30px;
-            background: var(--bg-dock-panel);
-            backdrop-filter: var(--blur);
-            border: 1px solid var(--border-accent);
-            border-radius: 16px;
-            padding: 14px 18px;
-            color: var(--text-primary);
-            z-index: 10000;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: var(--shadow-dock);
-          }
-
-          #cp-slider-modal {
-            display: none; position: fixed; inset: 0; z-index: 10001; background: var(--overlay-bg);
-            backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 40px;
-          }
-          #cp-slider-box {
-            background: var(--bg-dock-panel); border: 1px solid var(--border-glass); border-radius: 20px;
-            display: flex; flex-direction: column; box-shadow: var(--shadow-dock); max-width: 90vw; max-height: 90vh; width: 100%;
-          }
 
           /* --- Inline Text Editor Popover --- */
           #cp-text-editor {
@@ -911,7 +1009,7 @@ const UI_HTML = `
             border-color: var(--border-accent);
           }
           .cp-text-action-btn.apply:hover {
-            background: rgba(99, 102, 241, 0.2);
+            background: var(--accent-subtle);
           }
           .cp-text-action-btn.revert {
             background: var(--bg-surface-input);
@@ -952,16 +1050,16 @@ const UI_HTML = `
           }
           .cp-dist-line {
             position: absolute;
-            background: rgba(167, 139, 250, 0.45);
+            background: var(--border-accent);
           }
           .cp-dist-line.horizontal {
             height: 1px;
-            border-top: 1px dashed rgba(167, 139, 250, 0.6);
+            border-top: 1px dashed var(--border-accent);
             background: none;
           }
           .cp-dist-line.vertical {
             width: 1px;
-            border-left: 1px dashed rgba(167, 139, 250, 0.6);
+            border-left: 1px dashed var(--border-accent);
             background: none;
           }
           .cp-dist-pill {
@@ -1031,44 +1129,51 @@ const UI_HTML = `
 
           /* --- Horizontal Dock Mode --- */
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock {
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             width: auto;
-            height: auto;
-            padding: 7px 9px 5px 9px;
-            gap: 5px;
-            border-radius: 20px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-glass);
+            height: 32px;
+            padding: 3px 6px;
+            gap: 4px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border-glass);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-tiles {
             flex-direction: row;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile {
-            width: 38px;
-            height: 38px;
-            border-radius: 13px;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile svg {
-            width: 19px;
-            height: 19px;
+            width: 14px;
+            height: 14px;
+          }
+          #cp-dock-wrapper.cp-dock-horizontal .cp-badge-pill {
+            top: -3px;
+            right: -3px;
+            min-width: 14px;
+            height: 14px;
+            font-size: 9px;
+            padding: 0 3px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle {
-            width: 30px;
-            height: 4px;
-            margin: 2px auto 1px auto;
+            width: 4px;
+            height: 16px;
+            margin: 0 2px;
             border-radius: 999px;
             background: var(--handle-color);
             cursor: grab;
             transition: all 0.2s ease;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle:hover {
-            width: 36px;
             background: var(--accent);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-callout {
-            top: 54px;
+            top: 40px;
             left: 50%;
             transform: translateX(-50%);
             right: auto;
@@ -1084,7 +1189,7 @@ const UI_HTML = `
             border-top: none;
           }
           #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom #cp-dock-callout {
-            top: -46px;
+            top: -42px;
             bottom: auto;
           }
           #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom .cp-callout-tail {
@@ -1142,7 +1247,7 @@ const UI_HTML = `
                 <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><polyline points="10 9 7 12 10 15"/></svg>
                 <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               </button>
-              <button class="cp-dock-tile" id="cp-track-btn" title="Track Visual Diff" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+              <button class="cp-dock-tile" id="cp-flyout-snap-btn" title="Take Screenshot (Website UI)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
               <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
@@ -1197,17 +1302,30 @@ const UI_HTML = `
               </div>
             </div>
 
-              <div id="cp-pin-bar">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Pinned Stack (<span id="cp-pin-count">0</span>)</span>
-                </div>
-                <div id="cp-pin-list"></div>
-                
-                <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                  <input type="text" id="cp-task-input" placeholder="Describe what to change, e.g. 'Unify all card borders'" style="width:100%; box-sizing:border-box; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:8px; padding:8px 12px; color:var(--text-primary); font-family:var(--font-sans); font-size:12px; outline:none; transition: border-color 0.2s;" />
-                  <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy Task Brief</button>
-                </div>
+            <!-- Persistent Notes Section in Sidebar -->
+            <div id="cp-notes-section" style="padding:10px 20px; border-top:1px solid var(--border-glass); background:var(--bg-surface-sunken);">
+              <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Notes (<span id="cp-notes-count">0</span>)
+                </span>
+                <button id="cp-notes-copy-all" class="cp-vibe-chip" style="font-size:9.5px; padding:2px 6px;" title="Copy all notes as AI prompt">Copy All Notes</button>
               </div>
+              <div id="cp-notes-list" style="display:flex; flex-direction:column; gap:6px; max-height:130px; overflow-y:auto;">
+                <div style="font-size:11px; color:var(--text-muted); font-style:italic;">No notes yet. Click the note icon on any element to add persistent notes.</div>
+              </div>
+            </div>
+
+            <div id="cp-pin-bar">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Pinned Stack (<span id="cp-pin-count">0</span>)</span>
+              </div>
+              <div id="cp-pin-list"></div>
+              
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <input type="text" id="cp-task-input" placeholder="Overall goal (optional, e.g. 'Align cards to dark theme')" style="width:100%; box-sizing:border-box; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:8px; padding:7px 10px; color:var(--text-primary); font-family:var(--font-sans); font-size:11.5px; outline:none; transition: border-color 0.2s;" />
+                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%; font-size:11.5px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
+              </div>
+            </div>
             </div>
 
             <!-- Settings View (Dedicated Page inside Sidebar) -->
@@ -1276,11 +1394,17 @@ const UI_HTML = `
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
                 <span id="cp-sel-copy-label">Copy Prompt</span>
               </button>
+              <button id="cp-sel-note-btn" title="Add Note / Comment">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button id="cp-sel-pin-btn" title="Pin Component Task">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+              </button>
+              <button id="cp-sel-snap-btn" title="Capture Clean Screenshot (Web UI only)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              </button>
               <button id="cp-sel-ide-btn" title="Open in IDE">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              </button>
-              <button id="cp-sel-pin-btn" title="Pin Component">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
               </button>
               <button id="cp-sel-close-btn" title="Deselect">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1292,6 +1416,47 @@ const UI_HTML = `
         <div id="cp-padding-band"></div>
         <div id="cp-axis-guides"></div>
         <div id="cp-distance-layer"></div>
+        <div id="cp-comments-layer" style="position:fixed; inset:0; pointer-events:none; z-index:999996;"></div>
+
+        <!-- Inline Note Popover -->
+        <div id="cp-note-popover" style="display:none; position:fixed; z-index:999999; width:320px; background:var(--bg-dock-panel); backdrop-filter:var(--blur); border:1px solid var(--border-glass); border-radius:12px; box-shadow:var(--shadow-dock); color:var(--text-primary); padding:12px; pointer-events:auto;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-weight:600; font-size:11.5px; display:inline-flex; align-items:center; gap:6px; color:var(--text-primary);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Element Note
+            </span>
+            <button id="cp-note-popover-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:2px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:6px;" id="cp-note-popover-target"></div>
+          <textarea id="cp-note-input" placeholder="Add an inline note or task for this element... (persists across restarts)" style="width:100%; box-sizing:border-box; min-height:70px; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:6px; padding:8px; color:var(--text-primary); font-family:var(--font-sans); font-size:12px; resize:vertical; outline:none; margin-bottom:8px;"></textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="cp-btn-bento" id="cp-note-delete" style="display:none; padding:4px 8px; font-size:11px; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> Delete</button>
+            <div style="display:flex; gap:6px; margin-left:auto;">
+              <button class="cp-btn-bento" id="cp-note-cancel" style="padding:4px 10px; font-size:11px;">Cancel</button>
+              <button class="cp-btn-bento primary" id="cp-note-save" style="padding:4px 12px; font-size:11px;">Save Note</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pinned Task Dialog (Two-choice flow: Copy Now vs Add More) -->
+        <div id="cp-pin-dialog" style="display:none; position:fixed; z-index:999999; width:340px; background:var(--bg-dock-panel); backdrop-filter:var(--blur); border:1px solid var(--border-glass); border-radius:14px; box-shadow:var(--shadow-dock); color:var(--text-primary); padding:14px; pointer-events:auto;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="cp-pin-badge" id="cp-pin-dialog-badge">Pin #1</span>
+              <span style="font-weight:600; font-size:12px; color:var(--text-primary);" id="cp-pin-dialog-name">&lt;Component /&gt;</span>
+            </div>
+            <button id="cp-pin-dialog-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:8px;" id="cp-pin-dialog-file"></div>
+          <textarea id="cp-pin-dialog-task" placeholder="Describe the change or task for this component..." style="width:100%; box-sizing:border-box; min-height:65px; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:6px; padding:8px; color:var(--text-primary); font-family:var(--font-sans); font-size:12px; resize:vertical; outline:none; margin-bottom:10px;"></textarea>
+          <div style="display:flex; gap:8px;">
+            <button class="cp-btn-bento" id="cp-pin-dialog-add-more" style="flex:1; justify-content:center; font-size:11px;" title="Save task and inspect another component">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add More Pins
+            </button>
+            <button class="cp-btn-bento primary" id="cp-pin-dialog-copy-now" style="flex:1; justify-content:center; font-size:11px;" title="Copy task prompt for AI immediately">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy Task Prompt
+            </button>
+          </div>
+        </div>
 
         <div id="cp-text-editor">
           <div id="cp-text-editor-header">
@@ -1313,36 +1478,6 @@ const UI_HTML = `
             <span id="cp-text-char-count"></span>
           </div>
         </div>
-
-        <div id="cp-tracker">
-          <div style="font-weight: 600; font-size: 13px;">Tracking: <span id="cp-tracker-name" style="color: var(--accent); font-family:var(--font-mono);"></span></div>
-          <button class="cp-btn-bento primary" id="cp-tracker-capture" style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff</button>
-          <button class="cp-btn-bento" id="cp-tracker-cancel" style="font-size: 11px; padding: 4px 8px;">Cancel</button>
-        </div>
-
-        <div id="cp-slider-modal">
-          <div id="cp-slider-box">
-            <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-              <h2 style="margin:0; font-size:15px; font-weight:600; color:var(--text-primary);">Visual Diff: <span id="cp-modal-name" style="color:var(--accent); font-family:var(--font-mono);"></span></h2>
-              <div style="display:flex; gap:12px; align-items:center;">
-                <div id="cp-modal-badge"></div>
-                <button class="cp-dock-tile" id="cp-modal-close" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              </div>
-            </div>
-            <div style="padding: 24px; overflow: auto; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.3); min-height: 320px;">
-              <div style="position: relative; user-select: none; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); overflow: hidden; max-width: 100%;">
-                <img id="cp-modal-after" style="display: block; max-width: 100%; max-height: 70vh;" />
-                <img id="cp-modal-before" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);" />
-                <div id="cp-modal-handle" style="position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent); pointer-events: none; transform: translateX(-50%);">
-                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; background: var(--bg-dock-panel); border: 1.5px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent);">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </div>
-                </div>
-                <input type="range" min="0" max="100" value="50" id="cp-modal-slider" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0;" />
-              </div>
-            </div>
-          </div>
-        </div>
 `;
 
 const ICONS = {
@@ -1353,7 +1488,12 @@ const ICONS = {
   camera: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`,
   x: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
   lock: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
-  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`
+  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+  comment: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  check: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  trash: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+  download: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`
 };
 
 function generateOverlayBootstrap(port: number, editor: string): string {
@@ -1373,7 +1513,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let currentElement = null;
       let currentComponentInfo = null;
       let frozenEntries = [];
-      let screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null };
 
       const ICONS = ${JSON.stringify(ICONS)};
 
@@ -1920,12 +2059,18 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const selFile = shadow.getElementById('cp-sel-file');
       const selCopyBtn = shadow.getElementById('cp-sel-copy-btn');
       const selCopyLabel = shadow.getElementById('cp-sel-copy-label');
-      const selIdeBtn = shadow.getElementById('cp-sel-ide-btn');
+      const selNoteBtn = shadow.getElementById('cp-sel-note-btn');
       const selPinBtn = shadow.getElementById('cp-sel-pin-btn');
+      const selSnapBtn = shadow.getElementById('cp-sel-snap-btn');
+      const selIdeBtn = shadow.getElementById('cp-sel-ide-btn');
       const selCloseBtn = shadow.getElementById('cp-sel-close-btn');
 
       let selectedTarget = null;
       let selectedElement = null;
+      let comments = [];
+      let editingComment = null;
+      let pendingPinTarget = null;
+      let currentPins = [];
 
       function clearSelection() {
         selectedTarget = null;
@@ -1977,6 +2122,361 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       }
 
+      // --- Persistent Inline Comments Logic ---
+      async function loadComments() {
+        try {
+          const res = await fetch(BRIDGE + '/api/comments');
+          const data = await res.json();
+          comments = data.comments || [];
+          try { localStorage.setItem('agent-hover-comments', JSON.stringify(comments)); } catch(e) {}
+          renderCommentMarkers();
+          renderSidebarNotes();
+        } catch(e) {
+          try {
+            comments = JSON.parse(localStorage.getItem('agent-hover-comments') || '[]');
+            renderCommentMarkers();
+            renderSidebarNotes();
+          } catch(err) {}
+        }
+      }
+
+      function renderCommentMarkers() {
+        const layer = shadow.getElementById('cp-comments-layer');
+        if (!layer) return;
+        layer.innerHTML = '';
+
+        comments.forEach((c, index) => {
+          let el = null;
+          if (c.selector) {
+            try { el = document.querySelector(c.selector); } catch(e) {}
+          }
+          if (!el && c.component) {
+            el = findComponentElement(c.component);
+          }
+          if (!el) return;
+
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) return;
+
+          const marker = document.createElement('div');
+          marker.className = 'cp-comment-marker' + (c.resolved ? ' resolved' : '');
+          marker.style.top = Math.max(12, rect.top + 10) + 'px';
+          marker.style.left = Math.max(12, rect.left + 10) + 'px';
+          marker.title = (c.component ? '<' + c.component + ' />: ' : '') + c.text;
+          marker.innerHTML = ICONS.comment + '<span style="margin-left:3px; font-size:10px;">' + (index + 1) + '</span>';
+          marker.onclick = (e) => {
+            e.stopPropagation();
+            openNotePopover({ element: el, name: c.component || el.tagName.toLowerCase() }, c);
+          };
+          layer.appendChild(marker);
+        });
+      }
+
+      function renderSidebarNotes() {
+        const countEl = shadow.getElementById('cp-notes-count');
+        const listEl = shadow.getElementById('cp-notes-list');
+        if (!listEl) return;
+        if (countEl) countEl.textContent = comments.length;
+
+        if (comments.length === 0) {
+          listEl.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic;">No notes yet. Click the note icon on any element to add persistent notes.</div>';
+          return;
+        }
+
+        listEl.innerHTML = '';
+        comments.forEach((c, idx) => {
+          const item = document.createElement('div');
+          item.className = 'cp-note-item' + (c.resolved ? ' resolved' : '');
+          
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const titleWrap = document.createElement('div');
+          titleWrap.style.display = 'flex';
+          titleWrap.style.alignItems = 'center';
+          titleWrap.style.gap = '5px';
+          titleWrap.innerHTML = '<span style="font-weight:600; color:var(--accent); font-family:var(--font-mono); font-size:10px;">#' + (idx + 1) + ' ' + (c.component ? '<' + c.component + ' />' : (c.selector || 'Element')) + '</span>';
+
+          const actionsWrap = document.createElement('div');
+          actionsWrap.style.display = 'flex';
+          actionsWrap.style.alignItems = 'center';
+          actionsWrap.style.gap = '4px';
+
+          const resolveBtn = document.createElement('button');
+          resolveBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:2px; color:' + (c.resolved ? 'var(--accent-emerald)' : 'var(--text-muted)');
+          resolveBtn.title = c.resolved ? 'Mark unresolved' : 'Mark resolved';
+          resolveBtn.innerHTML = ICONS.check;
+          resolveBtn.onclick = async (e) => {
+            e.stopPropagation();
+            await fetch(BRIDGE + '/api/comments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'toggle-resolve', id: c.id })
+            });
+            loadComments();
+          };
+
+          const delBtn = document.createElement('button');
+          delBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:2px; color:var(--accent-rose); opacity:0.7;';
+          delBtn.title = 'Delete note';
+          delBtn.innerHTML = ICONS.trash;
+          delBtn.onclick = async (e) => {
+            e.stopPropagation();
+            await fetch(BRIDGE + '/api/comments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'delete', id: c.id })
+            });
+            loadComments();
+          };
+
+          actionsWrap.appendChild(resolveBtn);
+          actionsWrap.appendChild(delBtn);
+          header.appendChild(titleWrap);
+          header.appendChild(actionsWrap);
+
+          const body = document.createElement('div');
+          body.style.color = c.resolved ? 'var(--text-muted)' : 'var(--text-primary)';
+          body.style.textDecoration = c.resolved ? 'line-through' : 'none';
+          body.style.fontSize = '11.5px';
+          body.style.lineHeight = '1.4';
+          body.textContent = c.text;
+
+          item.appendChild(header);
+          item.appendChild(body);
+          
+          item.onclick = () => {
+            let el = null;
+            if (c.selector) {
+              try { el = document.querySelector(c.selector); } catch(e) {}
+            }
+            if (!el && c.component) el = findComponentElement(c.component);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              selectedElement = el;
+              selectedTarget = { name: c.component || el.tagName.toLowerCase(), element: el, isDomElement: true };
+              updateSelectionFrame();
+            }
+          };
+
+          listEl.appendChild(item);
+        });
+      }
+
+      function openNotePopover(target, comment = null) {
+        editingComment = comment;
+        const popover = shadow.getElementById('cp-note-popover');
+        const targetEl = shadow.getElementById('cp-note-popover-target');
+        const inputEl = shadow.getElementById('cp-note-input');
+        const delBtn = shadow.getElementById('cp-note-delete');
+        if (!popover || !inputEl) return;
+
+        const compName = comment?.component || target?.name || selectedTarget?.name || 'Element';
+        const fileStr = comment?.file || lastResolved?.file || '';
+        targetEl.textContent = (compName ? '<' + compName + ' />' : '') + (fileStr ? ' (' + fileStr.split('/').pop() + ')' : '');
+        inputEl.value = comment?.text || '';
+
+        if (comment) {
+          delBtn.style.display = 'inline-flex';
+          delBtn.onclick = async () => {
+            await fetch(BRIDGE + '/api/comments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'delete', id: comment.id })
+            });
+            popover.style.display = 'none';
+            loadComments();
+            showCallout('Note deleted', 'NOTE');
+          };
+        } else {
+          delBtn.style.display = 'none';
+        }
+
+        if (selectedRect) {
+          let top = selectedRect.bottom + 10;
+          if (top + 190 > window.innerHeight) top = Math.max(20, selectedRect.top - 200);
+          let left = Math.max(20, Math.min(window.innerWidth - 340, selectedRect.left));
+          popover.style.top = top + 'px';
+          popover.style.left = left + 'px';
+          popover.style.transform = 'none';
+        } else {
+          popover.style.top = '25%';
+          popover.style.left = '50%';
+          popover.style.transform = 'translate(-50%, -50%)';
+        }
+
+        popover.style.display = 'block';
+        setTimeout(() => inputEl.focus(), 50);
+      }
+
+      async function saveNote() {
+        const inputEl = shadow.getElementById('cp-note-input');
+        const text = inputEl ? inputEl.value.trim() : '';
+        if (!text) {
+          showCallout('Please enter a note first', 'TIP');
+          return;
+        }
+
+        if (editingComment) {
+          await fetch(BRIDGE + '/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update', id: editingComment.id, text })
+          });
+          showCallout('Note updated (persists across restarts)', 'SAVED');
+        } else {
+          const compName = selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
+          const file = lastResolved?.file || lastCopiedContext?.source?.file || '';
+          const line = lastResolved?.line || lastCopiedContext?.source?.startLine || undefined;
+          const selector = (selectedTarget?.element || selectedElement) ? buildCSSSelector(selectedTarget?.element || selectedElement) : '';
+
+          await fetch(BRIDGE + '/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'add',
+              comment: { file, line, component: compName, selector, text }
+            })
+          });
+          showCallout('Note saved (persists across restarts)', 'SAVED');
+        }
+
+        shadow.getElementById('cp-note-popover').style.display = 'none';
+        loadComments();
+      }
+
+      shadow.getElementById('cp-note-save').onclick = saveNote;
+      shadow.getElementById('cp-note-cancel').onclick = () => {
+        shadow.getElementById('cp-note-popover').style.display = 'none';
+      };
+      shadow.getElementById('cp-note-popover-close').onclick = () => {
+        shadow.getElementById('cp-note-popover').style.display = 'none';
+      };
+
+      const notesCopyAllBtn = shadow.getElementById('cp-notes-copy-all');
+      if (notesCopyAllBtn) {
+        notesCopyAllBtn.onclick = async () => {
+          if (comments.length === 0) {
+            showCallout('No notes to copy', 'TIP');
+            return;
+          }
+          const bt = String.fromCharCode(96);
+          const nl = String.fromCharCode(10);
+          let md = '### Persistent Codebase Notes & Feedback' + nl + nl;
+          comments.forEach((c, i) => {
+            const num = i + 1;
+            const target = c.component ? '<' + c.component + ' />' : (c.selector || 'Element');
+            const loc = c.file ? ' (' + bt + c.file + (c.line ? ':' + c.line : '') + bt + ')' : '';
+            const status = c.resolved ? ' [RESOLVED]' : '';
+            md += num + '. **' + target + '**' + loc + status + ':' + nl;
+            md += '   > ' + c.text + nl + nl;
+          });
+          await navigator.clipboard.writeText(md);
+          const origText = notesCopyAllBtn.textContent;
+          notesCopyAllBtn.textContent = 'Copied!';
+          showCallout('All ' + comments.length + ' notes copied for AI', 'COPIED');
+          setTimeout(() => { notesCopyAllBtn.textContent = origText; }, 1600);
+        };
+      }
+
+      // --- Pinned Multi-Task Dialog Logic ---
+      function openPinDialog(target, resolved) {
+        pendingPinTarget = { target, resolved };
+        const pinBadge = shadow.getElementById('cp-pin-dialog-badge');
+        const pinName = shadow.getElementById('cp-pin-dialog-name');
+        const pinFile = shadow.getElementById('cp-pin-dialog-file');
+        const pinTask = shadow.getElementById('cp-pin-dialog-task');
+        const pinDlg = shadow.getElementById('cp-pin-dialog');
+
+        const currentPinsCount = currentPins.length;
+        pinBadge.textContent = 'Pin #' + (currentPinsCount + 1);
+        pinName.textContent = '<' + (target?.name || 'Component') + ' />';
+        pinFile.textContent = resolved?.file ? (resolved.file.split('/').slice(-2).join('/') + (resolved.line ? ':' + resolved.line : '')) : '';
+        
+        const existingPin = currentPins.find(p => p.context?.source?.file === resolved?.file);
+        pinTask.value = existingPin?.task || '';
+
+        if (selectedRect) {
+          let top = selectedRect.bottom + 10;
+          if (top + 190 > window.innerHeight) top = Math.max(20, selectedRect.top - 200);
+          let left = Math.max(20, Math.min(window.innerWidth - 360, selectedRect.left));
+          pinDlg.style.top = top + 'px';
+          pinDlg.style.left = left + 'px';
+          pinDlg.style.transform = 'none';
+        } else {
+          pinDlg.style.top = '30%';
+          pinDlg.style.left = '50%';
+          pinDlg.style.transform = 'translate(-50%, -50%)';
+        }
+
+        pinDlg.style.display = 'block';
+        setTimeout(() => pinTask.focus(), 50);
+      }
+
+      const pinDialogAddMore = shadow.getElementById('cp-pin-dialog-add-more');
+      if (pinDialogAddMore) {
+        pinDialogAddMore.onclick = async () => {
+          if (!pendingPinTarget) return;
+          const { target, resolved } = pendingPinTarget;
+          const taskVal = shadow.getElementById('cp-pin-dialog-task')?.value.trim() || '';
+          const pinId = 'pin_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          
+          await fetch(BRIDGE + '/api/pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'add', id: pinId, file: resolved.file, line: resolved.line, task: taskVal })
+          });
+          shadow.getElementById('cp-pin-dialog').style.display = 'none';
+          showCallout('Pin added. Click next element to add more', 'PIN');
+          await refreshState();
+          
+          if (!isPointerMode) {
+            togglePointerMode();
+          }
+        };
+      }
+
+      const pinDialogCopyNow = shadow.getElementById('cp-pin-dialog-copy-now');
+      if (pinDialogCopyNow) {
+        pinDialogCopyNow.onclick = async () => {
+          if (!pendingPinTarget) return;
+          const { target, resolved } = pendingPinTarget;
+          const taskVal = shadow.getElementById('cp-pin-dialog-task')?.value.trim() || '';
+          const pinId = 'pin_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+          await fetch(BRIDGE + '/api/pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'add', id: pinId, file: resolved.file, line: resolved.line, task: taskVal })
+          });
+          shadow.getElementById('cp-pin-dialog').style.display = 'none';
+          await refreshState();
+
+          const level = shadow.getElementById('cp-context-level')?.value || 'standard';
+          try {
+            const taskRes = await fetch(BRIDGE + '/api/task', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ instruction: taskVal, level })
+            });
+            const taskData = await taskRes.json();
+            await navigator.clipboard.writeText(taskData.context);
+            showCallout('Task prompt copied (' + (taskData.tokenCost || '?') + ' tok)', 'COPIED');
+          } catch(e) {
+            showCallout('Pinned ' + (target?.name || 'Component'), 'PIN');
+          }
+        };
+      }
+
+      const pinDialogClose = shadow.getElementById('cp-pin-dialog-close');
+      if (pinDialogClose) {
+        pinDialogClose.onclick = () => {
+          shadow.getElementById('cp-pin-dialog').style.display = 'none';
+        };
+      }
+
       if (selCloseBtn) {
         selCloseBtn.onclick = (e) => {
           e.stopPropagation();
@@ -2018,12 +2518,31 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             } catch(err) {
               console.error(err);
             }
-            const fallbackText = 'Target: ' + selectedTarget.name + (lastResolved ? ' (' + lastResolved.file + ':' + lastResolved.line + ')' : '');
-            await navigator.clipboard.writeText(fallbackText);
+            const promptText = formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack);
+            await navigator.clipboard.writeText(promptText);
             if (selCopyLabel) selCopyLabel.textContent = 'Copied!';
-            showCallout('Copied target', 'COPIED');
+            showCallout('Element Prompt Copied', 'COPIED');
             setTimeout(() => { if (selCopyLabel) selCopyLabel.textContent = 'Copy Prompt'; }, 1600);
           }
+        };
+      }
+
+      if (selNoteBtn) {
+        selNoteBtn.onclick = (e) => {
+          e.stopPropagation();
+          const compName = selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
+          const file = lastResolved?.file || lastCopiedContext?.source?.file || '';
+          const existing = comments.find(c => (compName && c.component === compName) || (file && c.file === file));
+          openNotePopover(selectedTarget, existing || null);
+        };
+      }
+
+      if (selSnapBtn) {
+        selSnapBtn.onclick = async (e) => {
+          e.stopPropagation();
+          const targetEl = selectedTarget?.element || selectedElement || document.body;
+          const targetName = selectedTarget?.name || 'component';
+          await downloadCleanScreenshot(targetEl, targetName);
         };
       }
 
@@ -2040,13 +2559,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const targetToPin = selectedTarget?.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
           const resolved = lastResolved || (targetToPin ? await resolveComponent(targetToPin) : null);
           if (resolved) {
-            await fetch(BRIDGE + '/api/pin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'add', file: resolved.file, line: resolved.line })
-            });
-            showCallout('Pinned ' + (targetToPin?.name || 'Component'), 'PIN');
-            refreshState();
+            openPinDialog(targetToPin, resolved);
           } else {
             showCallout('Could not resolve file', 'ERROR');
           }
@@ -2070,6 +2583,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const originalHtml = copyAiBtn.innerHTML;
             copyAiBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
             showCallout('AI Prompt Copied (' + (lastCopiedContext.tokens?.current || '?') + ' tok)', 'COPIED');
+            setTimeout(() => { copyAiBtn.innerHTML = originalHtml; }, 1600);
+          } else if (selectedTarget) {
+            const promptText = formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack);
+            await navigator.clipboard.writeText(promptText);
+            const originalHtml = copyAiBtn.innerHTML;
+            copyAiBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+            showCallout('Element Prompt Copied', 'COPIED');
             setTimeout(() => { copyAiBtn.innerHTML = originalHtml; }, 1600);
           } else {
             showCallout('Select a component first', 'TIP');
@@ -2121,7 +2641,9 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const nl = String.fromCharCode(10);
           let promptText = '### Vibe Task: ' + taskDesc + nl + nl;
           if (targetCtx) {
-            promptText += formatContextForAiPrompt(targetCtx, currentStack);
+            promptText += formatContextForAiPrompt(targetCtx, currentStack, taskDesc);
+          } else if (selectedTarget) {
+            promptText += formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack, taskDesc);
           } else {
             promptText += '- Target: <' + compName + ' />' + locStr;
           }
@@ -2181,154 +2703,25 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       shadow.getElementById('cp-editor-btn').onclick = openInEditor;
 
-      // Track Visuals
-      const trackVisualBtn = shadow.getElementById('cp-track-btn');
-      if (trackVisualBtn) {
-        trackVisualBtn.onclick = async () => {
-          if (!lastCopiedContext || !currentElement) return;
-          const btn = trackVisualBtn;
-          const compName = lastCopiedContext.component.name;
-        const componentId = lastCopiedContext.source.file + ':' + compName;
-        
-        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Capturing...';
-        const dataUrl = await captureElement(currentElement);
-        if (!dataUrl) {
-          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Failed';
-          setTimeout(() => btn.innerHTML = ICONS.camera + ' Track Visuals', 2000);
-          return;
-        }
-        
-        screenshotState = { 
-          beforeDataUrl: dataUrl, 
-          afterDataUrl: null, 
-          currentComponentId: componentId,
-          componentName: compName
+      // Direct Screenshot of Website UI
+      const flyoutSnapBtn = shadow.getElementById('cp-flyout-snap-btn');
+      if (flyoutSnapBtn) {
+        flyoutSnapBtn.onclick = async () => {
+          const targetEl = selectedTarget?.element || selectedElement || currentElement || document.body;
+          const targetName = selectedTarget?.name || (selectedElement ? 'component' : 'website');
+          await downloadCleanScreenshot(targetEl, targetName);
         };
-        
-        const rect = currentElement.getBoundingClientRect();
-        fetch(BRIDGE + '/api/screenshot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: componentId,
-            label: 'before',
-            dataUrl: dataUrl,
-            boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
-            viewport: { width: window.innerWidth, height: window.innerHeight }
-          })
-        }).catch(e => console.error(e));
-        
-        btn.innerHTML = ICONS.camera + ' Track Visuals';
-        flyout.classList.remove('open');
-        shadow.getElementById('cp-tracker-name').innerText = compName;
-        shadow.getElementById('cp-tracker').style.display = 'flex';
-        showCallout('Baseline captured: ' + compName, 'DIFF');
-      };
-    }
-
-      shadow.getElementById('cp-tracker-cancel').onclick = () => {
-        shadow.getElementById('cp-tracker').style.display = 'none';
-        if (screenshotState.currentComponentId) {
-          fetch(BRIDGE + '/api/screenshot/clear', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: screenshotState.currentComponentId })
-          }).catch(e => console.error(e));
-        }
-        screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null, componentName: null };
-      };
-
-      shadow.getElementById('cp-tracker-capture').onclick = async () => {
-        if (!screenshotState.beforeDataUrl || !screenshotState.componentName) return;
-        const btn = shadow.getElementById('cp-tracker-capture');
-        const el = findComponentElement(screenshotState.componentName);
-        if (!el) {
-          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Component not in DOM';
-          setTimeout(() => btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff', 2000);
-          return;
-        }
-        
-        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Capturing...';
-        const dataUrl = await captureElement(el);
-        if (!dataUrl) {
-          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Failed';
-          setTimeout(() => btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff', 2000);
-          return;
-        }
-        
-        btn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Diffing...';
-        const diffResult = await generatePixelDiff(screenshotState.beforeDataUrl, dataUrl);
-        const rect = el.getBoundingClientRect();
-        const beforeRect = { top: 0, left: 0, width: 0, height: 0 };
-        
-        const diff = {
-          componentId: screenshotState.currentComponentId,
-          componentName: screenshotState.componentName,
-          before: { id: screenshotState.currentComponentId, label: 'before', dataUrl: screenshotState.beforeDataUrl, timestamp: new Date().toISOString(), boundingBox: beforeRect, viewport: { width: window.innerWidth, height: window.innerHeight } },
-          after: { id: screenshotState.currentComponentId, label: 'after', dataUrl: dataUrl, timestamp: new Date().toISOString(), boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }, viewport: { width: window.innerWidth, height: window.innerHeight } },
-          diffDataUrl: diffResult.diffDataUrl,
-          changedPixelPercent: diffResult.changedPixelPercent,
-          createdAt: new Date().toISOString()
-        };
-        
-        fetch(BRIDGE + '/api/screenshot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: screenshotState.currentComponentId,
-            label: 'after',
-            dataUrl: dataUrl,
-            boundingBox: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
-            viewport: { width: window.innerWidth, height: window.innerHeight },
-            diff: diff
-          })
-        }).catch(e => console.error(e));
-        
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Capture After & Diff';
-        shadow.getElementById('cp-tracker').style.display = 'none';
-        
-        const pct = diffResult.changedPixelPercent;
-        let badgeClass = 'cp-badge-emerald';
-        let badgeText = 'No change (0%)';
-        if (pct > 0 && pct < 0.5) { badgeClass = 'cp-badge-muted'; badgeText = 'Minimal (' + pct + '%)'; }
-        else if (pct >= 0.5 && pct < 10) { badgeClass = 'cp-badge-accent'; badgeText = 'Changed (' + pct + '%)'; }
-        else if (pct >= 10) { badgeClass = 'cp-badge-rose'; badgeText = 'Significant (' + pct + '%)'; }
-        
-        shadow.getElementById('cp-modal-name').innerText = screenshotState.componentName;
-        shadow.getElementById('cp-modal-badge').innerHTML = '<span class="cp-badge ' + badgeClass + '">' + badgeText + '</span>';
-        shadow.getElementById('cp-modal-before').src = screenshotState.beforeDataUrl;
-        shadow.getElementById('cp-modal-after').src = dataUrl;
-        shadow.getElementById('cp-modal-slider').value = 50;
-        shadow.getElementById('cp-modal-before').style.clipPath = 'polygon(0 0, 50% 0, 50% 100%, 0 100%)';
-        shadow.getElementById('cp-modal-handle').style.left = '50%';
-        shadow.getElementById('cp-slider-modal').style.display = 'flex';
-        
-        screenshotState = { beforeDataUrl: null, afterDataUrl: null, currentComponentId: null, componentName: null };
-      };
-
-      shadow.getElementById('cp-modal-close').onclick = () => {
-        shadow.getElementById('cp-slider-modal').style.display = 'none';
-      };
-
-      shadow.getElementById('cp-modal-slider').oninput = function() {
-        const val = this.value;
-        shadow.getElementById('cp-modal-before').style.clipPath = 'polygon(0 0, ' + val + '% 0, ' + val + '% 100%, 0 100%)';
-        shadow.getElementById('cp-modal-handle').style.left = val + '%';
-      };
+      }
 
       shadow.getElementById('cp-pin-btn').onclick = async () => {
-        if (lastCopiedContext) {
-          await fetch(BRIDGE + '/api/pin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'add',
-              file: lastCopiedContext.source.file,
-              line: lastCopiedContext.source.startLine
-            })
-          });
-          showCallout('Pinned ' + lastCopiedContext.component.name, 'PIN');
-          refreshPins();
+        const targetToPin = selectedTarget?.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
+        const resolved = lastResolved || (targetToPin ? await resolveComponent(targetToPin) : null);
+        if (resolved) {
+          openPinDialog(targetToPin, resolved);
+        } else if (lastCopiedContext) {
+          openPinDialog({ name: lastCopiedContext.component.name }, { file: lastCopiedContext.source.file, line: lastCopiedContext.source.startLine });
+        } else {
+          showCallout('Select a component to pin first', 'TIP');
         }
       };
 
@@ -2343,12 +2736,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       shadow.getElementById('cp-gen-task').onclick = async () => {
-        const instruction = taskInput ? taskInput.value.trim() : '';
-        if (!instruction) {
-          showCallout('Enter a task description first', 'TIP');
-          if (taskInput) taskInput.focus();
+        if (!currentPins || currentPins.length === 0) {
+          showCallout('Pin at least one component first', 'TIP');
           return;
         }
+        const instruction = taskInput ? taskInput.value.trim() : '';
         const level = shadow.getElementById('cp-context-level')?.value || 'standard';
         const btn = shadow.getElementById('cp-gen-task');
         const originalHtml = btn.innerHTML;
@@ -2362,9 +2754,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           });
           const data = await res.json();
           await navigator.clipboard.writeText(data.context || JSON.stringify(data, null, 2));
-          showCallout('Task brief copied (' + (data.tokenCost || '?') + ' tokens)', 'COPIED');
+          showCallout('All tasks copied in order (' + (data.tokenCost || '?') + ' tokens)', 'COPIED');
           btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
-          if (taskInput) taskInput.value = '';
           setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 1600);
         } catch(e) {
           showCallout('Failed to generate task context', 'ERROR');
@@ -3158,7 +3549,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           flyout.classList.remove('open');
           dockWrapper.classList.remove('sidebar-open');
           if (typeof clearSelection === 'function') clearSelection();
-          shadow.getElementById('cp-slider-modal').style.display = 'none';
         }
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
         if (isPointerMode && currentStack.length > 1) {
@@ -3272,68 +3662,55 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           console.error('[agent-hover] dom-to-image-more not loaded');
           return null;
         }
+        // Requirement 4: Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
+        const rootContainer = shadow.host || container;
+        const prevDisplay = rootContainer.style.display;
+        rootContainer.style.display = 'none';
+
         try {
-          element.scrollIntoView({ block: 'center', behavior: 'instant' });
-          await new Promise(r => setTimeout(r, 150));
+          if (element.scrollIntoView) {
+            element.scrollIntoView({ block: 'center', behavior: 'instant' });
+          }
+          await new Promise(r => setTimeout(r, 120));
+          const isFullPage = element === document.body || element === document.documentElement;
+          const captureWidth = isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth);
+          const captureHeight = isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight);
+
           const dataUrl = await window.domtoimage.toPng(element, {
-            width: element.offsetWidth,
-            height: element.offsetHeight,
-            style: { transform: 'none', animation: 'none' }
+            width: captureWidth,
+            height: captureHeight,
+            style: { transform: 'none', animation: 'none' },
+            filter: (node) => {
+              if (node && node.id === 'agent-hover-root') return false;
+              if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
+              return true;
+            }
           });
           return dataUrl;
         } catch (err) {
           console.error('[agent-hover] Screenshot capture failed:', err);
           return null;
+        } finally {
+          rootContainer.style.display = prevDisplay || 'block';
         }
       }
 
-      function generatePixelDiff(beforeDataUrl, afterDataUrl) {
-        return new Promise((resolve) => {
-          const imgA = new Image();
-          const imgB = new Image();
-          let loaded = 0;
-          function onLoad() {
-            if (++loaded < 2) return;
-            const w = Math.max(imgA.width, imgB.width);
-            const h = Math.max(imgA.height, imgB.height);
-            const cA = document.createElement('canvas');
-            cA.width = w; cA.height = h;
-            const cB = document.createElement('canvas');
-            cB.width = w; cB.height = h;
-            const cD = document.createElement('canvas');
-            cD.width = w; cD.height = h;
-            cA.getContext('2d').drawImage(imgA, 0, 0);
-            cB.getContext('2d').drawImage(imgB, 0, 0);
-            const dA = cA.getContext('2d').getImageData(0, 0, w, h);
-            const dB = cB.getContext('2d').getImageData(0, 0, w, h);
-            const dD = cD.getContext('2d').createImageData(w, h);
-            let changed = 0;
-            const tolerance = 16;
-            for (let i = 0; i < dA.data.length; i += 4) {
-              const dr = Math.abs(dA.data[i] - dB.data[i]);
-              const dg = Math.abs(dA.data[i+1] - dB.data[i+1]);
-              const db = Math.abs(dA.data[i+2] - dB.data[i+2]);
-              if (dr > tolerance || dg > tolerance || db > tolerance) {
-                dD.data[i] = 0; dD.data[i+1] = 240; dD.data[i+2] = 255; dD.data[i+3] = 220;
-                changed++;
-              } else {
-                dD.data[i] = dA.data[i]; dD.data[i+1] = dA.data[i+1];
-                dD.data[i+2] = dA.data[i+2]; dD.data[i+3] = 60;
-              }
-            }
-            cD.getContext('2d').putImageData(dD, 0, 0);
-            resolve({
-              diffDataUrl: cD.toDataURL('image/png'),
-              changedPixelPercent: Math.round((changed / (w * h)) * 1000) / 10
-            });
-          }
-          imgA.onload = onLoad;
-          imgB.onload = onLoad;
-          imgA.onerror = () => resolve({ diffDataUrl: null, changedPixelPercent: -1 });
-          imgB.onerror = () => resolve({ diffDataUrl: null, changedPixelPercent: -1 });
-          imgA.src = beforeDataUrl;
-          imgB.src = afterDataUrl;
-        });
+      async function downloadCleanScreenshot(targetEl, name) {
+        showCallout('Capturing clean screenshot...', 'SNAP', 800);
+        const el = targetEl || document.body;
+        const dataUrl = await captureElement(el);
+        if (!dataUrl) {
+          showCallout('Failed to capture screenshot', 'ERROR');
+          return;
+        }
+        const a = document.createElement('a');
+        const cleanName = (name || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
+        a.href = dataUrl;
+        a.download = cleanName + '_' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showCallout('Clean screenshot saved (Website UI only)', 'SAVED');
       }
 
       function findComponentElement(componentName) {
@@ -3940,17 +4317,20 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
 
-      function formatContextForAiPrompt(ctx, stack) {
+      function formatContextForAiPrompt(ctx, stack, customTask) {
         const bt = String.fromCharCode(96);
         const nl = String.fromCharCode(10);
-        let text = '### Component Context (Agent Hover)' + nl;
-        text += '- **Component**: ' + (ctx.component && ctx.component.name ? '<' + ctx.component.name + ' />' : 'Target Component') + nl;
+        const compName = ctx.component && ctx.component.name ? '<' + ctx.component.name + ' />' : 'Target Component';
+        let text = '### Component Task: ' + compName + nl;
         if (ctx.source && ctx.source.file) {
           text += '- **Location**: ' + bt + ctx.source.file + (ctx.source.startLine ? ':' + ctx.source.startLine + '-' + ctx.source.endLine : '') + bt + nl;
         }
         if (stack && stack.length > 0) {
           const pathStr = stack.map(function(s) { return s.name; }).reverse().join(' › ');
           text += '- **Hierarchy**: ' + pathStr + nl;
+        }
+        if (customTask && customTask.trim()) {
+          text += nl + '#### Objective' + nl + '> ' + customTask.trim() + nl;
         }
         if (ctx.interface && ctx.interface.props && ctx.interface.props.length > 0) {
           const propSummary = ctx.interface.props.map(function(p) { return p.name + ': ' + p.type + (p.required ? ' (req)' : ''); }).join(', ');
@@ -3959,10 +4339,57 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         if (ctx.interface && ctx.interface.hooks && ctx.interface.hooks.length > 0) {
           text += '- **Hooks**: ' + ctx.interface.hooks.join(', ') + nl;
         }
-        if (ctx.source && ctx.source.code) {
-          text += nl + bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
+        if (typeof comments !== 'undefined' && comments && comments.length > 0) {
+          const relComments = comments.filter(c => (ctx.component && c.component === ctx.component.name) || (ctx.source && c.file === ctx.source.file));
+          if (relComments.length > 0) {
+            text += nl + '#### Active Notes & Feedback' + nl;
+            relComments.forEach(c => {
+              text += '- ' + (c.resolved ? '[RESOLVED] ' : '') + c.text + nl;
+            });
+          }
         }
-        text += nl + '> Token Budget: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '150') + ' tokens (zero-searching target)' + nl;
+        if (ctx.source && ctx.source.code) {
+          text += nl + '#### Source Code' + nl + bt+bt+bt + 'tsx' + nl + ctx.source.code + nl + bt+bt+bt + nl;
+        }
+        text += nl + '> Token Budget: ~' + (ctx.tokens && ctx.tokens.current ? ctx.tokens.current : '150') + ' tokens' + nl;
+        return text;
+      }
+
+      function formatDomElementPrompt(target, computedStyles, stack, customTask) {
+        const bt = String.fromCharCode(96);
+        const nl = String.fromCharCode(10);
+        const el = target?.element || selectedElement;
+        const tag = el ? el.tagName.toLowerCase() : 'element';
+        const classes = el && el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '';
+        const selector = (typeof buildCSSSelector === 'function' && el) ? buildCSSSelector(el) : tag + classes;
+
+        let text = '### UI Element Task: <' + tag + classes + ' />' + nl;
+        text += '- **Selector**: ' + bt + selector + bt + nl;
+        if (stack && stack.length > 0) {
+          const pathStr = stack.map(function(s) { return s.name; }).reverse().join(' › ');
+          text += '- **Hierarchy**: ' + pathStr + nl;
+        }
+        if (customTask && customTask.trim()) {
+          text += nl + '#### Objective' + nl + '> ' + customTask.trim() + nl;
+        }
+        if (computedStyles) {
+          text += nl + '#### Computed Styles & Box Model' + nl;
+          if (computedStyles.boundingBox) {
+            text += '- **Dimensions**: ' + Math.round(computedStyles.boundingBox.width) + 'px × ' + Math.round(computedStyles.boundingBox.height) + 'px (at x: ' + Math.round(computedStyles.boundingBox.left) + ', y: ' + Math.round(computedStyles.boundingBox.top) + ')' + nl;
+          }
+          text += '- **Layout**: display: ' + (computedStyles.display || 'block') + ' | position: ' + (computedStyles.position || 'static') + nl;
+          text += '- **Colors**: color: ' + (computedStyles.color || 'inherit') + ' | bg: ' + (computedStyles.backgroundColor || 'transparent') + nl;
+          text += '- **Typography**: ' + (computedStyles.fontSize || '14px') + ' line-height: ' + (computedStyles.lineHeight || 'normal') + nl;
+        }
+        if (typeof comments !== 'undefined' && comments && comments.length > 0) {
+          const relComments = comments.filter(c => c.selector === selector || (c.component && target && c.component === target.name));
+          if (relComments.length > 0) {
+            text += nl + '#### Active Notes & Feedback' + nl;
+            relComments.forEach(c => {
+              text += '- ' + (c.resolved ? '[RESOLVED] ' : '') + c.text + nl;
+            });
+          }
+        }
         return text;
       }
 
@@ -3991,7 +4418,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         try {
           const resPins = await fetch(BRIDGE + '/api/pins');
           const dataPins = await resPins.json();
-          const count = dataPins.pins ? dataPins.pins.length : 0;
+          currentPins = dataPins.pins || [];
+          const count = currentPins.length;
           shadow.getElementById('cp-pin-count').textContent = count;
 
           if (count > 0) {
@@ -4001,24 +4429,50 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             dockPinBadge.style.display = 'none';
           }
 
-
-
           const list = shadow.getElementById('cp-pin-list');
           list.innerHTML = '';
-          if (dataPins.pins) {
-            dataPins.pins.forEach(function(pin) {
-              const div = document.createElement('div');
-              div.className = 'cp-pin-item';
+          if (dataPins.pins && dataPins.pins.length > 0) {
+            dataPins.pins.forEach(function(pin, index) {
+              const card = document.createElement('div');
+              card.className = 'cp-pin-card';
               const name = pin.context ? pin.context.component.name : pin.id;
               const file = pin.context ? pin.context.source.file.split('/').pop() : '';
               
               const isPinFrozen = frozenEntries.some(f => (pin.context && f.file === pin.context.source.file) || f.id === pin.id);
               const lockIcon = isPinFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
               
-              div.innerHTML = '<span>' + lockIcon + name + ' <span style="color:var(--text-muted); font-size:10px; margin-left:6px;">' + file + '</span></span>' +
-                '<button class="cp-pin-remove" data-id="' + pin.id + '">' + ICONS.x + '</button>';
-              list.appendChild(div);
+              card.innerHTML =
+                '<div class="cp-pin-header">' +
+                  '<div class="cp-pin-title">' +
+                    '<span class="cp-pin-badge">#' + (index + 1) + '</span>' +
+                    '<span>' + lockIcon + '&lt;' + name + ' /&gt;</span>' +
+                    '<span class="cp-pin-file">' + file + '</span>' +
+                  '</div>' +
+                  '<button class="cp-pin-remove" data-id="' + pin.id + '" title="Remove pin">' + ICONS.x + '</button>' +
+                '</div>' +
+                '<textarea class="cp-pin-textarea" rows="2" placeholder="Task for this component..." data-id="' + pin.id + '">' + (pin.task || '') + '</textarea>';
+              list.appendChild(card);
             });
+
+            // Listen for changes/blur on task textareas to update-task
+            const textareas = list.querySelectorAll('.cp-pin-textarea');
+            textareas.forEach(ta => {
+              const saveTask = async () => {
+                const id = ta.getAttribute('data-id');
+                const p = dataPins.pins.find(x => x.id === id);
+                if (p && p.task !== ta.value) {
+                  p.task = ta.value;
+                  await fetch(BRIDGE + '/api/pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'update-task', id, task: ta.value })
+                  });
+                }
+              };
+              ta.addEventListener('change', saveTask);
+              ta.addEventListener('blur', saveTask);
+            });
+
             const removeBtns = list.querySelectorAll('.cp-pin-remove');
             removeBtns.forEach(btn => {
               btn.onclick = async () => {
@@ -4028,12 +4482,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                   await fetch(BRIDGE + '/api/pin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'remove', file: p.context.source.file })
+                    body: JSON.stringify({ action: 'remove', file: p.context.source.file, id })
                   });
                   refreshState();
                 }
               };
             });
+          } else {
+            list.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic; padding:6px 0;">No pinned components. Click "Pin Component Task" on any component to stage changes.</div>';
           }
 
           const savingsDiv = shadow.getElementById('cp-token-savings');
@@ -4060,6 +4516,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const payload = JSON.parse(msg.data);
             if (payload.type === 'state-update') {
               frozenEntries = payload.data.frozenEntries || [];
+              if (payload.data.comments) {
+                comments = payload.data.comments;
+                renderCommentMarkers();
+                renderSidebarNotes();
+              }
               refreshState();
             } else if (payload.type === 'pins-update') {
               refreshState();
@@ -4099,25 +4560,6 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                   requestId: requestId
                 };
                 
-                if (label === 'after') {
-                  try {
-                    const checkRes = await fetch(BRIDGE + '/api/screenshot/' + encodeURIComponent(componentId) + '?include_data=true');
-                    const checkData = await checkRes.json();
-                    if (checkData.before && checkData.before.dataUrl) {
-                      const diffResult = await generatePixelDiff(checkData.before.dataUrl, dataUrl);
-                      postBody.diff = {
-                        componentId: componentId,
-                        componentName: component,
-                        before: { id: componentId, label: 'before', dataUrl: checkData.before.dataUrl, timestamp: checkData.before.timestamp, boundingBox: checkData.before.boundingBox, viewport: checkData.before.viewport },
-                        after: { id: componentId, label: 'after', dataUrl: dataUrl, timestamp: new Date().toISOString(), boundingBox: postBody.boundingBox, viewport: postBody.viewport },
-                        diffDataUrl: diffResult.diffDataUrl || '',
-                        changedPixelPercent: diffResult.changedPixelPercent,
-                        createdAt: new Date().toISOString()
-                      };
-                    }
-                  } catch(e) { console.error('[agent-hover] Diff generation error:', e); }
-                }
-                
                 fetch(BRIDGE + '/api/screenshot', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -4140,6 +4582,16 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         refreshState();
       })
       .catch(e => refreshState());
+      window.addEventListener('scroll', () => {
+        if (typeof updateSelectionFrame === 'function') updateSelectionFrame();
+        if (typeof renderCommentMarkers === 'function') renderCommentMarkers();
+      }, { passive: true });
+      window.addEventListener('resize', () => {
+        if (typeof updateSelectionFrame === 'function') updateSelectionFrame();
+        if (typeof renderCommentMarkers === 'function') renderCommentMarkers();
+      }, { passive: true });
+
+      loadComments();
 
       console.log('[agent-hover] Ready');
     })();
@@ -4155,6 +4607,16 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
   return {
     name: 'agent-hover',
     apply: 'serve', // only in dev mode
+
+    config() {
+      return {
+        server: {
+          watch: {
+            ignored: ['**/.agent-hover/**', '**/.agent-hover/comments.json'],
+          },
+        },
+      };
+    },
 
     configResolved(config) {
       projectRoot = config.root;

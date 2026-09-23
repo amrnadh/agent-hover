@@ -1,0 +1,12 @@
+[
+  {
+    "id": "c_1790150828919_hk7tn",
+    "file": "src/components/dashboard/ActivityItem.tsx",
+    "line": 10,
+    "component": "ActivityItem",
+    "selector": "section:nth-of-type(2) > div > div:nth-of-type(2) > div:nth-of-type(2) > div > div:nth-of-type(1)",
+    "text": "ai slop",
+    "createdAt": "2026-09-23T08:07:08.919Z",
+    "resolved": false
+  }
+]
