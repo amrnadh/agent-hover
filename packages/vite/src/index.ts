@@ -37,10 +37,10 @@ const UI_HTML = `
             --accent: #0d99ff;
             --accent-hover: #007be5;
             --accent-subtle: rgba(13, 153, 255, 0.10);
-            --accent-solid: #ffffff;
-            --accent-solid-text: #1e1e1e;
-            --accent-solid-border: rgba(255, 255, 255, 0.15);
-            --accent-solid-hover: #e0e0e0;
+            --accent-solid: #2c2c2c;
+            --accent-solid-text: #ffffff;
+            --accent-solid-border: #444444;
+            --accent-solid-hover: #383838;
             --accent-emerald: #14ae5c;
             --accent-rose: #f24822;
             --text-primary: #e0e0e0;
@@ -292,7 +292,7 @@ const UI_HTML = `
             color: var(--text-primary);
             font-family: var(--font-sans);
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-glass);
-            z-index: 999995;
+            z-index: 999998;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -337,7 +337,7 @@ const UI_HTML = `
             box-shadow: -12px 0 36px rgba(0, 0, 0, 0.55) !important;
             transform: translateX(100%);
             transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
-            z-index: 999995 !important;
+            z-index: 999998 !important;
           }
 
           #cp-flyout.is-sidebar.open {
@@ -410,7 +410,7 @@ const UI_HTML = `
           .cp-btn-bento {
             background: var(--bg-surface-raised);
             border: 1px solid var(--border-glass);
-            color: var(--text-primary);
+            color: var(--text-secondary);
             padding: 8px 13px;
             border-radius: 8px;
             font-family: var(--font-sans);
@@ -425,8 +425,8 @@ const UI_HTML = `
           }
 
           .cp-btn-bento:hover {
-            background: var(--bg-tile-hover);
-            border-color: var(--border-highlight);
+            background: #333333;
+            border-color: #4a4a4a;
             color: #ffffff;
             transform: translateY(-1px);
           }
@@ -437,17 +437,67 @@ const UI_HTML = `
           }
 
           .cp-btn-bento.primary {
-            background: var(--accent-solid);
-            border: 1px solid var(--accent-solid-border);
-            color: var(--accent-solid-text);
+            background: #2c2c2c;
+            border: 1px solid #4a4a4a;
+            color: #ffffff;
             font-weight: 600;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.10);
           }
 
           .cp-btn-bento.primary:hover {
-            background: var(--accent-solid-hover);
-            border-color: var(--border-highlight);
-            color: var(--accent-solid-text);
+            background: #383838;
+            border-color: #5c5c5c;
+            color: #ffffff;
+          }
+
+          .cp-flyout-tool-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #b3b3b3;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            padding: 0;
+          }
+          .cp-flyout-tool-btn:hover {
+            background: #2c2c2c;
+            border-color: #383838;
+            color: #ffffff;
+          }
+
+          :host(.light-mode) .cp-btn-bento {
+            background: #f0f0f1;
+            border: 1px solid #d9d9dc;
+            color: #474553;
+          }
+          :host(.light-mode) .cp-btn-bento:hover {
+            background: #e4e4e7;
+            border-color: #c0bfc4;
+            color: #030014;
+          }
+          :host(.light-mode) .cp-btn-bento.primary {
+            background: #1e1e1e;
+            border: 1px solid #1e1e1e;
+            color: #ffffff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+          }
+          :host(.light-mode) .cp-btn-bento.primary:hover {
+            background: #000000;
+            border-color: #000000;
+            color: #ffffff;
+          }
+          :host(.light-mode) .cp-flyout-tool-btn {
+            color: #8e8c95;
+          }
+          :host(.light-mode) .cp-flyout-tool-btn:hover {
+            background: #f0f0f1;
+            border-color: #d9d9dc;
+            color: #030014;
           }
 
           .cp-section { margin-bottom: 20px; }
@@ -479,7 +529,7 @@ const UI_HTML = `
             height: 0;
             border-top: 4px solid transparent;
             border-bottom: 4px solid transparent;
-            border-left: 5px solid var(--accent);
+            border-left: 5px solid var(--text-muted);
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             margin-right: 3px;
             transform-origin: 2px 4px;
@@ -554,7 +604,8 @@ const UI_HTML = `
             font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2px;
             min-height: 24px; line-height: 1;
           }
-          .cp-badge-accent { background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--border-accent); }
+          .cp-badge-accent { background: #2c2c2c; color: #ffffff; border: 1px solid #444444; }
+          :host(.light-mode) .cp-badge-accent { background: #f0f0f1; color: #030014; border: 1px solid #d9d9dc; }
           .cp-badge-emerald { background: rgba(20, 174, 92, 0.12); color: #14ae5c; border: 1px solid rgba(20, 174, 92, 0.3); }
           .cp-badge-muted { background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid var(--border-glass); }
           .cp-badge-rose { background: rgba(242, 72, 34, 0.12); color: #f24822; border: 1px solid rgba(242, 72, 34, 0.3); }
@@ -574,7 +625,7 @@ const UI_HTML = `
           #cp-highlight {
             position: fixed;
             pointer-events: none;
-            z-index: 999997;
+            z-index: 999991;
             border: 1.5px solid var(--frame-color);
             background: transparent;
             box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.25), 0 0 12px rgba(13, 153, 255, 0.12);
@@ -595,7 +646,7 @@ const UI_HTML = `
           #cp-margin-band {
             position: fixed;
             pointer-events: none;
-            z-index: 999996;
+            z-index: 999990;
             box-sizing: border-box;
             background: rgba(244, 63, 94, 0.05);
             border-style: dashed;
@@ -606,7 +657,7 @@ const UI_HTML = `
           #cp-padding-band {
             position: fixed;
             pointer-events: none;
-            z-index: 999997;
+            z-index: 999990;
             box-sizing: border-box;
             background: rgba(52, 211, 153, 0.06);
             border-style: dashed;
@@ -618,7 +669,7 @@ const UI_HTML = `
             position: fixed;
             inset: 0;
             pointer-events: none;
-            z-index: 999995;
+            z-index: 999990;
           }
           .cp-axis-line {
             position: fixed;
@@ -651,7 +702,7 @@ const UI_HTML = `
             left: -1px;
             background: var(--bg-dock-panel);
             border: 1px solid var(--frame-color);
-            color: var(--accent);
+            color: #ffffff;
             font-family: var(--font-mono);
             font-size: 10.5px;
             font-weight: 600;
@@ -675,7 +726,7 @@ const UI_HTML = `
           /* --- Persistent Selection Frame & Near-Component Action Pill --- */
           #cp-selection-frame {
             position: fixed;
-            z-index: 999998;
+            z-index: 999992;
             pointer-events: none;
             border: 2px solid var(--frame-color);
             box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.30), 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(13, 153, 255, 0.15);
@@ -695,7 +746,7 @@ const UI_HTML = `
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
-            border: 1px solid rgba(13, 153, 255, 0.45);
+            border: 1px solid var(--border-glass);
             border-radius: 8px;
             box-shadow: var(--shadow-dock);
             color: var(--text-primary);
@@ -709,8 +760,8 @@ const UI_HTML = `
             left: 0;
           }
           #cp-sel-name {
-            font-weight: 700;
-            color: var(--frame-color);
+            font-weight: 600;
+            color: var(--text-primary);
           }
           #cp-sel-file {
             color: var(--text-muted);
@@ -742,53 +793,81 @@ const UI_HTML = `
             transition: all 0.15s ease;
           }
           #cp-sel-actions button:hover {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border-color: var(--border-accent);
+            background: #383838;
+            color: #ffffff;
+            border-color: #555555;
+          }
+          :host(.light-mode) #cp-sel-actions button:hover {
+            background: #e4e4e7;
+            color: #030014;
+            border-color: #c0bfc4;
           }
           #cp-sel-copy-btn {
             font-weight: 600;
-            background: var(--frame-color) !important;
+            background: #2c2c2c !important;
             color: #ffffff !important;
-            border-color: var(--frame-color) !important;
-            box-shadow: 0 1px 3px rgba(13, 153, 255, 0.35);
+            border: 1px solid #4a4a4a !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
           }
           #cp-sel-copy-btn:hover {
-            background: var(--accent-hover) !important;
-            border-color: var(--accent-hover) !important;
+            background: #383838 !important;
+            border-color: #5c5c5c !important;
+            color: #ffffff !important;
             opacity: 1 !important;
+          }
+          :host(.light-mode) #cp-sel-copy-btn {
+            background: #ffffff !important;
+            color: #030014 !important;
+            border: 1px solid #d9d9dc !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+          }
+          :host(.light-mode) #cp-sel-copy-btn:hover {
+            background: #f0f0f1 !important;
+            border-color: #c0bfc4 !important;
+            color: #030014 !important;
           }
 
           /* --- Inline Comment Pin Markers on Page --- */
           .cp-comment-marker {
             position: fixed;
-            z-index: 999997;
+            z-index: 999993;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-width: 22px;
             height: 22px;
-            padding: 0 6px;
-            background: #ffcd29;
-            color: #1e1e1e;
+            padding: 0 7px;
+            background: #1e1e1e;
+            color: #ffffff;
+            border: 1.5px solid #0d99ff;
             border-radius: 999px;
             font-family: var(--font-mono);
             font-size: 11px;
-            font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px #1e1e1e;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6), 0 0 8px rgba(13, 153, 255, 0.35);
             cursor: pointer;
             pointer-events: auto;
             transform: translate(-50%, -50%);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
           }
           .cp-comment-marker:hover {
             transform: translate(-50%, -50%) scale(1.15);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 2px #ffffff;
+            background: #2c2c2c;
+            border-color: #ffffff;
+            box-shadow: 0 5px 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.4);
           }
           .cp-comment-marker.resolved {
-            opacity: 0.55;
-            background: var(--text-muted);
+            opacity: 0.5;
+            background: #252525;
+            border-color: #555555;
+            color: #888888;
+            box-shadow: none;
+          }
+          :host(.light-mode) .cp-comment-marker {
+            background: #171427;
             color: #ffffff;
+            border-color: #4f46e5;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2), 0 0 8px rgba(79, 70, 229, 0.3);
           }
 
           /* --- Pinned Stack Cards --- */
@@ -818,13 +897,18 @@ const UI_HTML = `
             gap: 6px;
           }
           .cp-pin-badge {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border: 1px solid var(--border-accent);
+            background: #2c2c2c;
+            color: #ffffff;
+            border: 1px solid #444444;
             font-family: var(--font-mono);
             font-size: 9.5px;
             padding: 1px 5px;
             border-radius: 4px;
+          }
+          :host(.light-mode) .cp-pin-badge {
+            background: #f0f0f1;
+            color: #030014;
+            border-color: #d9d9dc;
           }
           .cp-pin-file {
             font-family: var(--font-mono);
@@ -876,22 +960,32 @@ const UI_HTML = `
 
           .cp-vibe-chip {
             padding: 4px 9px;
-            background: var(--bg-surface-input);
-            border: 1px solid var(--border-glass);
+            background: #262626;
+            border: 1px solid #383838;
             border-radius: 6px;
-            color: var(--text-secondary);
+            color: #cccccc;
             font-family: var(--font-mono);
             font-size: 11px;
             cursor: pointer;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
           }
           .cp-vibe-chip:hover {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border-color: var(--border-accent);
+            background: #383838;
+            color: #ffffff;
+            border-color: #555555;
+          }
+          :host(.light-mode) .cp-vibe-chip {
+            background: #ffffff;
+            border-color: #d9d9dc;
+            color: #474553;
+          }
+          :host(.light-mode) .cp-vibe-chip:hover {
+            background: #f5f5f6;
+            color: #030014;
+            border-color: #c0bfc4;
           }
 
           #cp-pin-bar {
@@ -944,7 +1038,7 @@ const UI_HTML = `
           #cp-text-editor-header > span {
             font-size: 12px;
             font-weight: 600;
-            color: var(--accent);
+            color: var(--text-primary);
             font-family: var(--font-mono);
           }
           #cp-text-editor-toolbar {
@@ -955,8 +1049,8 @@ const UI_HTML = `
           .cp-text-tb-btn {
             width: 26px; height: 26px;
             display: flex; align-items: center; justify-content: center;
-            background: var(--bg-surface-input);
-            border: 1px solid var(--border-glass);
+            background: #262626;
+            border: 1px solid #383838;
             border-radius: 5px;
             color: var(--text-secondary);
             cursor: pointer;
@@ -966,14 +1060,14 @@ const UI_HTML = `
             transition: all 0.15s;
           }
           .cp-text-tb-btn:hover {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border-color: var(--border-accent);
+            background: #383838;
+            color: #ffffff;
+            border-color: #555555;
           }
           .cp-text-tb-btn.active {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border-color: var(--border-accent);
+            background: #ffffff;
+            color: #1e1e1e;
+            border-color: #ffffff;
           }
           #cp-text-editor-content {
             min-height: 60px;
@@ -990,7 +1084,7 @@ const UI_HTML = `
             background: transparent;
           }
           #cp-text-editor-content:focus {
-            background: var(--accent-subtle);
+            background: rgba(255, 255, 255, 0.03);
           }
           #cp-text-editor-footer {
             display: flex;
@@ -1011,21 +1105,22 @@ const UI_HTML = `
             transition: all 0.15s;
           }
           .cp-text-action-btn.apply {
-            background: var(--accent-subtle);
-            color: var(--accent);
-            border-color: var(--border-accent);
+            background: #ffffff;
+            color: #1e1e1e;
+            border-color: #ffffff;
           }
           .cp-text-action-btn.apply:hover {
-            background: var(--accent-subtle);
+            background: #f0f0f0;
           }
           .cp-text-action-btn.revert {
-            background: var(--bg-surface-input);
+            background: #262626;
+            border: 1px solid #383838;
             color: var(--text-secondary);
           }
           .cp-text-action-btn.revert:hover {
-            background: rgba(244, 63, 94, 0.12);
-            color: #fb7185;
-            border-color: rgba(244, 63, 94, 0.3);
+            background: #383838;
+            color: #ffffff;
+            border-color: #555555;
           }
           #cp-text-char-count {
             margin-left: auto;
@@ -1236,26 +1331,26 @@ const UI_HTML = `
         <div id="cp-flyout">
           <div id="cp-flyout-header">
             <div id="cp-flyout-title-wrap">
-              <button class="cp-dock-tile" id="cp-settings-back" title="Back to Inspector" style="display:none; width:28px; height:28px; border-radius:8px;">
+              <button class="cp-flyout-tool-btn" id="cp-settings-back" title="Back to Inspector" style="display:none;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
               <span class="cp-badge cp-badge-accent" id="cp-flyout-badge">LENS</span>
               <h3 id="cp-flyout-title">Component Inspector</h3>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
-              <button class="cp-dock-tile" id="cp-flyout-theme" title="Toggle Light/Dark Mode" style="width:30px; height:30px; border-radius:8px;">
+              <button class="cp-flyout-tool-btn" id="cp-flyout-theme" title="Toggle Light/Dark Mode">
                 <svg id="cp-theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <svg id="cp-theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               </button>
-              <button class="cp-dock-tile" id="cp-flyout-settings" title="Settings" style="width:30px; height:30px; border-radius:8px;">
+              <button class="cp-flyout-tool-btn" id="cp-flyout-settings" title="Settings">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
-              <button class="cp-dock-tile" id="cp-flyout-mode-toggle" title="Detach Sidebar (Float Window)" style="width:30px; height:30px; border-radius:8px;">
+              <button class="cp-flyout-tool-btn" id="cp-flyout-mode-toggle" title="Detach Sidebar (Float Window)">
                 <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><polyline points="10 9 7 12 10 15"/></svg>
                 <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               </button>
-              <button class="cp-dock-tile" id="cp-flyout-snap-btn" title="Take Screenshot (Website UI)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
-              <button class="cp-dock-tile" id="cp-flyout-close" title="Close (Esc)" style="width:30px; height:30px; border-radius:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button class="cp-flyout-tool-btn" id="cp-flyout-snap-btn" title="Take Screenshot (Website UI)"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+              <button class="cp-flyout-tool-btn" id="cp-flyout-close" title="Close (Esc)"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
 
@@ -1267,8 +1362,8 @@ const UI_HTML = `
             <!-- Live Token Meter & Context Level Bar -->
             <div id="cp-token-meter" style="padding: 7px 18px; background: var(--bg-surface-sunken); border-bottom: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span id="cp-token-count">0</span> tokens
+                <span style="color: var(--text-primary); font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span id="cp-token-count">0</span> tokens
                 </span>
                 <span id="cp-token-savings" class="cp-badge cp-badge-emerald" style="min-height: 18px; font-size: 10px; padding: 1px 6px;">
                   prompt-ready
@@ -1298,8 +1393,8 @@ const UI_HTML = `
             <!-- Vibe Prompt Starters -->
             <div style="padding:10px 20px; border-top:1px solid var(--border-glass); background:var(--bg-surface-sunken);">
               <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Vibe Prompts</span>
-                <span style="font-size:9.5px; color:var(--accent);">1-Click Copy</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Vibe Prompts</span>
+                <span style="font-size:9.5px; color:var(--text-muted);">1-Click Copy</span>
               </div>
               <div style="display:flex; flex-wrap:wrap; gap:6px;" id="cp-vibe-prompts">
                 <button class="cp-vibe-chip" data-vibe="redesign" title="Prompt AI to modernize and redesign this component"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Redesign</button>
@@ -1470,7 +1565,7 @@ const UI_HTML = `
             <span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:12px; color:var(--text-primary);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Edit Text
             </span>
-            <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--accent); background:var(--accent-subtle); padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid var(--border-accent); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+            <span id="cp-text-target-badge" style="font-size:10px; font-family:var(--font-mono); color:var(--text-primary); background:#2c2c2c; padding:2px 6px; border-radius:4px; margin-left:6px; border:1px solid #444444; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
             <div id="cp-text-editor-toolbar">
               <button class="cp-text-tb-btn" data-cmd="bold" title="Bold (Cmd+B)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H6v-8Zm0 0V4h8a4 4 0 0 1 0 8H6Z"/></svg></button>
               <button class="cp-text-tb-btn" data-cmd="italic" title="Italic (Cmd+I)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg></button>
@@ -1766,15 +1861,32 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }, duration);
       }
 
+      function updateInspectorCursor(active) {
+        let cursorStyle = document.getElementById('cp-inspector-cursor');
+        if (!cursorStyle) {
+          cursorStyle = document.createElement('style');
+          cursorStyle.id = 'cp-inspector-cursor';
+          cursorStyle.textContent = 'html.cp-inspector-active, html.cp-inspector-active * { cursor: url("data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\' fill=\\'%230d99ff\\' stroke=\\'%23ffffff\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'%3E%3Cpath d=\\'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\\'/%3E%3C/svg%3E") 4 5, crosshair !important; } #agent-hover-root, #agent-hover-root * { cursor: auto; }';
+          document.head.appendChild(cursorStyle);
+        }
+        if (active) {
+          document.documentElement.classList.add('cp-inspector-active');
+        } else {
+          document.documentElement.classList.remove('cp-inspector-active');
+        }
+      }
+
       function togglePointerMode() {
         isPointerMode = !isPointerMode;
         if (isPointerMode) {
           dockToggle.classList.add('active');
           showCallout('Inspector Active', 'Alt', 2200);
+          updateInspectorCursor(true);
           console.log('[agent-hover] Pointer mode ON');
         } else {
           dockToggle.classList.remove('active');
           showCallout('Inspector Paused', 'OFF', 1500);
+          updateInspectorCursor(false);
           highlight.style.display = 'none';
           if (typeof clearSelection === 'function') clearSelection();
           hideBands();
@@ -2117,12 +2229,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           selectionChip.classList.remove('inside-top');
         }
 
+        const sidebarActive = flyout && flyout.classList.contains('open') && flyout.classList.contains('is-sidebar');
+        const maxRight = sidebarActive ? (window.innerWidth - 440 - 12) : (window.innerWidth - 12);
+
         if (rect.left < 10) {
           selectionChip.style.left = '4px';
           selectionChip.style.right = 'auto';
-        } else if (rect.left + 320 > window.innerWidth) {
+        } else if (rect.left + 320 > maxRight) {
           selectionChip.style.left = 'auto';
-          selectionChip.style.right = '4px';
+          selectionChip.style.right = sidebarActive ? '452px' : '4px';
         } else {
           selectionChip.style.left = '-2px';
           selectionChip.style.right = 'auto';
@@ -2204,7 +2319,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           titleWrap.style.display = 'flex';
           titleWrap.style.alignItems = 'center';
           titleWrap.style.gap = '5px';
-          titleWrap.innerHTML = '<span style="font-weight:600; color:var(--accent); font-family:var(--font-mono); font-size:10px;">#' + (idx + 1) + ' ' + (c.component ? '<' + c.component + ' />' : (c.selector || 'Element')) + '</span>';
+          titleWrap.innerHTML = '<span class="cp-pin-badge">#' + (idx + 1) + '</span> <span style="font-weight:600; color:var(--text-primary); font-family:var(--font-mono); font-size:11px;">' + (c.component ? '&lt;' + escapeHtml(c.component) + ' /&gt;' : escapeHtml(c.selector || 'Element')) + '</span>';
 
           const actionsWrap = document.createElement('div');
           actionsWrap.style.display = 'flex';
@@ -3865,7 +3980,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const c = currentStack[i];
             const isActive = i === currentStackIndex;
             const style = isActive
-              ? 'color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:var(--accent-subtle); white-space:nowrap;'
+              ? 'color:#ffffff; font-weight:600; cursor:pointer; padding:2px 8px; border-radius:4px; background:#2c2c2c; border:1px solid #444444; white-space:nowrap;'
               : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; white-space:nowrap;';
             const label = c.isDomElement ? c.name : '<' + c.name + ' />';
             crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '" title="' + escapeHtml(label) + '">' + escapeHtml(label) + '</span>');
@@ -3898,7 +4013,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           html += '<span class="cp-badge cp-badge-accent">' + el.tagName.toLowerCase() + '</span> ';
           if (el.id) html += '<span class="cp-badge cp-badge-emerald">#' + el.id + '</span> ';
           if (el.className && typeof el.className === 'string') {
-            const cls = el.className.trim().split(/\\s+/).slice(0, 6);
+            const cls = el.className.trim().split(/\s+/).slice(0, 6);
             if (cls.length && cls[0]) {
               cls.forEach(function(c) {
                 html += '<span class="cp-badge cp-badge-muted">.' + c + '</span> ';
@@ -3910,12 +4025,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           // If inside a React component, link to the parent component
           if (currentStack.length > 1) {
             const parentComp = currentStack[1];
-            html += '<div class="cp-section" id="cp-parent-comp-card" style="background:var(--accent-subtle); border:1px solid var(--border-accent); border-radius:8px; padding:10px 14px; margin-bottom:14px; cursor:pointer;" title="Click to view component">';
+            html += '<div class="cp-section" id="cp-parent-comp-card" style="background:var(--bg-surface-raised); border:1px solid var(--border-glass); border-radius:8px; padding:10px 14px; margin-bottom:14px; cursor:pointer;" title="Click to view component">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
             html += '<span style="font-size:10.5px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;">Rendered In Component</span>';
-            html += '<span style="font-size:10.5px; color:var(--accent); font-weight:600;">Inspect Component ›</span>';
+            html += '<span style="font-size:10.5px; color:var(--text-secondary); font-weight:600;">Inspect Component ›</span>';
             html += '</div>';
-            html += '<div style="font-size:14px; font-weight:700; color:var(--accent); margin-top:2px;">&lt;' + parentComp.name + ' /&gt;</div>';
+            html += '<div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-top:3px;">&lt;' + parentComp.name + ' /&gt;</div>';
             if (parentComp.source) {
               html += '<div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-top:3px;">' + parentComp.source.fileName + ':' + parentComp.source.lineNumber + '</div>';
               lastResolved = { file: parentComp.source.fileName, line: parentComp.source.lineNumber };
@@ -3954,7 +4069,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Value</th></tr>';
             attrs.forEach(function(a) {
               const val = a.value.length > 60 ? a.value.substring(0, 60) + '...' : a.value;
-              html += '<tr><td style="color:var(--accent);">' + a.name + '</td><td style="color:var(--text-secondary);">' + escapeHtml(val) + '</td></tr>';
+              html += '<tr><td style="color:var(--text-primary); font-weight:500;">' + a.name + '</td><td style="color:var(--text-secondary);">' + escapeHtml(val) + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -4090,7 +4205,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<summary class="cp-section-title">Props (' + ctx.interface.props.length + ')</summary>';
             html += '<table class="cp-props-table"><tr><th>Name</th><th>Type</th><th>Req</th></tr>';
             ctx.interface.props.forEach(function(p) {
-              html += '<tr><td style="color:var(--accent);">' + p.name + '</td><td style="color:var(--text-secondary);">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '—') + '</td></tr>';
+              html += '<tr><td style="color:var(--text-primary); font-weight:500;">' + p.name + '</td><td style="color:var(--text-secondary);">' + p.type + '</td><td style="color:var(--accent-emerald);">' + (p.required ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '—') + '</td></tr>';
             });
             html += '</table></details>';
           }
@@ -4122,7 +4237,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">border: ' + computedStyles.border + '</div>';
             html += '<div style="border:1px solid var(--border-glass); padding:8px; margin:4px; display:inline-block; background:rgba(255,255,255,0.03); border-radius:4px;">';
             html += '<div style="margin-bottom:4px; color:var(--text-muted);">padding: ' + computedStyles.padding + '</div>';
-            html += '<div style="background:var(--accent-subtle); border:1px solid var(--border-accent); padding:8px 12px; display:inline-block; color:var(--text-primary); border-radius:4px; font-weight:600;">';
+            html += '<div style="background:var(--bg-surface-raised); border:1px solid var(--border-glass); padding:8px 12px; display:inline-block; color:var(--text-primary); border-radius:4px; font-weight:600;">';
             html += Math.round(parseFloat(computedStyles.width)) + ' × ' + Math.round(parseFloat(computedStyles.height));
             html += '</div></div></div></div>';
             
@@ -4150,7 +4265,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             html += '<div id="cp-source-editor-box" style="display:none; margin-top:8px;">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">';
             html += '<span>' + ctx.source.file.split('/').pop() + ' (L' + ctx.source.startLine + '-L' + ctx.source.endLine + ')</span>';
-            html += '<span style="color:var(--accent); font-weight:500;">Direct Disk Edit</span>';
+            html += '<span style="color:var(--text-secondary); font-weight:500;">Direct Disk Edit</span>';
             html += '</div>';
             html += '<textarea id="cp-source-code-editor" spellcheck="false"></textarea>';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">';
@@ -4211,7 +4326,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               saveSourceBtn.disabled = true;
               saveSourceBtn.innerHTML = 'Saving...';
               if (saveStatus) {
-                saveStatus.style.color = 'var(--accent)';
+                saveStatus.style.color = 'var(--text-primary)';
                 saveStatus.textContent = 'Writing to disk & compiling...';
               }
 
@@ -4286,7 +4401,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 e.preventDefault();
                 undoSourceBtn.disabled = true;
                 if (saveStatus) {
-                  saveStatus.style.color = 'var(--accent)';
+                  saveStatus.style.color = 'var(--text-primary)';
                   saveStatus.textContent = 'Reverting...';
                 }
                 try {
@@ -4529,7 +4644,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
             
             savingsDiv.style.display = 'block';
-            savingsDiv.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent); display:inline-block; vertical-align:middle; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
+            savingsDiv.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
           } else {
             savingsDiv.style.display = 'none';
           }
