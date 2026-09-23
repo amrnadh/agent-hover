@@ -25,44 +25,44 @@ const UI_HTML = `
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
             
-            /* Dark mode (default) - AAA Neutral Studio Palette */
-            --bg-dock: rgba(23, 20, 39, 0.88);
-            --bg-dock-panel: rgba(23, 20, 39, 0.96);
-            --bg-tile: rgba(41, 38, 55, 0.45);
-            --bg-tile-hover: rgba(71, 69, 83, 0.50);
-            --bg-tile-active: rgba(91, 89, 102, 0.55);
-            --border-glass: rgba(217, 217, 220, 0.12);
-            --border-highlight: rgba(217, 217, 220, 0.25);
-            --border-accent: rgba(217, 217, 220, 0.40);
-            --accent: #fcfcfd;
-            --accent-hover: #ffffff;
-            --accent-subtle: rgba(217, 217, 220, 0.08);
-            --accent-solid: #211f30;
-            --accent-solid-text: #ffffff;
-            --accent-solid-border: rgba(217, 217, 220, 0.22);
-            --accent-solid-hover: #292637;
-            --accent-emerald: #34d399;
-            --accent-rose: #fb7185;
-            --text-primary: #fcfcfd;
-            --text-secondary: #c0bfc4;
-            --text-muted: #8e8c95;
+            /* Dark mode (default) - Figma Design Studio Palette */
+            --bg-dock: rgba(30, 30, 30, 0.92);
+            --bg-dock-panel: rgba(30, 30, 30, 0.98);
+            --bg-tile: rgba(44, 44, 44, 0.55);
+            --bg-tile-hover: rgba(56, 56, 56, 0.65);
+            --bg-tile-active: rgba(70, 70, 70, 0.70);
+            --border-glass: rgba(56, 56, 56, 0.80);
+            --border-highlight: rgba(58, 58, 58, 1);
+            --border-accent: rgba(80, 80, 80, 0.60);
+            --accent: #0d99ff;
+            --accent-hover: #007be5;
+            --accent-subtle: rgba(13, 153, 255, 0.10);
+            --accent-solid: #ffffff;
+            --accent-solid-text: #1e1e1e;
+            --accent-solid-border: rgba(255, 255, 255, 0.15);
+            --accent-solid-hover: #e0e0e0;
+            --accent-emerald: #14ae5c;
+            --accent-rose: #f24822;
+            --text-primary: #e0e0e0;
+            --text-secondary: #999999;
+            --text-muted: #777777;
             --blur: blur(20px) saturate(180%);
-            --shadow-dock: 0 8px 32px rgba(3, 0, 20, 0.55), 0 0 0 1px rgba(217, 217, 220, 0.10);
-            --shadow-tile: 0 1px 3px rgba(3, 0, 20, 0.35);
-            --frame-color: #6366f1;
-            --frame-raw: #818cf8;
-            --measure-color: #818cf8;
-            --bg-surface-raised: rgba(41, 38, 55, 0.50);
-            --bg-surface-sunken: rgba(3, 0, 20, 0.55);
-            --bg-surface-overlay: rgba(3, 0, 20, 0.70);
-            --bg-surface-input: rgba(33, 31, 48, 0.60);
-            --bg-surface-header: rgba(23, 20, 39, 0.40);
-            --border-subtle: rgba(217, 217, 220, 0.08);
-            --border-tile: rgba(217, 217, 220, 0.10);
-            --border-tile-hover: rgba(217, 217, 220, 0.25);
-            --scrollbar-thumb: rgba(142, 140, 149, 0.30);
-            --handle-color: rgba(142, 140, 149, 0.45);
-            --overlay-bg: rgba(3, 0, 20, 0.85);
+            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 56, 56, 0.50);
+            --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.35);
+            --frame-color: #0d99ff;
+            --frame-raw: #5cb3ff;
+            --measure-color: #5cb3ff;
+            --bg-surface-raised: rgba(44, 44, 44, 0.60);
+            --bg-surface-sunken: rgba(24, 24, 24, 0.70);
+            --bg-surface-overlay: rgba(20, 20, 20, 0.75);
+            --bg-surface-input: rgba(38, 38, 38, 0.70);
+            --bg-surface-header: rgba(35, 35, 35, 0.50);
+            --border-subtle: rgba(51, 51, 51, 0.60);
+            --border-tile: rgba(56, 56, 56, 0.50);
+            --border-tile-hover: rgba(58, 58, 58, 0.80);
+            --scrollbar-thumb: rgba(100, 100, 100, 0.35);
+            --handle-color: rgba(100, 100, 100, 0.50);
+            --overlay-bg: rgba(20, 20, 20, 0.88);
           }
           
           /* Light mode - AAA Neutral Studio Palette */
@@ -122,13 +122,13 @@ const UI_HTML = `
           .cp-spin { animation: cp-spin 0.8s linear infinite; }
 
           #cp-dock {
-            width: 52px;
+            width: 54px;
             background: var(--bg-dock);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            padding: 8px 6px 6px 6px;
+            border-radius: 14px;
+            padding: 7px 5px 6px 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -144,8 +144,8 @@ const UI_HTML = `
           /* --- Dock Squircle Tiles --- */
           .cp-dock-tile {
             position: relative;
-            width: 40px;
-            border-radius: 16px;
+            width: 42px;
+            border-radius: 8px;
             background: var(--bg-tile);
             border: 1px solid var(--border-tile);
             color: var(--text-secondary);
@@ -155,9 +155,9 @@ const UI_HTML = `
             justify-content: center;
             cursor: pointer;
             box-shadow: var(--shadow-tile);
-            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: visible;
-            height: 40px;
+            height: 42px;
           }
 
           .cp-dock-tile:hover {
@@ -167,13 +167,14 @@ const UI_HTML = `
           }
 
           .cp-dock-tile:active {
-            opacity: 0.8;
+            opacity: 0.85;
           }
 
           .cp-dock-tile.active {
-            color: var(--accent);
-            border-color: var(--border-accent);
-            background: var(--accent-subtle);
+            color: #ffffff;
+            border-color: var(--accent);
+            background: var(--accent);
+            box-shadow: 0 1px 4px rgba(13, 153, 255, 0.4);
           }
 
           /* Bottom Drag & Snap Handle */
@@ -407,11 +408,11 @@ const UI_HTML = `
           }
 
           .cp-btn-bento {
-            background: var(--bg-tile);
+            background: var(--bg-surface-raised);
             border: 1px solid var(--border-glass);
             color: var(--text-primary);
-            padding: 10px 14px;
-            border-radius: 12px;
+            padding: 8px 13px;
+            border-radius: 8px;
             font-family: var(--font-sans);
             font-size: 12px;
             font-weight: 500;
@@ -419,18 +420,20 @@ const UI_HTML = `
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            transition: all 0.18s ease;
+            gap: 7px;
+            transition: all 0.16s ease;
           }
 
           .cp-btn-bento:hover {
             background: var(--bg-tile-hover);
             border-color: var(--border-highlight);
+            color: #ffffff;
             transform: translateY(-1px);
           }
 
           .cp-btn-bento:active {
             opacity: 0.85;
+            transform: translateY(0);
           }
 
           .cp-btn-bento.primary {
@@ -438,12 +441,12 @@ const UI_HTML = `
             border: 1px solid var(--accent-solid-border);
             color: var(--accent-solid-text);
             font-weight: 600;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
           }
 
           .cp-btn-bento.primary:hover {
             background: var(--accent-solid-hover);
-            border-color: var(--border-accent);
+            border-color: var(--border-highlight);
             color: var(--accent-solid-text);
           }
 
@@ -552,9 +555,9 @@ const UI_HTML = `
             min-height: 24px; line-height: 1;
           }
           .cp-badge-accent { background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--border-accent); }
-          .cp-badge-emerald { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+          .cp-badge-emerald { background: rgba(20, 174, 92, 0.12); color: #14ae5c; border: 1px solid rgba(20, 174, 92, 0.3); }
           .cp-badge-muted { background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid var(--border-glass); }
-          .cp-badge-rose { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+          .cp-badge-rose { background: rgba(242, 72, 34, 0.12); color: #f24822; border: 1px solid rgba(242, 72, 34, 0.3); }
 
           .cp-box-model {
             background: var(--bg-surface-overlay);
@@ -574,7 +577,7 @@ const UI_HTML = `
             z-index: 999997;
             border: 1.5px solid var(--frame-color);
             background: transparent;
-            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25), 0 0 12px rgba(99, 102, 241, 0.12);
+            box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.25), 0 0 12px rgba(13, 153, 255, 0.12);
             border-radius: 2px;
             display: none;
             transition: all 60ms ease-out;
@@ -582,7 +585,7 @@ const UI_HTML = `
           }
           #cp-highlight.selected {
             border-color: var(--frame-color);
-            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 0 16px rgba(99, 102, 241, 0.20);
+            box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.35), 0 0 16px rgba(13, 153, 255, 0.20);
           }
           #cp-highlight.is-raw {
             border-color: var(--frame-raw);
@@ -675,7 +678,7 @@ const UI_HTML = `
             z-index: 999998;
             pointer-events: none;
             border: 2px solid var(--frame-color);
-            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.30), 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 1px rgba(13, 153, 255, 0.30), 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(13, 153, 255, 0.15);
             border-radius: 4px;
             box-sizing: border-box;
             display: none;
@@ -692,7 +695,7 @@ const UI_HTML = `
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
-            border: 1px solid rgba(99, 102, 241, 0.45);
+            border: 1px solid rgba(13, 153, 255, 0.45);
             border-radius: 8px;
             box-shadow: var(--shadow-dock);
             color: var(--text-primary);
@@ -702,8 +705,8 @@ const UI_HTML = `
             z-index: 10;
           }
           #cp-selection-chip.inside-top {
-            top: 4px;
-            left: 4px;
+            top: calc(100% + 6px);
+            left: 0;
           }
           #cp-sel-name {
             font-weight: 700;
@@ -748,9 +751,12 @@ const UI_HTML = `
             background: var(--frame-color) !important;
             color: #ffffff !important;
             border-color: var(--frame-color) !important;
+            box-shadow: 0 1px 3px rgba(13, 153, 255, 0.35);
           }
           #cp-sel-copy-btn:hover {
-            opacity: 0.9 !important;
+            background: var(--accent-hover) !important;
+            border-color: var(--accent-hover) !important;
+            opacity: 1 !important;
           }
 
           /* --- Inline Comment Pin Markers on Page --- */
@@ -763,25 +769,26 @@ const UI_HTML = `
             min-width: 22px;
             height: 22px;
             padding: 0 6px;
-            background: var(--accent-solid);
-            color: var(--accent-solid-text);
+            background: #ffcd29;
+            color: #1e1e1e;
             border-radius: 999px;
             font-family: var(--font-mono);
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--bg-dock-panel);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px #1e1e1e;
             cursor: pointer;
             pointer-events: auto;
             transform: translate(-50%, -50%);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
           }
           .cp-comment-marker:hover {
-            transform: translate(-50%, -50%) scale(1.12);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--border-highlight);
+            transform: translate(-50%, -50%) scale(1.15);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 2px #ffffff;
           }
           .cp-comment-marker.resolved {
             opacity: 0.55;
             background: var(--text-muted);
+            color: #ffffff;
           }
 
           /* --- Pinned Stack Cards --- */
@@ -1132,7 +1139,7 @@ const UI_HTML = `
             flex-direction: row;
             align-items: center;
             width: auto;
-            height: 32px;
+            height: 34px;
             padding: 3px 6px;
             gap: 4px;
             border-radius: 10px;
@@ -1144,13 +1151,13 @@ const UI_HTML = `
             align-items: center;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border-radius: 6px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile svg {
-            width: 14px;
-            height: 14px;
+            width: 15px;
+            height: 15px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-badge-pill {
             top: -3px;
@@ -1204,7 +1211,7 @@ const UI_HTML = `
           <div id="cp-dock">
             <div id="cp-dock-tiles">
               <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
               </div>
 
               <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
@@ -2160,8 +2167,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
           const marker = document.createElement('div');
           marker.className = 'cp-comment-marker' + (c.resolved ? ' resolved' : '');
-          marker.style.top = Math.max(12, rect.top + 10) + 'px';
-          marker.style.left = Math.max(12, rect.left + 10) + 'px';
+          marker.style.top = Math.max(8, rect.top) + 'px';
+          marker.style.left = Math.min(window.innerWidth - 20, rect.right) + 'px';
           marker.title = (c.component ? '<' + c.component + ' />: ' : '') + c.text;
           marker.innerHTML = ICONS.comment + '<span style="margin-left:3px; font-size:10px;">' + (index + 1) + '</span>';
           marker.onclick = (e) => {
@@ -2766,11 +2773,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- React 19 Fiber Detection ---
       function getFiberNode(el) {
-        if (!el) return null;
-        for (const key in el) {
-          if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
-            return el[key];
+        let curr = el;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+          for (const key in curr) {
+            if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
+              return curr[key];
+            }
           }
+          curr = curr.parentElement;
         }
         return null;
       }
@@ -3537,33 +3547,55 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       // --- Keyboard Shortcuts ---
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'Alt' && !isPointerMode) {
+        const activeEl = document.activeElement;
+        const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+
+        if (e.key === 'Alt') {
+          if (isTyping) return;
           e.preventDefault();
           togglePointerMode();
+          return;
         }
+
         if (e.key === 'Escape') {
           if (textEditorVisible) {
             closeTextEditor();
             return;
           }
+          if (isTyping && activeEl && activeEl.blur) {
+            activeEl.blur();
+            return;
+          }
           flyout.classList.remove('open');
           dockWrapper.classList.remove('sidebar-open');
           if (typeof clearSelection === 'function') clearSelection();
+          return;
         }
+
+        if (isTyping) return;
+
         // Ancestry navigation: ArrowUp goes to parent, ArrowDown goes to child
-        if (isPointerMode && currentStack.length > 1) {
+        if ((isPointerMode || flyout.classList.contains('open')) && currentStack && currentStack.length > 1) {
           if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (currentStackIndex < currentStack.length - 1) {
               currentStackIndex++;
-              highlightComponent(currentStack[currentStackIndex], true);
+              if (flyout.classList.contains('open')) {
+                renderFlyoutForStackIndex(currentStackIndex);
+              } else {
+                highlightComponent(currentStack[currentStackIndex], true);
+              }
             }
           }
           if (e.key === 'ArrowDown') {
             e.preventDefault();
             if (currentStackIndex > 0) {
               currentStackIndex--;
-              highlightComponent(currentStack[currentStackIndex], currentStackIndex > 0);
+              if (flyout.classList.contains('open')) {
+                renderFlyoutForStackIndex(currentStackIndex);
+              } else {
+                highlightComponent(currentStack[currentStackIndex], currentStackIndex > 0);
+              }
             }
           }
         }
@@ -3733,21 +3765,16 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!currentStack || currentStack.length === 0) {
-          const clickedEl = document.elementFromPoint(e.clientX, e.clientY) || e.target;
-          if (clickedEl && clickedEl !== document.body) {
-            currentStack = buildHierarchyStack(clickedEl);
-            currentStackIndex = 0;
-            currentElement = clickedEl;
-          }
+        const clickedEl = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+        if (clickedEl && clickedEl !== document.body && clickedEl !== container && (!clickedEl.closest || !clickedEl.closest('#agent-hover-root'))) {
+          currentStack = buildHierarchyStack(clickedEl);
+          currentStackIndex = 0;
+          currentElement = clickedEl;
         }
         if (!currentStack || currentStack.length === 0) return;
 
-        // Default to innermost React component if present (index 1), else DOM element (0)
-        let targetIndex = 0;
-        if (currentStack.length > 1) {
-          targetIndex = 1;
-        }
+        // Select exact leaf element clicked (index 0) so smaller elements and components are directly selectable
+        const targetIndex = 0;
         const target = currentStack[targetIndex] || currentStack[0];
 
         // Raw elements can't be frozen/pinned
@@ -3830,20 +3857,23 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           dockWrapper.classList.add('sidebar-open');
         }
 
-        // Render interactive breadcrumbs
+        // Render interactive breadcrumbs with proper HTML escaping
         const breadcrumbEl = shadow.getElementById('cp-flyout-breadcrumb');
-        if (currentStack.length > 1) {
+        if (currentStack && currentStack.length > 0) {
           const crumbs = [];
           for (let i = currentStack.length - 1; i >= 0; i--) {
             const c = currentStack[i];
             const isActive = i === currentStackIndex;
             const style = isActive
-              ? 'color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:var(--accent-subtle);'
-              : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px;';
-            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '">' + (c.isDomElement ? c.name : '<' + c.name + ' />') + '</span>');
+              ? 'color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:2px 6px; border-radius:4px; background:var(--accent-subtle); white-space:nowrap;'
+              : 'color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; white-space:nowrap;';
+            const label = c.isDomElement ? c.name : '<' + c.name + ' />';
+            crumbs.push('<span style="' + style + '" data-bc-idx="' + i + '" title="' + escapeHtml(label) + '">' + escapeHtml(label) + '</span>');
           }
           breadcrumbEl.innerHTML = crumbs.join('<span style="color:var(--text-muted); margin:0 2px; font-size:10px;">›</span>');
-          breadcrumbEl.style.display = 'block';
+          breadcrumbEl.style.display = 'flex';
+          breadcrumbEl.style.alignItems = 'center';
+          breadcrumbEl.style.overflowX = 'auto';
 
           breadcrumbEl.onclick = (evt) => {
             const targetEl = evt.target.closest('[data-bc-idx]');
