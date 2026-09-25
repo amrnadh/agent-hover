@@ -25,9 +25,25 @@ const UI_HTML = `
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;
             
-            /* Dark mode (default) - Figma Design Studio Palette */
-            --bg-dock: rgba(30, 30, 30, 0.92);
-            --bg-dock-panel: rgba(30, 30, 30, 0.98);
+            /* Dark mode (default) - Carbon-Black Premium Dock & Studio Palette */
+            --bg-dock: rgba(18, 18, 20, 0.88);
+            --bg-dock-panel: rgba(26, 26, 28, 0.98);
+            --border-dock: rgba(255, 255, 255, 0.08);
+            --border-dock-hover: rgba(255, 255, 255, 0.16);
+            --shadow-dock: 0 16px 40px -8px rgba(0, 0, 0, 0.70), 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            --bg-dock-tile: transparent;
+            --border-dock-tile: transparent;
+            --bg-dock-tile-hover: rgba(255, 255, 255, 0.06);
+            --border-dock-tile-hover: rgba(255, 255, 255, 0.08);
+            --text-dock-tile: #88888e;
+            --text-dock-tile-hover: #ffffff;
+            --bg-dock-tile-active: #232326;
+            --border-dock-tile-active: rgba(255, 255, 255, 0.14);
+            --text-dock-tile-active: #ffffff;
+            --shadow-dock-tile-active: 0 2px 8px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            --badge-bg: #232326;
+            --badge-text: #ffffff;
+            --badge-border: rgba(255, 255, 255, 0.14);
             --bg-tile: rgba(44, 44, 44, 0.55);
             --bg-tile-hover: rgba(56, 56, 56, 0.65);
             --bg-tile-active: rgba(70, 70, 70, 0.70);
@@ -46,8 +62,7 @@ const UI_HTML = `
             --text-primary: #e0e0e0;
             --text-secondary: #999999;
             --text-muted: #777777;
-            --blur: blur(20px) saturate(180%);
-            --shadow-dock: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 56, 56, 0.50);
+            --blur: blur(24px) saturate(160%);
             --shadow-tile: 0 1px 3px rgba(0, 0, 0, 0.35);
             --frame-color: #0d99ff;
             --frame-raw: #5cb3ff;
@@ -61,14 +76,31 @@ const UI_HTML = `
             --border-tile: rgba(56, 56, 56, 0.50);
             --border-tile-hover: rgba(58, 58, 58, 0.80);
             --scrollbar-thumb: rgba(100, 100, 100, 0.35);
-            --handle-color: rgba(100, 100, 100, 0.50);
+            --handle-color: rgba(255, 255, 255, 0.20);
+            --handle-hover: rgba(255, 255, 255, 0.50);
             --overlay-bg: rgba(20, 20, 20, 0.88);
           }
           
-          /* Light mode - AAA Neutral Studio Palette */
+          /* Light mode - Opal Light Glass Dock & Studio Palette */
           :host(.light-mode), :host(.light-mode) #cp-dock-wrapper, :host(.light-mode) #cp-dock, :host(.light-mode) #cp-flyout, :host(.light-mode) #cp-highlight {
-            --bg-dock: rgba(252, 252, 253, 0.94);
+            --bg-dock: rgba(255, 255, 255, 0.76);
             --bg-dock-panel: rgba(255, 255, 255, 0.98);
+            --border-dock: rgba(0, 0, 0, 0.07);
+            --border-dock-hover: rgba(0, 0, 0, 0.14);
+            --shadow-dock: 0 16px 40px -8px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.8), inset 0 1px 0 #ffffff;
+            --bg-dock-tile: transparent;
+            --border-dock-tile: transparent;
+            --bg-dock-tile-hover: rgba(0, 0, 0, 0.04);
+            --border-dock-tile-hover: rgba(0, 0, 0, 0.04);
+            --text-dock-tile: #71717a;
+            --text-dock-tile-hover: #18181b;
+            --bg-dock-tile-active: #ffffff;
+            --border-dock-tile-active: rgba(0, 0, 0, 0.08);
+            --text-dock-tile-active: #18181b;
+            --shadow-dock-tile-active: 0 2px 8px -1px rgba(0, 0, 0, 0.09), 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
+            --badge-bg: #18181b;
+            --badge-text: #ffffff;
+            --badge-border: #ffffff;
             --bg-tile: rgba(3, 0, 20, 0.04);
             --bg-tile-hover: rgba(3, 0, 20, 0.08);
             --bg-tile-active: rgba(3, 0, 20, 0.14);
@@ -87,8 +119,7 @@ const UI_HTML = `
             --text-primary: #030014;
             --text-secondary: #474553;
             --text-muted: #8e8c95;
-            --blur: blur(20px) saturate(160%);
-            --shadow-dock: 0 8px 32px rgba(3, 0, 20, 0.10), 0 0 0 1px rgba(3, 0, 20, 0.06);
+            --blur: blur(24px) saturate(190%);
             --shadow-tile: 0 1px 3px rgba(3, 0, 20, 0.08);
             --frame-color: #4f46e5;
             --frame-raw: #6366f1;
@@ -102,7 +133,8 @@ const UI_HTML = `
             --border-tile: rgba(3, 0, 20, 0.08);
             --border-tile-hover: rgba(3, 0, 20, 0.18);
             --scrollbar-thumb: rgba(142, 140, 149, 0.40);
-            --handle-color: rgba(91, 89, 102, 0.40);
+            --handle-color: rgba(0, 0, 0, 0.16);
+            --handle-hover: rgba(0, 0, 0, 0.38);
             --overlay-bg: rgba(255, 255, 255, 0.88);
           }
 
@@ -122,48 +154,48 @@ const UI_HTML = `
           .cp-spin { animation: cp-spin 0.8s linear infinite; }
 
           #cp-dock {
-            width: 54px;
+            width: 52px;
             background: var(--bg-dock);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--border-glass);
-            border-radius: 14px;
-            padding: 7px 5px 6px 5px;
+            border: 1px solid var(--border-dock);
+            border-radius: 20px;
+            padding: 6px 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             box-shadow: var(--shadow-dock);
             transition: border-color 0.25s ease, box-shadow 0.25s ease;
           }
 
           #cp-dock:hover {
-            border-color: var(--border-highlight);
+            border-color: var(--border-dock-hover);
           }
 
           /* --- Dock Squircle Tiles --- */
           .cp-dock-tile {
             position: relative;
-            width: 42px;
-            border-radius: 8px;
-            background: var(--bg-tile);
-            border: 1px solid var(--border-tile);
-            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            background: var(--bg-dock-tile);
+            border: 1px solid var(--border-dock-tile);
+            color: var(--text-dock-tile);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: var(--shadow-tile);
+            box-shadow: none;
             transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: visible;
-            height: 42px;
           }
 
           .cp-dock-tile:hover {
-            background: var(--bg-tile-hover);
-            color: var(--text-primary);
-            border-color: var(--border-tile-hover);
+            background: var(--bg-dock-tile-hover);
+            color: var(--text-dock-tile-hover);
+            border-color: var(--border-dock-tile-hover);
           }
 
           .cp-dock-tile:active {
@@ -171,16 +203,16 @@ const UI_HTML = `
           }
 
           .cp-dock-tile.active {
-            color: #ffffff;
-            border-color: var(--accent);
-            background: var(--accent);
-            box-shadow: 0 1px 4px rgba(13, 153, 255, 0.4);
+            color: var(--text-dock-tile-active);
+            border-color: var(--border-dock-tile-active);
+            background: var(--bg-dock-tile-active);
+            box-shadow: var(--shadow-dock-tile-active);
           }
 
           /* Bottom Drag & Snap Handle */
           .cp-dock-handle {
-            width: 26px;
-            height: 4px;
+            width: 20px;
+            height: 3px;
             background: var(--handle-color);
             border-radius: 999px;
             margin-top: 4px;
@@ -189,16 +221,16 @@ const UI_HTML = `
           }
 
           .cp-dock-handle:hover {
-            background: var(--accent);
-            width: 32px;
+            background: var(--handle-hover);
+            width: 24px;
           }
 
           .cp-badge-pill {
             position: absolute;
             top: -4px;
             right: -4px;
-            background: var(--accent);
-            color: #fff;
+            background: var(--badge-bg);
+            color: var(--badge-text);
             font-family: var(--font-mono);
             font-size: 10px;
             font-weight: 700;
@@ -211,7 +243,7 @@ const UI_HTML = `
             justify-content: center;
             border-radius: 999px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-            border: 1.5px solid var(--bg-dock);
+            border: 1.5px solid var(--badge-border);
             z-index: 10;
           }
 
@@ -1234,11 +1266,11 @@ const UI_HTML = `
             flex-direction: row;
             align-items: center;
             width: auto;
-            height: 34px;
-            padding: 3px 6px;
+            height: 40px;
+            padding: 4px 6px;
             gap: 4px;
-            border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border-glass);
+            border-radius: 12px;
+            box-shadow: var(--shadow-dock);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-tiles {
             flex-direction: row;
@@ -1246,13 +1278,13 @@ const UI_HTML = `
             align-items: center;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 12px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-tile svg {
-            width: 15px;
-            height: 15px;
+            width: 17px;
+            height: 17px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-badge-pill {
             top: -3px;
@@ -1263,16 +1295,16 @@ const UI_HTML = `
             padding: 0 3px;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle {
-            width: 4px;
-            height: 16px;
-            margin: 0 2px;
+            width: 3px;
+            height: 18px;
+            margin: 0 4px;
             border-radius: 999px;
             background: var(--handle-color);
             cursor: grab;
             transition: all 0.2s ease;
           }
           #cp-dock-wrapper.cp-dock-horizontal .cp-dock-handle:hover {
-            background: var(--accent);
+            background: var(--handle-hover);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-callout {
             top: 40px;
@@ -3020,7 +3052,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let currentStack = [];
       let currentStackIndex = -1;
 
-      // Position margin/padding bands and dashed axis guides (Design-Mode style)
+      // Position margin/padding bands and dashed axis guides (Studio inspection style)
       function positionBands(el) {
         if (!el) return;
         const cs = window.getComputedStyle(el);
@@ -3030,7 +3062,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const pt = px(cs.paddingTop), pr = px(cs.paddingRight), pb = px(cs.paddingBottom), pl = px(cs.paddingLeft);
         const bt = px(cs.borderTopWidth), brw = px(cs.borderRightWidth), bb = px(cs.borderBottomWidth), blw = px(cs.borderLeftWidth);
 
-        // 1. Draw full-canvas dashed Axis Projection Lines (Figma / Design-Mode style)
+        // 1. Draw full-canvas dashed Axis Projection Lines (Figma / Studio inspection style)
         if (axisGuides) {
           const lines = [
             '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.top) + 'px;"></div>',
