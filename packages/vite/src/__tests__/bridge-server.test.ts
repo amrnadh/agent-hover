@@ -179,4 +179,36 @@ describe('BridgeServer Integration Tests', () => {
       await new Promise<void>((resolve) => blockerServer.close(() => resolve()));
     }
   });
+
+  it('saves screenshot to disk and allows downloading it', async () => {
+    const testPort = 31000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+
+    // 1x1 transparent PNG in base64
+    const sampleDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=';
+
+    const saveRes = await fetch(`http://localhost:${activePort}/api/screenshot/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl: sampleDataUrl, filename: 'test_card' }),
+    });
+    expect(saveRes.status).toBe(200);
+    const saveData = await saveRes.json();
+    expect(saveData.success).toBe(true);
+    expect(saveData.path).toContain('.agent-hover/screenshots/test_card_');
+    expect(saveData.filename).toBeDefined();
+
+    // Verify file actually exists on disk
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const stat = await fs.stat(path.join(tempDir, saveData.path));
+    expect(stat.size).toBeGreaterThan(0);
+
+    // Verify download endpoint
+    const dlRes = await fetch(`http://localhost:${activePort}/api/screenshot/download/${saveData.filename}`);
+    expect(dlRes.status).toBe(200);
+    const dlBuffer = await dlRes.arrayBuffer();
+    expect(dlBuffer.byteLength).toBe(stat.size);
+  });
 });

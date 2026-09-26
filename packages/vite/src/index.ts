@@ -2951,7 +2951,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       const flyoutSnapBtn = shadow.getElementById('cp-flyout-snap-btn');
       if (flyoutSnapBtn) {
         flyoutSnapBtn.onclick = async () => {
-          const targetEl = selectedTarget?.element || selectedElement || currentElement || document.body;
+          const targetEl = selectedTarget?.element || selectedElement || document.body;
           const targetName = selectedTarget?.name || (selectedElement ? 'component' : 'website');
           await downloadCleanScreenshot(targetEl, targetName);
         };
@@ -3983,20 +3983,19 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             }
           }
 
-          const captureWidth = isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth);
-          const captureHeight = isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight);
+          const rect = !isFullPage && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+          const captureWidth = Math.max(Math.round(isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300))), 10);
+          const captureHeight = Math.max(Math.round(isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200))), 10);
           const scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
           const solidBg = getInheritedBackgroundColor(element);
 
           const dataUrl = await window.domtoimage.toPng(element, {
-            width: captureWidth * scale,
-            height: captureHeight * scale,
+            width: captureWidth,
+            height: captureHeight,
+            pixelRatio: scale,
             bgcolor: solidBg,
+            imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=',
             style: {
-              transform: 'scale(' + scale + ')',
-              transformOrigin: 'top left',
-              width: captureWidth + 'px',
-              height: captureHeight + 'px',
               animation: 'none',
               transition: 'none'
             },
@@ -4015,22 +4014,101 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       }
 
+      function dataUrlToBlob(dataUrl) {
+        try {
+          const parts = dataUrl.split(';base64,');
+          const contentType = (parts[0] && parts[0].split(':')[1]) || 'image/png';
+          const byteCharacters = atob(parts[1]);
+          const byteArrays = [];
+          for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+            const slice = byteCharacters.slice(offset, offset + 1024);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+            byteArrays.push(new Uint8Array(byteNumbers));
+          }
+          return new Blob(byteArrays, { type: contentType });
+        } catch (e) {
+          console.error('[agent-hover] Blob conversion error:', e);
+          return null;
+        }
+      }
+
       async function downloadCleanScreenshot(targetEl, name) {
         showCallout('Capturing clean screenshot...', 'SNAP', 800);
-        const el = targetEl || document.body;
+        const el = (targetEl && targetEl.isConnected) ? targetEl : document.body;
+        const cleanName = (name || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const timestamp = Date.now();
+        const filename = cleanName + '_' + timestamp + '.png';
+
         const dataUrl = await captureElement(el);
         if (!dataUrl) {
-          showCallout('Failed to capture screenshot', 'ERROR');
+          showCallout('Failed to capture screenshot', 'ERROR', 2500);
           return;
         }
-        const a = document.createElement('a');
-        const cleanName = (name || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
-        a.href = dataUrl;
-        a.download = cleanName + '_' + Date.now() + '.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showCallout('Clean screenshot saved (Website UI only)', 'SAVED');
+
+        const blob = dataUrlToBlob(dataUrl);
+
+        // 1. Direct browser download via Blob Object URL
+        let browserDownloaded = false;
+        if (blob) {
+          try {
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              try { document.body.removeChild(a); } catch (_) {}
+              URL.revokeObjectURL(blobUrl);
+            }, 5000);
+            browserDownloaded = true;
+          } catch (e) {
+            console.warn('[agent-hover] Browser blob download failed:', e);
+          }
+        }
+
+        // 2. Direct copy to system clipboard for immediate pasting (Cmd+V / Ctrl+V)
+        let clipboardCopied = false;
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            clipboardCopied = true;
+          } catch (_) {}
+        }
+
+        // 3. Save directly to project disk via Bridge server (.agent-hover/screenshots/)
+        let diskSaved = false;
+        try {
+          const res = await fetch(BRIDGE + '/api/screenshot/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataUrl, filename: cleanName })
+          });
+          const result = await res.json();
+          if (result && result.success) {
+            diskSaved = true;
+          }
+        } catch (_) {}
+
+        if (diskSaved || browserDownloaded) {
+          if (clipboardCopied && diskSaved) {
+            showCallout('Saved to .agent-hover/screenshots/ & clipboard!', 'SAVED', 3500);
+          } else if (clipboardCopied) {
+            showCallout('Downloaded & copied to clipboard!', 'SAVED', 3000);
+          } else if (diskSaved) {
+            showCallout('Saved to .agent-hover/screenshots/', 'SAVED', 3000);
+          } else {
+            showCallout('Clean screenshot downloaded (Website UI only)', 'SAVED', 3000);
+          }
+        } else {
+          showCallout('Failed to save screenshot', 'ERROR', 2500);
+        }
       }
 
       function findComponentElement(componentName) {

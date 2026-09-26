@@ -691,6 +691,49 @@ export class BridgeServer {
       }
     });
 
+    // Save clean screenshot to project disk (.agent-hover/screenshots/)
+    this.app.post('/api/screenshot/save', async (req, res) => {
+      try {
+        const { dataUrl, filename } = req.body;
+        if (!dataUrl) {
+          res.status(400).json({ error: 'Missing dataUrl' });
+          return;
+        }
+
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const screenshotsDir = path.join(this.projectRoot, '.agent-hover', 'screenshots');
+        await fs.mkdir(screenshotsDir, { recursive: true });
+
+        const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const cleanName = (filename || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const fileNameWithExt = `${cleanName}_${Date.now()}.png`;
+        const filePath = path.join(screenshotsDir, fileNameWithExt);
+        await fs.writeFile(filePath, buffer);
+
+        const relPath = path.relative(this.projectRoot, filePath);
+        console.log(`[agent-hover] 📸 Screenshot saved to ${relPath}`);
+        res.json({ success: true, path: relPath, filename: fileNameWithExt, fullPath: filePath });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to save screenshot';
+        console.error('[agent-hover] Screenshot save error:', message);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // Download/serve screenshot file
+    this.app.get('/api/screenshot/download/:filename', async (req, res) => {
+      try {
+        const path = await import('path');
+        const safeName = path.basename(req.params.filename);
+        const filePath = path.join(this.projectRoot, '.agent-hover', 'screenshots', safeName);
+        res.download(filePath, safeName);
+      } catch (e) {
+        res.status(404).send('Not found');
+      }
+    });
+
     // Get screenshot diff for a component
     this.app.get('/api/screenshot/:id', (req, res) => {
       try {
