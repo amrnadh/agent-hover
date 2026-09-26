@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Arc-coder07/agent-hover.git",
+    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
     "directory": "packages/core"
   },
   "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
