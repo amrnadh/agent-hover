@@ -1,6 +1,6 @@
 {
   "name": "agent-hover",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Point at your UI. Your agent understands it.",
   "workspaces": [
@@ -18,10 +18,6 @@
     "test:watch": "vitest",
     "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git"
   },
   "keywords": [
     "agent-hover",

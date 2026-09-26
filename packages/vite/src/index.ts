@@ -1376,8 +1376,9 @@ const UI_HTML = `
                 <svg id="cp-theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <svg id="cp-theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               </button>
-              <button class="cp-flyout-tool-btn" id="cp-flyout-settings" title="Settings">
+              <button class="cp-flyout-tool-btn" id="cp-flyout-settings" title="Settings" style="position:relative;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span id="cp-settings-update-dot" style="display:none; position:absolute; top:2px; right:2px; width:7px; height:7px; border-radius:50%; background:#38bdf8; box-shadow:0 0 6px #38bdf8;"></span>
               </button>
               <button class="cp-flyout-tool-btn" id="cp-flyout-mode-toggle" title="Detach Sidebar (Float Window)">
                 <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><polyline points="10 9 7 12 10 15"/></svg>
@@ -1421,7 +1422,7 @@ const UI_HTML = `
               <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy AI Context</button>
               <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay</button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing Overlay</button>
             </div>
 
             <!-- Vibe Prompt Starters -->
@@ -1466,6 +1467,16 @@ const UI_HTML = `
 
             <!-- Settings View (Dedicated Page inside Sidebar) -->
             <div id="cp-view-settings" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:20px; gap:16px;">
+              <div id="cp-update-banner" style="display:none; padding:10px 12px; background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.35); border-radius:8px; font-size:11px;">
+                <div style="font-weight:600; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>Update Available: v<span id="cp-update-latest-ver"></span></span>
+                </div>
+                <div style="margin-top:5px; color:var(--text-secondary); font-size:10.5px;">
+                  Run <code style="font-family:var(--font-mono); color:#38bdf8; background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">npm i -D @agent-hover/vite@latest</code>
+                </div>
+              </div>
+
               <div class="cp-settings-section">
                 <div class="cp-settings-section-title">Theme</div>
                 <div style="display:flex; gap:8px;">
@@ -1510,8 +1521,8 @@ const UI_HTML = `
               </div>
 
               <div class="cp-settings-section" style="margin-top:auto; padding-top:12px; border-top:1px solid var(--border-subtle); font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
-                <span>Agent Hover v0.1.0</span>
-                <span class="cp-badge cp-badge-emerald" style="min-height:18px; font-size:9.5px; padding:1px 6px;">Bridge Active</span>
+                <span>Agent Hover v0.1.1</span>
+                <span id="cp-bridge-status-badge" class="cp-badge cp-badge-emerald" style="min-height:18px; font-size:9.5px; padding:1px 6px;">Bridge Active</span>
               </div>
             </div>
           </div>
@@ -1637,13 +1648,76 @@ function generateOverlayBootstrap(port: number, editor: string): string {
     (() => {
       const BRIDGE = 'http://localhost:${port}';
       let ws;
+      let isBridgeConnected = false;
+
+      function setBridgeConnected(connected) {
+        isBridgeConnected = connected;
+        const badge = shadow.getElementById('cp-bridge-status-badge');
+        if (badge) {
+          if (connected) {
+            badge.className = 'cp-badge cp-badge-emerald';
+            badge.textContent = 'Bridge Active';
+          } else {
+            badge.className = 'cp-badge cp-badge-rose';
+            badge.textContent = 'Server Offline';
+          }
+        }
+      }
+
+      function handleUpdateAvailable(updateInfo) {
+        if (!updateInfo || !updateInfo.latest) return;
+        const dot = shadow.getElementById('cp-settings-update-dot');
+        if (dot) dot.style.display = 'block';
+        const banner = shadow.getElementById('cp-update-banner');
+        const verEl = shadow.getElementById('cp-update-latest-ver');
+        if (banner && verEl) {
+          verEl.textContent = updateInfo.latest;
+          banner.style.display = 'block';
+        }
+      }
+
       try {
         ws = new WebSocket('ws://localhost:${port}');
-        ws.onopen = () => console.log('[agent-hover] Connected to bridge');
-        ws.onerror = () => console.warn('[agent-hover] WebSocket connection failed');
+        ws.onopen = () => {
+          console.log('[agent-hover] Connected to bridge');
+          setBridgeConnected(true);
+        };
+        ws.onclose = () => {
+          setBridgeConnected(false);
+          console.warn('[agent-hover] Bridge disconnected (dev server stopped)');
+        };
+        ws.onerror = () => {
+          setBridgeConnected(false);
+          console.warn('[agent-hover] WebSocket connection failed');
+        };
       } catch(e) {
         console.warn('[agent-hover] Could not connect WebSocket');
       }
+
+      // Check bridge server health and pending updates on load
+      fetch(BRIDGE + '/api/health')
+        .then(r => r.json())
+        .then(d => {
+          setBridgeConnected(true);
+          if (d.updateAvailable) handleUpdateAvailable(d.updateAvailable);
+        })
+        .catch(() => setBridgeConnected(false));
+
+      // Check on page restore from browser bfcache (e.g. Cmd+Shift+T)
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          fetch(BRIDGE + '/api/health')
+            .then(res => res.json())
+            .then(data => {
+              setBridgeConnected(true);
+              if (data.updateAvailable) handleUpdateAvailable(data.updateAvailable);
+            })
+            .catch(() => {
+              setBridgeConnected(false);
+              showCallout('Dev server offline — restart npm run dev', 'OFFLINE', 3000);
+            });
+        }
+      });
 
       let isPointerMode = false;
       let currentElement = null;
@@ -2813,47 +2887,61 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       async function openInEditor() {
-        const targetSource = lastCopiedContext?.source || (lastResolved ? { absolutePath: lastResolved.file, startLine: lastResolved.line } : null);
-        if (targetSource) {
-          try {
-            const btn = shadow.getElementById('cp-editor-btn');
-            const originalContent = btn ? btn.innerHTML : '';
-            if (btn) btn.innerHTML = 'Opening...';
-            showCallout('Opening in IDE...', currentEditorPref || '${editor}');
-            const res = await fetch(BRIDGE + '/api/open-editor', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                file: targetSource.absolutePath || targetSource.file,
-                line: targetSource.startLine || targetSource.line || 1,
-                editor: currentEditorPref || '${editor}'
-              })
-            });
-            const data = await res.json();
-            if (!res.ok || data.error) {
-              showCallout('Failed to open editor', 'ERROR');
-            } else {
-              showCallout('Opened in IDE', 'IDE');
-            }
-            if (btn) btn.innerHTML = originalContent;
-          } catch(e) {
-            console.error('[agent-hover] Failed to open editor:', e);
-            showCallout('Bridge server connection failed', 'ERROR');
-            const btn = shadow.getElementById('cp-editor-btn');
-            if (btn) btn.innerHTML = ICONS.code + ' Open in IDE';
+        // Priority 1: Check selectedTarget.source or leaf Fiber source
+        let targetFile = selectedTarget?.source?.fileName || null;
+        let targetLine = selectedTarget?.source?.lineNumber || null;
+        let targetComp = selectedTarget && !selectedTarget.isDomElement ? selectedTarget.name : null;
+
+        // If selectedTarget was a DOM element, check enclosing component in currentStack
+        if (!targetFile && currentStack && currentStack.length > 1) {
+          const comp = currentStack.find(c => !c.isDomElement && c.source?.fileName);
+          if (comp) {
+            targetFile = comp.source.fileName;
+            targetLine = comp.source.lineNumber;
+            if (!targetComp) targetComp = comp.name;
           }
-        } else if (selectedTarget) {
-          const compToResolve = selectedTarget.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
-          resolveComponent(compToResolve).then(res => {
-            if (res) {
-              lastResolved = res;
-              openInEditor();
-            } else {
-              showCallout('Could not resolve file', 'ERROR');
-            }
+        }
+
+        // Priority 2: Use lastCopiedContext or lastResolved
+        if (!targetFile && lastCopiedContext?.source) {
+          targetFile = lastCopiedContext.source.file;
+          targetLine = lastCopiedContext.source.startLine;
+        } else if (!targetFile && lastResolved) {
+          targetFile = lastResolved.file;
+          targetLine = lastResolved.line;
+        }
+
+        const el = selectedElement || selectedTarget?.element || currentElement;
+        const textSnippet = el && el.textContent ? el.textContent.trim().slice(0, 50) : '';
+
+        const btn = shadow.getElementById('cp-editor-btn');
+        const originalContent = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = 'Opening...';
+        showCallout('Opening in IDE...', currentEditorPref || '${editor}');
+
+        try {
+          const res = await fetch(BRIDGE + '/api/open-editor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              file: targetFile,
+              line: targetLine,
+              text: textSnippet,
+              component: targetComp,
+              editor: currentEditorPref || '${editor}'
+            })
           });
-        } else {
-          showCallout('Select a component first', 'TIP');
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            showCallout('Failed to open editor: ' + (data.error || 'Unknown'), 'ERROR');
+          } else {
+            showCallout('Opened in IDE (L' + (data.line || targetLine || 1) + ')', 'IDE');
+          }
+        } catch(e) {
+          console.error('[agent-hover] Failed to open editor:', e);
+          showCallout('Bridge server connection failed', 'ERROR');
+        } finally {
+          if (btn) btn.innerHTML = originalContent || (ICONS.code + ' Open in IDE');
         }
       }
 
@@ -2954,16 +3042,27 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         // 1. The exact DOM element under the cursor is ALWAYS level 0 (direct selection)
         const desc = describeElement(el);
         const textSnippet = el.textContent ? el.textContent.trim().slice(0, 35) : '';
+        const fiber = getFiberNode(el);
+        let leafSource = null;
+        if (fiber && fiber._debugSource) {
+          leafSource = {
+            fileName: fiber._debugSource.fileName,
+            lineNumber: fiber._debugSource.lineNumber,
+            columnNumber: fiber._debugSource.columnNumber
+          };
+        }
+
         stack.push({
           name: desc,
           isDomElement: true,
           element: el,
           tagName: el.tagName.toLowerCase(),
-          textPreview: textSnippet
+          textPreview: textSnippet,
+          source: leafSource,
+          fiber: fiber
         });
 
         // 2. Walk fiber ancestry to find all React components containing this element
-        const fiber = getFiberNode(el);
         if (fiber) {
           const seen = new Set();
           let curr = fiber;
@@ -3323,17 +3422,21 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         textEditTargetLine = null;
         textEditTargetComponent = null;
 
-        // Find enclosing React component and source location
+        // 1. Try direct leaf fiber _debugSource (exact JSX element tag)
+        const leafFiber = getFiberNode(el);
+        if (leafFiber && leafFiber._debugSource) {
+          textEditTargetFile = leafFiber._debugSource.fileName;
+          textEditTargetLine = leafFiber._debugSource.lineNumber;
+        }
+
+        // 2. Find enclosing React component and source location
         const stack = buildHierarchyStack(el);
         const comp = stack.find(c => !c.isDomElement);
         if (comp) {
           textEditTargetComponent = comp.name;
-          if (comp.source && comp.source.fileName) {
-            const fn = comp.source.fileName.split('/').pop().replace(/\.[jt]sx?$/, '');
-            if (fn.toLowerCase() === comp.name.toLowerCase()) {
-              textEditTargetFile = comp.source.fileName;
-              textEditTargetLine = comp.source.lineNumber;
-            }
+          if (!textEditTargetFile && comp.source && comp.source.fileName) {
+            textEditTargetFile = comp.source.fileName;
+            textEditTargetLine = comp.source.lineNumber;
           }
         }
 
@@ -3354,12 +3457,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                 targetBadge.textContent = textEditTargetComponent + ' • ' + fn + (resolved.line ? ':' + resolved.line : '');
                 targetBadge.title = resolved.file + ':' + resolved.line;
               } else {
-                targetBadge.textContent = textEditTargetComponent + ' (DOM only)';
+                targetBadge.textContent = textEditTargetComponent + ' • auto-scan';
               }
             });
           } else {
-            targetBadge.textContent = 'DOM preview only';
-            targetBadge.title = 'No component source resolved';
+            targetBadge.textContent = 'Auto-scan on save';
+            targetBadge.title = 'Will scan project files on save';
           }
         }
 
@@ -3407,8 +3510,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
         const applyBtn = shadow.getElementById('cp-text-apply');
 
-        // If source file is known and text actually changed, write directly to source code!
-        if (textEditTargetFile && originalText && newText !== originalText) {
+        // Always attempt /api/edit-source when text actually changed!
+        if (originalText && newText !== originalText) {
           if (applyBtn) {
             applyBtn.textContent = 'Saving...';
             applyBtn.disabled = true;
@@ -3418,8 +3521,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                file: textEditTargetFile,
-                component: textEditTargetComponent,
+                file: textEditTargetFile || '',
+                component: textEditTargetComponent || '',
                 originalText: originalText,
                 newText: newText,
                 line: textEditTargetLine,
@@ -3431,14 +3534,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               applyBtn.disabled = false;
             }
             if (data.success) {
-              const fileBase = textEditTargetFile.split('/').pop();
+              const fileBase = (data.file || textEditTargetFile || 'source').split('/').pop();
               showCallout('Saved to ' + fileBase + ' (HMR reloaded)', 'SOURCE');
               textEditTarget.textContent = newText;
               closeTextEditor();
               return;
             } else {
               console.warn('[agent-hover] Source edit fallback:', data.error);
-              showCallout('AST: text literal not found — applied to DOM', 'WARNING');
+              showCallout('Could not match AST — applied to DOM', 'WARNING');
             }
           } catch (e) {
             if (applyBtn) {
@@ -3838,31 +3941,67 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
+      function getInheritedBackgroundColor(el) {
+        let curr = el;
+        while (curr && curr !== document.documentElement) {
+          const bg = window.getComputedStyle(curr).backgroundColor;
+          if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+            return bg;
+          }
+          curr = curr.parentElement;
+        }
+        const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        if (bodyBg && bodyBg !== 'transparent' && bodyBg !== 'rgba(0, 0, 0, 0)') {
+          return bodyBg;
+        }
+        const htmlBg = window.getComputedStyle(document.documentElement).backgroundColor;
+        if (htmlBg && htmlBg !== 'transparent' && htmlBg !== 'rgba(0, 0, 0, 0)') {
+          return htmlBg;
+        }
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return isDark ? '#09090b' : '#ffffff';
+      }
+
       async function captureElement(element) {
         if (!window.domtoimage) {
           console.error('[agent-hover] dom-to-image-more not loaded');
           return null;
         }
-        // Requirement 4: Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
+        // Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
         const rootContainer = shadow.host || container;
         const prevDisplay = rootContainer.style.display;
         rootContainer.style.display = 'none';
 
         try {
-          if (element.scrollIntoView) {
-            element.scrollIntoView({ block: 'center', behavior: 'instant' });
-          }
-          await new Promise(r => setTimeout(r, 120));
           const isFullPage = element === document.body || element === document.documentElement;
+          if (!isFullPage && element.getBoundingClientRect) {
+            const rect = element.getBoundingClientRect();
+            const inViewport = rect.top >= 0 && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
+            if (!inViewport && element.scrollIntoView) {
+              element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+              await new Promise(r => setTimeout(r, 100));
+            }
+          }
+
           const captureWidth = isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth);
           const captureHeight = isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight);
+          const scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
+          const solidBg = getInheritedBackgroundColor(element);
 
           const dataUrl = await window.domtoimage.toPng(element, {
-            width: captureWidth,
-            height: captureHeight,
-            style: { transform: 'none', animation: 'none' },
+            width: captureWidth * scale,
+            height: captureHeight * scale,
+            bgcolor: solidBg,
+            style: {
+              transform: 'scale(' + scale + ')',
+              transformOrigin: 'top left',
+              width: captureWidth + 'px',
+              height: captureHeight + 'px',
+              animation: 'none',
+              transition: 'none'
+            },
             filter: (node) => {
-              if (node && node.id === 'agent-hover-root') return false;
+              if (node && (node.id === 'agent-hover-root' || node === container)) return false;
               if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
               return true;
             }
@@ -4695,12 +4834,17 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const payload = JSON.parse(msg.data);
             if (payload.type === 'state-update') {
               frozenEntries = payload.data.frozenEntries || [];
+              if (payload.data.updateAvailable) {
+                handleUpdateAvailable(payload.data.updateAvailable);
+              }
               if (payload.data.comments) {
                 comments = payload.data.comments;
                 renderCommentMarkers();
                 renderSidebarNotes();
               }
               refreshState();
+            } else if (payload.type === 'update-available') {
+              handleUpdateAvailable(payload.data);
             } else if (payload.type === 'pins-update') {
               refreshState();
             } else if (payload.type === 'source-updated') {
@@ -4812,13 +4956,20 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
       bridgeServer = new BridgeServer(projectRoot, port);
       bridgeServer.start();
 
-      // Clean up on server close
-      server.httpServer?.on('close', () => {
+      const cleanup = () => {
         if (bridgeServer) {
           bridgeServer.stop();
           bridgeServer = null;
         }
-      });
+      };
+
+      // Clean up on server close
+      server.httpServer?.on('close', cleanup);
+
+      // Clean up on process termination (Ctrl+C, kill)
+      process.once('SIGINT', cleanup);
+      process.once('SIGTERM', cleanup);
+      process.once('exit', cleanup);
     },
 
     transformIndexHtml() {

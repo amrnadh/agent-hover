@@ -170,6 +170,22 @@ export class SourceEditor {
             });
           }
         }
+      },
+      StringLiteral(p: any) {
+        if (!p.node.loc) return;
+        if (p.parentPath && t.isJSXAttribute(p.parentPath.node)) return; // handled by JSXAttribute
+        if (compStartLine && (p.node.loc.start.line < compStartLine || p.node.loc.end.line > compEndLine!)) return;
+
+        const strVal = p.node.value;
+        if (strVal === originalText || strVal.trim() === trimmedOriginal) {
+          matches.push({
+            start: p.node.start,
+            end: p.node.end,
+            line: p.node.loc.start.line,
+            replaceWith: JSON.stringify(newText),
+            dist: line ? Math.abs(p.node.loc.start.line - line) : 0,
+          });
+        }
       }
     });
 
@@ -205,6 +221,19 @@ export class SourceEditor {
           lines[idx] = lines[idx].replace(targetStr, newText);
           replaced = true;
           break;
+        }
+      }
+
+      // If not replaced within component bounds, broaden search to the whole file
+      if (!replaced && (searchStart > 0 || searchEnd < lines.length)) {
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(originalText) || lines[i].includes(trimmedOriginal)) {
+            matchedLine = i + 1;
+            const targetStr = lines[i].includes(originalText) ? originalText : trimmedOriginal;
+            lines[i] = lines[i].replace(targetStr, newText);
+            replaced = true;
+            break;
+          }
         }
       }
 

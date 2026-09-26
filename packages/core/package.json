@@ -1,6 +1,6 @@
 {
   "name": "@agent-hover/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Context intelligence engine for Agent Hover (AST parsing, component relationships, token estimation).",
   "type": "module",
   "main": "dist/index.js",
@@ -35,12 +35,6 @@
     "typescript": "^5.7.0",
     "@types/babel__traverse": "^7.20.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
-    "directory": "packages/core"
-  },
-  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
   "keywords": [
     "agent-hover",
     "ast",

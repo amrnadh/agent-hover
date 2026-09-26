@@ -1,6 +1,6 @@
 {
   "name": "@agent-hover/vite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Point at your UI. Your agent understands it. Vite dev plugin + local bridge server.",
   "type": "module",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
-    "@agent-hover/core": "^0.1.0",
+    "@agent-hover/core": "^0.1.1",
     "cors": "^2.8.5",
     "dom-to-image-more": "^3.10.2",
     "express": "^4.21.0",
@@ -41,12 +41,6 @@
   "peerDependencies": {
     "vite": ">=5.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
-    "directory": "packages/vite"
-  },
-  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
   "keywords": [
     "agent-hover",
     "vite-plugin",

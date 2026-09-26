@@ -44,6 +44,8 @@ export class BridgeServer {
   private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
   private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
   private readonly MAX_SCREENSHOT_ENTRIES = 20;
+  private readonly CURRENT_VERSION = '0.1.1';
+  private updateInfo: { current: string; latest: string } | null = null;
   private clients: Set<WebSocket> = new Set();
 
   constructor(projectRoot: string, port: number) {
@@ -124,7 +126,11 @@ export class BridgeServer {
 
     // Health check
     this.app.get('/api/health', (_req, res) => {
-      res.json({ status: 'ok', version: '0.1.0' });
+      res.json({
+        status: 'ok',
+        version: this.CURRENT_VERSION,
+        updateAvailable: this.updateInfo,
+      });
     });
 
     // Resolve component name to file + line
@@ -724,46 +730,102 @@ export class BridgeServer {
     });
 
     // Open in editor
-    this.app.post('/api/open-editor', (req, res) => {
+    this.app.post('/api/open-editor', async (req, res) => {
       try {
-        const { file, line, editor } = req.body;
-        if (!file) {
-          res.status(400).json({ error: 'Missing file' });
+        const { file, line, text, component, editor } = req.body;
+        const fg = await import('fast-glob');
+        const path = await import('path');
+
+        let targetFile: string | null = null;
+        if (file) {
+          targetFile = path.isAbsolute(file) ? file : path.resolve(this.projectRoot, file);
+        }
+
+        // If file doesn't exist or wasn't provided, try searching by component or text
+        if (!targetFile || !existsSync(targetFile)) {
+          const files = await fg.default('**/*.{tsx,jsx,ts,js}', {
+            cwd: this.projectRoot,
+            ignore: ['node_modules/**', 'dist/**', '.git/**'],
+          });
+
+          if (component) {
+            const compFile = files.find(f => {
+              const base = path.basename(f, path.extname(f)).toLowerCase();
+              return base === component.toLowerCase() || f.toLowerCase().includes(component.toLowerCase());
+            });
+            if (compFile) {
+              targetFile = path.resolve(this.projectRoot, compFile);
+            }
+          }
+
+          if ((!targetFile || !existsSync(targetFile)) && text && text.trim()) {
+            const trimmed = text.trim();
+            for (const f of files) {
+              try {
+                const absF = path.resolve(this.projectRoot, f);
+                const content = readFileSync(absF, 'utf-8');
+                if (content.includes(trimmed)) {
+                  targetFile = absF;
+                  break;
+                }
+              } catch {}
+            }
+          }
+        }
+
+        if (!targetFile || !existsSync(targetFile)) {
+          res.status(404).json({ error: 'Could not resolve source file for component/text' });
           return;
         }
 
+        let targetLine = typeof line === 'number' && line > 0 ? line : 1;
+
+        // If text is provided, find the exact line in targetFile where text occurs
+        if (text && text.trim()) {
+          try {
+            const content = readFileSync(targetFile, 'utf-8');
+            const lines = content.split('\n');
+            const trimmed = text.trim();
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].includes(trimmed)) {
+                targetLine = i + 1;
+                break;
+              }
+            }
+          } catch {}
+        }
+
         let actualEditor = editor;
-        if (editor === 'auto') {
+        if (!actualEditor || actualEditor === 'auto') {
           const tp = process.env.TERM_PROGRAM || '';
-          const envKeys = Object.keys(process.env).join(',');
-          if (envKeys.toLowerCase().includes('cursor')) {
+          const envStr = JSON.stringify(process.env).toLowerCase();
+          if (envStr.includes('cursor')) {
             actualEditor = 'cursor';
-          } else if (tp === 'windsurf' || envKeys.toLowerCase().includes('windsurf')) {
+          } else if (tp === 'windsurf' || envStr.includes('windsurf')) {
             actualEditor = 'windsurf';
-          } else if (tp === 'antigravity' || envKeys.toLowerCase().includes('antigravity') || process.env.AGY_IDE) {
+          } else if (tp === 'antigravity' || envStr.includes('antigravity') || process.env.AGY_IDE) {
             actualEditor = 'antigravity';
-          } else if (tp === 'vscode' || envKeys.toLowerCase().includes('vscode')) {
+          } else if (tp === 'vscode' || envStr.includes('code')) {
             actualEditor = 'vscode';
           } else {
-            // Default fallback if we can't detect
-            actualEditor = 'antigravity';
+            actualEditor = 'cursor';
           }
           console.log('[agent-hover] Auto-detected editor:', actualEditor);
         }
 
         let cmd = '';
         if (actualEditor === 'cursor') {
-          cmd = `cursor "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "cursor://file${file}:${line || 1}"`;
+          cmd = `cursor -g "${targetFile}:${targetLine}" 2>/dev/null || open "cursor://file${targetFile}:${targetLine}"`;
         } else if (actualEditor === 'windsurf') {
-          cmd = `windsurf "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "windsurf://file${file}:${line || 1}"`;
+          cmd = `windsurf -g "${targetFile}:${targetLine}" 2>/dev/null || open "windsurf://file${targetFile}:${targetLine}"`;
         } else if (actualEditor === 'antigravity') {
-          // Try agy CLI first, fallback to macOS open command if missing
-          cmd = `agy "${this.projectRoot}" "${file}" 2>/dev/null || open "antigravity-ide://file${file}:${line || 1}"`;
+          cmd = `agy "${this.projectRoot}" "${targetFile}" 2>/dev/null || open "antigravity-ide://file${targetFile}:${targetLine}"`;
         } else if (actualEditor === 'webstorm') {
-          cmd = `webstorm "${this.projectRoot}" --line ${line || 1} "${file}"`;
+          cmd = `webstorm --line ${targetLine} "${targetFile}"`;
+        } else if (actualEditor === 'zed') {
+          cmd = `zed "${targetFile}:${targetLine}"`;
         } else {
-          // Default to vscode
-          cmd = `code "${this.projectRoot}" --goto "${file}:${line || 1}" 2>/dev/null || open "vscode://file${file}:${line || 1}"`;
+          cmd = `code -g "${targetFile}:${targetLine}" 2>/dev/null || open "vscode://file${targetFile}:${targetLine}"`;
         }
 
         exec(cmd, (error) => {
@@ -771,7 +833,7 @@ export class BridgeServer {
             console.error('[agent-hover] Failed to open editor:', error);
             res.status(500).json({ error: error.message });
           } else {
-            res.json({ success: true });
+            res.json({ success: true, file: targetFile, line: targetLine });
           }
         });
       } catch (error: unknown) {
@@ -784,14 +846,49 @@ export class BridgeServer {
     this.app.post('/api/edit-source', async (req, res) => {
       try {
         const { file, component, originalText, newText, line } = req.body;
-        if (!file || originalText === undefined || newText === undefined) {
-          res.status(400).json({ error: 'Missing required parameters (file, originalText, newText)' });
+        if (originalText === undefined || newText === undefined) {
+          res.status(400).json({ error: 'Missing required parameters (originalText, newText)' });
+          return;
+        }
+
+        let targetFile = file;
+
+        // If file wasn't provided or was unresolved by client, scan project for originalText
+        if (!targetFile && originalText) {
+          const fg = await import('fast-glob');
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          const files = await fg.default('**/*.{tsx,jsx}', {
+            cwd: this.projectRoot,
+            ignore: ['node_modules/**', 'dist/**', '.git/**'],
+          });
+
+          if (component) {
+            const compFile = files.find(f => f.toLowerCase().includes(component.toLowerCase()));
+            if (compFile) targetFile = compFile;
+          }
+
+          if (!targetFile) {
+            for (const candidateFile of files) {
+              try {
+                const content = await fs.readFile(path.join(this.projectRoot, candidateFile), 'utf-8');
+                if (content.includes(originalText.trim())) {
+                  targetFile = candidateFile;
+                  break;
+                }
+              } catch {}
+            }
+          }
+        }
+
+        if (!targetFile) {
+          res.status(400).json({ error: 'Target file not found for text edit' });
           return;
         }
 
         let result = await this.sourceEditor.editSourceText({
           projectRoot: this.projectRoot,
-          file,
+          file: targetFile,
           component,
           originalText,
           newText,
@@ -799,7 +896,7 @@ export class BridgeServer {
         });
 
         // If not found in the specified file (e.g. call-site file was passed instead of definition file),
-        // search for the component or text across the project source files
+        // search for the component or text across all project source files
         if (!result.success) {
           const fg = await import('fast-glob');
           const fs = await import('fs/promises');
@@ -807,7 +904,7 @@ export class BridgeServer {
 
           const files = await fg.default('**/*.{tsx,jsx}', {
             cwd: this.projectRoot,
-            ignore: ['node_modules/**', 'dist/**', file],
+            ignore: ['node_modules/**', 'dist/**', targetFile],
           });
 
           // Priority 1: Files matching component name
@@ -955,7 +1052,13 @@ export class BridgeServer {
           ws.send(
             JSON.stringify({
               type: 'state-update',
-              data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments },
+              data: {
+                pins: this.pins,
+                frozenEntries: this.frozenEntries,
+                comments: this.comments,
+                screenshotCount: this.screenshotStore.size,
+                updateAvailable: this.updateInfo,
+              },
             })
           );
         });
@@ -966,6 +1069,10 @@ export class BridgeServer {
         console.log(
           `[agent-hover] Project root: ${this.projectRoot}`
         );
+
+        // Check for package updates in background without blocking startup
+        this.checkForUpdates();
+
         resolve(this.port);
       };
 
@@ -975,10 +1082,62 @@ export class BridgeServer {
     });
   }
 
+  private isNewerVersion(remote: string, local: string): boolean {
+    const r = remote.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+    const l = local.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(r.length, l.length); i++) {
+      const rv = r[i] || 0;
+      const lv = l[i] || 0;
+      if (rv > lv) return true;
+      if (rv < lv) return false;
+    }
+    return false;
+  }
+
+  private checkForUpdates() {
+    import('https').then((https) => {
+      const req = https.get(
+        'https://registry.npmjs.org/@agent-hover/vite/latest',
+        {
+          timeout: 2500,
+          headers: { 'User-Agent': 'agent-hover/' + this.CURRENT_VERSION },
+        },
+        (res) => {
+          if (res.statusCode !== 200) return;
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => {
+            try {
+              const pkg = JSON.parse(data);
+              const latest = pkg.version;
+              if (latest && this.isNewerVersion(latest, this.CURRENT_VERSION)) {
+                this.updateInfo = { current: this.CURRENT_VERSION, latest };
+                console.log(
+                  `\n  \x1b[36m[agent-hover]\x1b[0m 💡 \x1b[1mUpdate available:\x1b[0m ${this.CURRENT_VERSION} → \x1b[32m${latest}\x1b[0m`
+                );
+                console.log(
+                  `  \x1b[36m[agent-hover]\x1b[0m Run: \x1b[33mnpm i -D @agent-hover/vite@latest\x1b[0m to update\n`
+                );
+                this.broadcast({
+                  type: 'update-available',
+                  data: this.updateInfo,
+                });
+              }
+            } catch {}
+          });
+        }
+      );
+      req.on('error', () => {});
+      req.on('timeout', () => { req.destroy(); });
+    }).catch(() => {});
+  }
+
   public async stop(): Promise<void> {
     console.log('[agent-hover] Stopping bridge server...');
     this.clients.forEach((client) => {
-      try { client.close(); } catch {}
+      try {
+        client.terminate();
+      } catch {}
     });
     this.clients.clear();
 
@@ -988,6 +1147,11 @@ export class BridgeServer {
     }
 
     if (this.httpServer) {
+      try {
+        if (typeof (this.httpServer as any).closeAllConnections === 'function') {
+          (this.httpServer as any).closeAllConnections();
+        }
+      } catch {}
       if (this.httpServer.listening) {
         await new Promise<void>((res) => this.httpServer!.close(() => res()));
       }
@@ -1007,7 +1171,13 @@ export class BridgeServer {
   private broadcastState() {
     const data = JSON.stringify({
       type: 'state-update',
-      data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments, screenshotCount: this.screenshotStore.size },
+      data: {
+        pins: this.pins,
+        frozenEntries: this.frozenEntries,
+        comments: this.comments,
+        screenshotCount: this.screenshotStore.size,
+        updateAvailable: this.updateInfo,
+      },
     });
     this.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
