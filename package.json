@@ -13,10 +13,15 @@
     "build": "npm run build --workspaces --if-present",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
-    "build:overlay": "npm run build --workspace=@agent-hover/overlay",
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
-    "test": "npm run test --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arc-coder07/agent-hover.git"
   },
   "keywords": [
     "agent-hover",
@@ -28,5 +33,8 @@
     "vibe-coding"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
 }

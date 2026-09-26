@@ -1,11 +1,20 @@
 {
   "name": "@agent-hover/mcp",
   "version": "0.1.0",
+  "description": "Model Context Protocol (MCP) server for Agent Hover. Connects Claude Desktop, Cursor, and AI agents directly to your running UI.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "agent-hover-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "exports": {
     ".": {
@@ -15,6 +24,7 @@
   },
   "scripts": {
     "build": "npx tsc",
+    "prepack": "npx tsc",
     "dev": "npx tsc --watch"
   },
   "dependencies": {
@@ -22,5 +32,21 @@
   },
   "devDependencies": {
     "typescript": "^5.7.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arc-coder07/agent-hover.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
+  "keywords": [
+    "agent-hover",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "react",
+    "ai-agent"
+  ],
+  "license": "MIT"
 }

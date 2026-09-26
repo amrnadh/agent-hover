@@ -1,9 +1,18 @@
 {
   "name": "@agent-hover/core",
   "version": "0.1.0",
+  "description": "Context intelligence engine for Agent Hover (AST parsing, component relationships, token estimation).",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -12,6 +21,7 @@
   },
   "scripts": {
     "build": "npx tsc",
+    "prepack": "npx tsc",
     "dev": "npx tsc --watch"
   },
   "dependencies": {
@@ -24,5 +34,20 @@
   "devDependencies": {
     "typescript": "^5.7.0",
     "@types/babel__traverse": "^7.20.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arc-coder07/agent-hover.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
+  "keywords": [
+    "agent-hover",
+    "ast",
+    "react",
+    "ai-agent",
+    "token-estimation",
+    "mcp"
+  ],
+  "license": "MIT"
 }

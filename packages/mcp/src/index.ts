@@ -479,6 +479,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+export { isConnectionError, handleBridgeError, getBridgePort, server };
+
 /**
  * Connect the server to stdio transport and begin listening for JSON-RPC messages.
  */
@@ -491,7 +493,9 @@ async function main(): Promise<void> {
 }
 
 // Start the server, logging any unhandled startup errors to stderr
-main().catch((error) => {
-  console.error("Fatal error starting Agent Hover MCP server:", error);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== 'test') {
+  main().catch((error) => {
+    console.error("Fatal error starting Agent Hover MCP server:", error);
+    process.exit(1);
+  });
+}

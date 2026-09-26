@@ -12,6 +12,8 @@ export interface ComponentPointerOptions {
   editor?: 'auto' | 'vscode' | 'cursor' | 'webstorm' | 'zed' | 'windsurf' | 'antigravity';
 }
 
+export type AgentHoverOptions = ComponentPointerOptions;
+
 const UI_HTML = `
         <style>
           * { box-sizing: border-box; }
@@ -4838,13 +4840,17 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
           injectTo: 'body' as const,
         });
       }
+      const actualPort = bridgeServer ? bridgeServer.getPort() : port;
       tags.push({
         tag: 'script',
         attrs: { type: 'module' },
-        children: generateOverlayBootstrap(port, editor),
+        children: generateOverlayBootstrap(actualPort, editor),
         injectTo: 'body' as const,
       });
       return tags;
     },
   };
 }
+
+export { componentPointer as agentHover, componentPointer };
+

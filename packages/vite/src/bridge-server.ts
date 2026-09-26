@@ -32,6 +32,7 @@ export class BridgeServer {
   private wss: WebSocketServer | null = null;
   private projectRoot: string;
   private port: number;
+  private initialPort: number;
 
   private contextBuilder: ContextBuilder;
   private relationshipResolver: RelationshipResolver;
@@ -48,6 +49,7 @@ export class BridgeServer {
   constructor(projectRoot: string, port: number) {
     this.projectRoot = projectRoot;
     this.port = port;
+    this.initialPort = port;
     this.app = express();
 
     this.contextBuilder = new ContextBuilder(projectRoot);
@@ -283,13 +285,28 @@ export class BridgeServer {
       }
     });
 
-    // Manage pins
-    this.app.post('/api/pin', async (req, res) => {
+    // Manage pins (support both /api/pin and /api/pins)
+    const pinHandler = async (req: express.Request, res: express.Response) => {
       try {
-        const { action, file, line, task, id } = req.body;
+        const { action, file, line, task, id, context } = req.body;
 
         if (action === 'clear') {
           this.pins = [];
+        } else if (context && (action === 'add' || !action)) {
+          const pinId = id || context.id || `pin_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          const existingIdx = this.pins.findIndex((p) => p.id === pinId);
+          const entry: PinEntry = {
+            id: pinId,
+            context,
+            task: task || req.body.task || '',
+            order: req.body.order || this.pins.length + 1,
+            addedAt: req.body.addedAt || new Date().toISOString(),
+          };
+          if (existingIdx >= 0) {
+            this.pins[existingIdx] = entry;
+          } else {
+            this.pins.push(entry);
+          }
         } else if (action === 'add' && file && line !== undefined) {
           const pinId = id || `pin_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
           const existing = id ? this.pins.find((p) => p.id === id) : null;
@@ -334,6 +351,22 @@ export class BridgeServer {
         console.error('[agent-hover] Pin error:', message);
         res.status(500).json({ error: message });
       }
+    };
+
+    this.app.post('/api/pin', pinHandler);
+    this.app.post('/api/pins', pinHandler);
+    this.app.delete('/api/pins', (req, res) => {
+      const { id, file } = req.body;
+      if (id || file) {
+        this.pins = this.pins.filter(
+          (p) => id ? p.id !== id : p.context.source.file !== file
+        );
+        this.pins.forEach((p, idx) => { p.order = idx + 1; });
+        this.broadcastState();
+        res.json(this.getPinSet());
+      } else {
+        res.status(400).json({ error: 'Missing id or file' });
+      }
     });
 
     // Get all pins
@@ -359,16 +392,24 @@ export class BridgeServer {
     this.app.post('/api/comments', async (req, res) => {
       try {
         this.loadComments();
-        const { action, comment, id, text } = req.body;
-        if (action === 'add' && comment) {
+        const action = req.body.action || (req.body.comment || req.body.text || req.body.file ? 'add' : undefined);
+        let commentObj: any = req.body;
+        if (typeof req.body.comment === 'object' && req.body.comment !== null) {
+          commentObj = req.body.comment;
+        }
+        const commentText = typeof req.body.comment === 'string'
+          ? req.body.comment
+          : (commentObj.text || commentObj.comment || '');
+        const { id, text } = req.body;
+        if (action === 'add') {
           const newComment: ElementComment = {
-            id: comment.id || `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            file: comment.file,
-            line: comment.line,
-            component: comment.component,
-            selector: comment.selector,
-            text: comment.text || '',
-            createdAt: comment.createdAt || new Date().toISOString(),
+            id: commentObj.id || `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            file: commentObj.file || '',
+            line: commentObj.line || 1,
+            component: commentObj.component || '',
+            selector: commentObj.selector,
+            text: commentText,
+            createdAt: commentObj.createdAt || new Date().toISOString(),
             resolved: false,
           };
           this.comments.push(newComment);
@@ -414,9 +455,27 @@ export class BridgeServer {
     });
 
     // Manage frozen components
+    this.app.get('/api/freeze', (_req, res) => {
+      res.json({ frozenEntries: this.frozenEntries });
+    });
+
+    this.app.delete('/api/freeze', (req, res) => {
+      const { file, component } = req.body;
+      if (file && component) {
+        this.frozenEntries = this.frozenEntries.filter(
+          f => !(f.file === file && f.component === component)
+        );
+        this.broadcastState();
+        res.json({ frozenEntries: this.frozenEntries });
+      } else {
+        res.status(400).json({ error: 'Missing file or component' });
+      }
+    });
+
     this.app.post('/api/freeze', (req, res) => {
       try {
-        const { action, file, component, line } = req.body;
+        const action = req.body.action || (req.body.file && req.body.component ? 'add' : 'list');
+        const { file, component, line } = req.body;
         
         if (action === 'clear') {
           this.frozenEntries = [];
@@ -448,6 +507,7 @@ export class BridgeServer {
         res.status(500).json({ error: message });
       }
     });
+
 
     // Store computed styles
     this.app.post('/api/computed-styles', (req, res) => {
@@ -855,41 +915,84 @@ export class BridgeServer {
     });
   }
 
-  public start() {
-    this.httpServer = createServer(this.app);
-    this.wss = new WebSocketServer({ server: this.httpServer });
+  public getPort(): number {
+    return this.port;
+  }
 
-    this.wss.on('connection', (ws) => {
-      this.clients.add(ws);
+  public start(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const server = createServer(this.app);
+      this.httpServer = server;
 
-      ws.on('close', () => {
-        this.clients.delete(ws);
-      });
+      const errorHandler = (err: any) => {
+        server.removeListener('listening', listenHandler);
+        server.on('error', () => {});
+        if (err.code === 'EADDRINUSE' && this.port < this.initialPort + 10) {
+          console.warn(
+            `[agent-hover] Port ${this.port} is already in use. Retrying on port ${this.port + 1}...`
+          );
+          this.port++;
+          this.start().then(resolve, reject);
+        } else {
+          console.error('[agent-hover] Failed to start bridge server:', err);
+          reject(err);
+        }
+      };
 
-      // Send current state to new connections
-      ws.send(
-        JSON.stringify({
-          type: 'state-update',
-          data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments },
-        })
-      );
-    });
+      const listenHandler = () => {
+        server.removeListener('error', errorHandler);
+        const wss = new WebSocketServer({ server });
+        this.wss = wss;
 
-    this.httpServer.listen(this.port, () => {
-      console.log(
-        `[agent-hover] Bridge server running on http://localhost:${this.port}`
-      );
-      console.log(
-        `[agent-hover] Project root: ${this.projectRoot}`
-      );
+        wss.on('connection', (ws) => {
+          this.clients.add(ws);
+
+          ws.on('close', () => {
+            this.clients.delete(ws);
+          });
+
+          // Send current state to new connections
+          ws.send(
+            JSON.stringify({
+              type: 'state-update',
+              data: { pins: this.pins, frozenEntries: this.frozenEntries, comments: this.comments },
+            })
+          );
+        });
+
+        console.log(
+          `[agent-hover] Bridge server running on http://localhost:${this.port}`
+        );
+        console.log(
+          `[agent-hover] Project root: ${this.projectRoot}`
+        );
+        resolve(this.port);
+      };
+
+      server.once('error', errorHandler);
+      server.once('listening', listenHandler);
+      server.listen(this.port);
     });
   }
 
-  public stop() {
+  public async stop(): Promise<void> {
     console.log('[agent-hover] Stopping bridge server...');
-    this.clients.forEach((client) => client.close());
-    this.wss?.close();
-    this.httpServer?.close();
+    this.clients.forEach((client) => {
+      try { client.close(); } catch {}
+    });
+    this.clients.clear();
+
+    if (this.wss) {
+      await new Promise<void>((res) => this.wss!.close(() => res()));
+      this.wss = null;
+    }
+
+    if (this.httpServer) {
+      if (this.httpServer.listening) {
+        await new Promise<void>((res) => this.httpServer!.close(() => res()));
+      }
+      this.httpServer = null;
+    }
   }
 
   private broadcast(msg: { type: string; data?: any }) {
