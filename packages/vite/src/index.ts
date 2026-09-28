@@ -2,6 +2,7 @@ import type { Plugin } from 'vite';
 import { BridgeServer } from './bridge-server.js';
 import { readFileSync } from 'fs';
 import { createRequire } from 'module';
+import { MODERN_SCREENSHOT_CODE } from './vendor/modern-screenshot.js';
 
 export interface ComponentPointerOptions {
   /** Port for the bridge server. Default: 9850 */
@@ -81,6 +82,9 @@ const UI_HTML = `
             --handle-color: rgba(255, 255, 255, 0.20);
             --handle-hover: rgba(255, 255, 255, 0.50);
             --overlay-bg: rgba(20, 20, 20, 0.88);
+            --callout-bg: rgba(20, 20, 24, 0.94);
+            --callout-border: rgba(255, 255, 255, 0.12);
+            --callout-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.70), 0 4px 12px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.12);
           }
           
           /* Light mode - Opal Light Glass Dock & Studio Palette */
@@ -109,13 +113,13 @@ const UI_HTML = `
             --border-glass: #d9d9dc;
             --border-highlight: #c0bfc4;
             --border-accent: #8e8c95;
-            --accent: #171427;
-            --accent-hover: #030014;
-            --accent-subtle: rgba(23, 20, 39, 0.06);
-            --accent-solid: #171427;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-subtle: rgba(79, 70, 229, 0.08);
+            --accent-solid: #4f46e5;
             --accent-solid-text: #ffffff;
-            --accent-solid-border: #171427;
-            --accent-solid-hover: #030014;
+            --accent-solid-border: #4f46e5;
+            --accent-solid-hover: #4338ca;
             --accent-emerald: #059669;
             --accent-rose: #e11d48;
             --text-primary: #030014;
@@ -138,6 +142,9 @@ const UI_HTML = `
             --handle-color: rgba(0, 0, 0, 0.16);
             --handle-hover: rgba(0, 0, 0, 0.38);
             --overlay-bg: rgba(255, 255, 255, 0.88);
+            --callout-bg: rgba(255, 255, 255, 0.96);
+            --callout-border: rgba(0, 0, 0, 0.09);
+            --callout-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
           }
 
           /* --- Vertical Dock Container --- */
@@ -256,20 +263,20 @@ const UI_HTML = `
             top: 22px;
             opacity: 0;
             pointer-events: none;
-            background: var(--bg-dock-panel);
+            background: var(--callout-bg);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--border-glass);
+            border: 1px solid var(--callout-border);
             border-radius: 12px;
-            padding: 9px 16px;
+            padding: 8px 14px;
             color: var(--text-primary);
             font-family: var(--font-sans);
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 12px;
-            box-shadow: var(--shadow-dock);
+            gap: 10px;
+            box-shadow: var(--callout-shadow);
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             z-index: 999998;
             white-space: nowrap;
@@ -291,7 +298,7 @@ const UI_HTML = `
             height: 0;
             border-top: 6px solid transparent;
             border-bottom: 6px solid transparent;
-            border-right: 7px solid var(--bg-dock-panel);
+            border-right: 7px solid var(--callout-bg);
           }
 
           .cp-callout-message {
@@ -301,13 +308,90 @@ const UI_HTML = `
 
           .cp-callout-time {
             font-family: var(--font-mono);
-            font-size: 11px;
+            font-size: 10.5px;
+            font-weight: 600;
             color: var(--accent);
-            margin-left: 6px;
+            margin-left: 4px;
             background: var(--accent-subtle);
             padding: 2px 7px;
             border-radius: 6px;
             border: 1px solid var(--border-accent);
+            transition: all 0.2s ease;
+          }
+
+          /* Dynamic Callout Meta Badges */
+          .cp-callout-time.meta-success {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(52, 211, 153, 0.35);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+          }
+          :host(.light-mode) .cp-callout-time.meta-success {
+            color: #059669;
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(5, 150, 105, 0.3);
+            box-shadow: none;
+          }
+
+          .cp-callout-time.meta-snap {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+          }
+          :host(.light-mode) .cp-callout-time.meta-snap {
+            color: #0284c7;
+            background: rgba(14, 165, 233, 0.12);
+            border-color: rgba(2, 132, 199, 0.3);
+            box-shadow: none;
+          }
+
+          .cp-callout-time.meta-error {
+            color: #fb7185;
+            background: rgba(244, 63, 94, 0.15);
+            border-color: rgba(251, 113, 133, 0.35);
+            box-shadow: 0 0 8px rgba(244, 63, 94, 0.2);
+          }
+          :host(.light-mode) .cp-callout-time.meta-error {
+            color: #e11d48;
+            background: rgba(244, 63, 94, 0.12);
+            border-color: rgba(225, 29, 72, 0.3);
+            box-shadow: none;
+          }
+
+          .cp-callout-time.meta-warning {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(251, 191, 36, 0.35);
+          }
+          :host(.light-mode) .cp-callout-time.meta-warning {
+            color: #d97706;
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(217, 119, 6, 0.3);
+          }
+
+          .cp-callout-time.meta-code {
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(167, 139, 250, 0.35);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+          }
+          :host(.light-mode) .cp-callout-time.meta-code {
+            color: #7c3aed;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: none;
+          }
+
+          .cp-callout-time.meta-info {
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(129, 140, 248, 0.35);
+          }
+          :host(.light-mode) .cp-callout-time.meta-info {
+            color: #4f46e5;
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(79, 70, 229, 0.3);
           }
 
           /* --- Full Context Lens Flyout --- */
@@ -395,7 +479,7 @@ const UI_HTML = `
             left: auto;
             right: -7px;
             border-right: none;
-            border-left: 7px solid var(--bg-dock-panel);
+            border-left: 7px solid var(--callout-bg);
           }
 
           #cp-flyout-header {
@@ -868,40 +952,46 @@ const UI_HTML = `
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 22px;
-            height: 22px;
+            min-width: 24px;
+            height: 24px;
             padding: 0 7px;
-            background: #1e1e1e;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: #ffffff;
-            border: 1.5px solid #0d99ff;
+            border: 1.5px solid rgba(255, 255, 255, 0.95);
             border-radius: 999px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6), 0 0 8px rgba(13, 153, 255, 0.35);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.50), 0 0 10px rgba(99, 102, 241, 0.35);
             cursor: pointer;
             pointer-events: auto;
             transform: translate(-50%, -50%);
-            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
           }
           .cp-comment-marker:hover {
-            transform: translate(-50%, -50%) scale(1.15);
-            background: #2c2c2c;
+            transform: translate(-50%, -50%) scale(1.18);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.65), 0 0 14px rgba(255, 255, 255, 0.5);
             border-color: #ffffff;
-            box-shadow: 0 5px 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.4);
+            filter: brightness(1.1);
           }
           .cp-comment-marker.resolved {
-            opacity: 0.5;
-            background: #252525;
-            border-color: #555555;
-            color: #888888;
-            box-shadow: none;
+            opacity: 0.85;
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            color: #34d399;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
           }
           :host(.light-mode) .cp-comment-marker {
-            background: #171427;
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
             color: #ffffff;
-            border-color: #4f46e5;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2), 0 0 8px rgba(79, 70, 229, 0.3);
+            border: 1.5px solid #ffffff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.38), 0 1px 3px rgba(0, 0, 0, 0.1);
+          }
+          :host(.light-mode) .cp-comment-marker.resolved {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #059669;
+            color: #059669;
+            box-shadow: none;
           }
 
           /* --- Pinned Stack Cards --- */
@@ -1321,7 +1411,7 @@ const UI_HTML = `
             transform: translateX(-50%);
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
-            border-bottom: 6px solid var(--bg-dock-panel);
+            border-bottom: 6px solid var(--callout-bg);
             border-top: none;
           }
           #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom #cp-dock-callout {
@@ -1331,7 +1421,7 @@ const UI_HTML = `
           #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom .cp-callout-tail {
             top: auto;
             bottom: -6px;
-            border-top: 6px solid var(--bg-dock-panel);
+            border-top: 6px solid var(--callout-bg);
             border-bottom: none;
           }
         </style>
@@ -1961,6 +2051,25 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       function showCallout(text, meta, duration = 2000) {
         calloutText.textContent = text;
         calloutMeta.textContent = meta || '';
+
+        // Reset and apply theme-aware meta classification
+        callout.className = '';
+        calloutMeta.className = 'cp-callout-time';
+
+        if (meta) {
+          const m = String(meta).toLowerCase();
+          let metaClass = 'meta-info';
+          if (m === 'saved' || m === 'copied') metaClass = 'meta-success';
+          else if (m === 'snap') metaClass = 'meta-snap';
+          else if (m === 'error') metaClass = 'meta-error';
+          else if (m === 'warning') metaClass = 'meta-warning';
+          else if (m === 'hmr' || m === 'edit' || m === 'source' || m === 'undo') metaClass = 'meta-code';
+          else if (m === 'pin' || m === 'note' || m === 'tip' || m === 'alt' || m === 'dock' || m === 'theme' || m === 'mode' || m === 'set' || m === 'ide') metaClass = 'meta-info';
+
+          callout.classList.add(metaClass);
+          calloutMeta.classList.add(metaClass);
+        }
+
         callout.classList.add('show');
         if (calloutTimer) clearTimeout(calloutTimer);
         calloutTimer = setTimeout(() => {
@@ -3962,11 +4071,22 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         return isDark ? '#09090b' : '#ffffff';
       }
 
+      function triggerShutterFlash() {
+        try {
+          const flash = document.createElement('div');
+          flash.id = 'ah-shutter-flash';
+          flash.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.32);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);pointer-events:none;z-index:9999999;opacity:1;transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);';
+          document.body.appendChild(flash);
+          requestAnimationFrame(() => {
+            flash.style.opacity = '0';
+            setTimeout(() => {
+              try { if (flash.parentNode) flash.parentNode.removeChild(flash); } catch (_) {}
+            }, 400);
+          });
+        } catch (_) {}
+      }
+
       async function captureElement(element) {
-        if (!window.domtoimage) {
-          console.error('[agent-hover] dom-to-image-more not loaded');
-          return null;
-        }
         // Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
         const rootContainer = shadow.host || container;
         const prevDisplay = rootContainer.style.display;
@@ -3983,29 +4103,47 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             }
           }
 
-          const rect = !isFullPage && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
-          const captureWidth = Math.max(Math.round(isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300))), 10);
-          const captureHeight = Math.max(Math.round(isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200))), 10);
           const scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
           const solidBg = getInheritedBackgroundColor(element);
 
-          const dataUrl = await window.domtoimage.toPng(element, {
-            width: captureWidth,
-            height: captureHeight,
-            pixelRatio: scale,
-            bgcolor: solidBg,
-            imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=',
-            style: {
-              animation: 'none',
-              transition: 'none'
-            },
-            filter: (node) => {
-              if (node && (node.id === 'agent-hover-root' || node === container)) return false;
-              if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
-              return true;
-            }
-          });
-          return dataUrl;
+          // 1. Primary: Use modernScreenshot (high-res, no text/flex clipping, zero overlap)
+          if (window.modernScreenshot && window.modernScreenshot.domToPng) {
+            const dataUrl = await window.modernScreenshot.domToPng(element, {
+              scale: scale,
+              backgroundColor: solidBg,
+              filter: (node) => {
+                if (node && (node.id === 'agent-hover-root' || node === container)) return false;
+                if (node && node.id === 'ah-shutter-flash') return false;
+                if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
+                return true;
+              }
+            });
+            return dataUrl;
+          }
+
+          // 2. Fallback: domtoimage
+          if (window.domtoimage) {
+            const rect = !isFullPage && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+            const captureWidth = Math.max(Math.round(isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300))), 10);
+            const captureHeight = Math.max(Math.round(isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200))), 10);
+            const dataUrl = await window.domtoimage.toPng(element, {
+              width: captureWidth,
+              height: captureHeight,
+              pixelRatio: scale,
+              bgcolor: solidBg,
+              imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=',
+              filter: (node) => {
+                if (node && (node.id === 'agent-hover-root' || node === container)) return false;
+                if (node && node.id === 'ah-shutter-flash') return false;
+                if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
+                return true;
+              }
+            });
+            return dataUrl;
+          }
+
+          console.error('[agent-hover] No screenshot capture library available');
+          return null;
         } catch (err) {
           console.error('[agent-hover] Screenshot capture failed:', err);
           return null;
@@ -4036,7 +4174,8 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       async function downloadCleanScreenshot(targetEl, name) {
-        showCallout('Capturing clean screenshot...', 'SNAP', 800);
+        triggerShutterFlash();
+        showCallout('Capturing screenshot...', 'SNAP', 800);
         const el = (targetEl && targetEl.isConnected) ? targetEl : document.body;
         const cleanName = (name || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
         const timestamp = Date.now();
@@ -4098,13 +4237,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
         if (diskSaved || browserDownloaded) {
           if (clipboardCopied && diskSaved) {
-            showCallout('Saved to .agent-hover/screenshots/ & clipboard!', 'SAVED', 3500);
+            showCallout('📸 Screenshot saved & copied to clipboard!', 'SAVED', 3500);
           } else if (clipboardCopied) {
-            showCallout('Downloaded & copied to clipboard!', 'SAVED', 3000);
+            showCallout('📸 Downloaded & copied to clipboard!', 'SAVED', 3000);
           } else if (diskSaved) {
-            showCallout('Saved to .agent-hover/screenshots/', 'SAVED', 3000);
+            showCallout('📸 Saved to .agent-hover/screenshots/', 'SAVED', 3000);
           } else {
-            showCallout('Clean screenshot downloaded (Website UI only)', 'SAVED', 3000);
+            showCallout('📸 Clean screenshot downloaded', 'SAVED', 3000);
           }
         } else {
           showCallout('Failed to save screenshot', 'ERROR', 2500);
@@ -5051,17 +5190,27 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
     },
 
     transformIndexHtml() {
-      // Inline dom-to-image-more library for screenshot capture
+      const tags: any[] = [];
+
+      // Primary: Inject modern-screenshot (high-resolution DOM to canvas/PNG, robust layout & font metrics)
+      if (MODERN_SCREENSHOT_CODE) {
+        tags.push({
+          tag: 'script',
+          children: MODERN_SCREENSHOT_CODE,
+          injectTo: 'body' as const,
+        });
+      }
+
+      // Fallback: Inline dom-to-image-more library if present
       const req = createRequire(import.meta.url);
       let domToImageSource = '';
       try {
         const domToImagePath = req.resolve('dom-to-image-more/dist/dom-to-image-more.min.js');
         domToImageSource = readFileSync(domToImagePath, 'utf-8');
       } catch (e) {
-        console.warn('[agent-hover] Could not load dom-to-image-more, screenshot capture will be disabled');
+        // Fallback gracefully
       }
 
-      const tags: any[] = [];
       if (domToImageSource) {
         tags.push({
           tag: 'script',
