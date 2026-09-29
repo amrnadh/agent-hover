@@ -1,5 +1,9 @@
 # Agent Hover
 
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/vite)](https://www.npmjs.com/package/@agent-hover/vite)
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/core)](https://www.npmjs.com/package/@agent-hover/core)
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/mcp)](https://www.npmjs.com/package/@agent-hover/mcp)
+
 > Point at your UI. Your agent understands it.
 
 Agent Hover is a Vite plugin that turns your running React app into a navigable map of your codebase. Hover over any component to see its source, props, and relationships — then send precisely the context your AI agent needs to make the change correctly on the first try.

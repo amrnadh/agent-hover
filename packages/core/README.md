@@ -1,5 +1,7 @@
 # @agent-hover/core
 
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/core)](https://www.npmjs.com/package/@agent-hover/core)
+
 > Context intelligence engine for [Agent Hover](https://github.com/Arc-coder07/agent-hover).
 
 `@agent-hover/core` powers the AST parsing, component relationship graph, token estimation, and markdown prompt formatting for Agent Hover. It analyzes React codebases statically and dynamically to extract rich structural context for AI coding agents.

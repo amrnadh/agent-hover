@@ -15,13 +15,36 @@ export interface ComponentPointerOptions {
 
 export type AgentHoverOptions = ComponentPointerOptions;
 
+const ICONS = {
+  clipboard: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`,
+  crosshair: `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>`,
+  code: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  pin: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`,
+  camera: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`,
+  x: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  lock: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+  comment: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  check: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  trash: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+  download: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  boxSelect: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M21 19a2 2 0 0 1-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1"/><path d="M9 21h1"/><path d="M14 3h1"/><path d="M14 21h1"/><path d="M3 9v1"/><path d="M21 9v1"/><path d="M3 14v1"/><path d="M21 14v1"/></svg>`,
+  monitor: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`,
+  arrowsVertical: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>`,
+  copy: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+  messageSquare: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  undo: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`,
+  send: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`
+};
+
 const UI_HTML = `
         <style>
           * { box-sizing: border-box; }
           :host {
             pointer-events: none;
           }
-          #cp-dock-wrapper, #cp-flyout, #cp-text-editor {
+          #cp-dock-wrapper, #cp-flyout, #cp-text-editor, #cp-snap-dropdown, #cp-snap-dropdown *, #cp-snap-preview, #cp-snap-preview *, #cp-note-popover, #cp-note-popover *, #cp-mcp-modal, #cp-mcp-modal *, #cp-selection-chip, #cp-selection-chip * {
             pointer-events: auto;
           }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight {
@@ -372,26 +395,419 @@ const UI_HTML = `
 
           .cp-callout-time.meta-code {
             color: #a78bfa;
-            background: rgba(139, 92, 246, 0.15);
-            border-color: rgba(167, 139, 250, 0.35);
-            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: none;
+            color: #d4d4d8;
           }
           :host(.light-mode) .cp-callout-time.meta-code {
-            color: #7c3aed;
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(124, 58, 237, 0.3);
+            color: #18181b;
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
             box-shadow: none;
           }
 
           .cp-callout-time.meta-info {
-            color: #818cf8;
-            background: rgba(99, 102, 241, 0.15);
-            border-color: rgba(129, 140, 248, 0.35);
+            color: #d4d4d8;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.16);
           }
           :host(.light-mode) .cp-callout-time.meta-info {
-            color: #4f46e5;
-            background: rgba(99, 102, 241, 0.12);
-            border-color: rgba(79, 70, 229, 0.3);
+            color: #18181b;
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+          }
+
+          /* --- Note Popover (redesigned, class-based) --- */
+          #cp-note-popover {
+            position: fixed;
+            z-index: 999999;
+            width: 340px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            padding: 16px;
+            pointer-events: auto;
+            visibility: hidden;
+            opacity: 0;
+            transform: scale(0.96) translateY(4px);
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.2s;
+          }
+          :host(.light-mode) #cp-note-popover {
+            border: 1px solid rgba(0, 0, 0, 0.10);
+            box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+          }
+          #cp-note-popover.open {
+            visibility: visible;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0s;
+          }
+          .cp-note-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 6px;
+          }
+          .cp-note-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-primary);
+          }
+          .cp-note-title svg {
+            color: var(--text-primary);
+            flex-shrink: 0;
+          }
+          .cp-note-header .cp-icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, color 0.15s ease;
+          }
+          .cp-note-header .cp-icon-btn:hover {
+            background: var(--bg-surface-raised);
+            color: var(--text-primary);
+          }
+          .cp-note-target {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+          }
+          .cp-file-badge {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            background: var(--bg-surface-raised);
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border-glass);
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .cp-note-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 70px;
+            background: rgba(14, 14, 16, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 4px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          }
+          .cp-note-textarea:focus {
+            border-color: rgba(255, 255, 255, 0.40);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+          }
+          :host(.light-mode) .cp-note-textarea {
+            background: #ffffff;
+            border: 1px solid #d9d9dc;
+            color: #121214;
+          }
+          :host(.light-mode) .cp-note-textarea:focus {
+            border-color: #121214;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+          }
+          .cp-note-error {
+            font-size: 11px;
+            color: var(--accent-rose, #f43f5e);
+            min-height: 16px;
+            margin-bottom: 4px;
+            line-height: 16px;
+          }
+          .cp-note-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .cp-note-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+          }
+          .cp-btn-ghost {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #b3b3b3;
+            padding: 5px 12px;
+            border-radius: 7px;
+            font-size: 11px;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+          }
+          .cp-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.20);
+          }
+          .cp-btn-ghost.cp-btn-danger {
+            color: var(--accent-rose, #f43f5e);
+            border-color: rgba(244, 63, 94, 0.3);
+          }
+          .cp-btn-ghost.cp-btn-danger:hover {
+            background: rgba(244, 63, 94, 0.1);
+          }
+          .cp-btn-primary {
+            background: #2c2c2e;
+            border: 1px solid #48484a;
+            color: #ffffff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.35);
+            padding: 5px 14px;
+            border-radius: 7px;
+            font-size: 11px;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+          }
+          .cp-btn-primary:hover {
+            background: #38383a;
+            border-color: #5c5c5e;
+            filter: none;
+          }
+          :host(.light-mode) .cp-btn-primary {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+          }
+          :host(.light-mode) .cp-btn-primary:hover {
+            background: #27272a;
+          }
+          :host(.light-mode) .cp-btn-ghost {
+            border-color: #d9d9dc;
+            color: #52525b;
+          }
+          :host(.light-mode) .cp-btn-ghost:hover {
+            background: #f4f4f5;
+            color: #18181b;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            #cp-note-popover { transition: none; }
+          }
+
+          /* --- Screenshot Mode Dropdown --- */
+          #cp-snap-dropdown {
+            position: fixed;
+            width: 240px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 0 1px rgba(255,255,255,0.08);
+            padding: 4px;
+            z-index: 999999;
+            visibility: hidden;
+            opacity: 0;
+            transform: scale(0.96);
+            transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;
+            pointer-events: auto;
+          }
+          :host(.light-mode) #cp-snap-dropdown {
+            border: 1px solid rgba(0, 0, 0, 0.10);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+          }
+          #cp-snap-dropdown.open {
+            visibility: visible;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0s;
+          }
+          .cp-snap-option {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-sans);
+            outline: none;
+          }
+          .cp-snap-option:hover,
+          .cp-snap-option:focus-visible {
+            background: var(--bg-surface-raised);
+            outline: none;
+          }
+          .cp-snap-option-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+          }
+          .cp-snap-option-label svg {
+            color: var(--text-muted);
+            flex-shrink: 0;
+          }
+          .cp-snap-option-caption {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 22px;
+          }
+          .cp-snap-message {
+            font-size: 11px;
+            color: var(--accent-rose, #f43f5e);
+            padding: 6px 12px;
+            display: none;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            #cp-snap-dropdown { transition: none; }
+          }
+
+          /* --- Screenshot Preview Card --- */
+          #cp-snap-preview {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--border-glass);
+            border-radius: 14px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.06);
+            padding: 12px;
+            z-index: 999998;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+          }
+          #cp-snap-preview.open {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0s;
+          }
+          .cp-snap-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+          .cp-snap-preview-title {
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-primary);
+          }
+          .cp-snap-preview-img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid var(--border-glass);
+            margin-bottom: 6px;
+            background: var(--bg-surface-sunken);
+          }
+          .cp-snap-preview-meta {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            margin-bottom: 4px;
+          }
+          .cp-snap-preview-status {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+          .cp-snap-preview-status.success { color: var(--accent-emerald, #10b981); }
+          .cp-snap-preview-status.error { color: var(--accent-rose, #f43f5e); }
+          .cp-snap-preview-actions {
+            display: flex;
+            gap: 6px;
+          }
+          .cp-snap-preview-actions .cp-btn-ghost,
+          .cp-snap-preview-actions .cp-btn-primary {
+            flex: 1;
+            justify-content: center;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            #cp-snap-preview { transition: none; }
+          }
+
+          /* --- Region Hint Overlay (screenshot mode hover) --- */
+          #cp-region-hint {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999990;
+            display: none;
+          }
+          #cp-region-hint.viewport {
+            inset: 0;
+            border: 2px solid var(--accent);
+            display: block;
+          }
+          #cp-region-hint.component {
+            border: 2px solid var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+            display: block;
+          }
+          .cp-region-label {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            padding: 2px 6px;
+            border-radius: 4px;
+          }
+
+          /* --- MCP Status Dot (in dock) --- */
+          .cp-mcp-dot {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            border: 1px solid var(--bg-dock-panel);
+            transition: background 0.3s ease;
+          }
+          .cp-mcp-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
           }
 
           /* --- Full Context Lens Flyout --- */
@@ -946,52 +1362,135 @@ const UI_HTML = `
           }
 
           /* --- Inline Comment Pin Markers on Page --- */
+          /* --- Studio Slate Comment Pin Markers --- */
           .cp-comment-marker {
             position: fixed;
             z-index: 999993;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 24px;
+            width: 24px;
             height: 24px;
-            padding: 0 7px;
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: #1e1e20;
             color: #ffffff;
-            border: 1.5px solid rgba(255, 255, 255, 0.95);
-            border-radius: 999px;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50% 50% 50% 3px;
             font-family: var(--font-mono);
             font-size: 11px;
-            font-weight: 600;
-            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.50), 0 0 10px rgba(99, 102, 241, 0.35);
+            font-weight: 500;
             cursor: pointer;
             pointer-events: auto;
-            transform: translate(-50%, -50%);
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
+            transform: translateY(-100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+            transition: box-shadow 0.15s ease, border-color 0.15s ease;
           }
-          .cp-comment-marker:hover {
-            transform: translate(-50%, -50%) scale(1.18);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.65), 0 0 14px rgba(255, 255, 255, 0.5);
+          .cp-comment-marker::before {
+            content: "";
+            position: absolute;
+            inset: -6px;
+          }
+          .cp-comment-marker:hover,
+          .cp-comment-marker:focus-visible {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.20), 0 4px 14px rgba(0, 0, 0, 0.55);
             border-color: #ffffff;
-            filter: brightness(1.1);
+            outline: none;
+          }
+          .cp-comment-marker:hover .cp-marker-preview,
+          .cp-comment-marker:focus-visible .cp-marker-preview {
+            opacity: 1;
+          }
+          .cp-comment-marker.active {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.65);
+            border-color: #ffffff;
+          }
+          .cp-comment-marker.active .cp-marker-preview {
+            opacity: 0;
+            pointer-events: none;
+          }
+          .cp-marker-num {
+            line-height: 1;
           }
           .cp-comment-marker.resolved {
-            opacity: 0.85;
-            background: rgba(16, 185, 129, 0.2);
-            border-color: #10b981;
-            color: #34d399;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+            background: #141f17;
+            border-color: rgba(20, 174, 92, 0.4);
+            color: #14ae5c;
+          }
+          .cp-comment-marker.cluster {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #2a2a2d;
+            border-color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
           }
           :host(.light-mode) .cp-comment-marker {
-            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-            color: #ffffff;
-            border: 1.5px solid #ffffff;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.38), 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
+            color: #18181b;
+            border: 1.5px solid rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+          }
+          :host(.light-mode) .cp-comment-marker:hover,
+          :host(.light-mode) .cp-comment-marker:focus-visible {
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.16);
+            border-color: #000000;
+          }
+          :host(.light-mode) .cp-comment-marker.active {
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25);
+            border-color: #000000;
           }
           :host(.light-mode) .cp-comment-marker.resolved {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: #059669;
-            color: #059669;
-            box-shadow: none;
+            background: #eefbf3;
+            border-color: rgba(20, 174, 92, 0.5);
+            color: #14ae5c;
+          }
+          /* Preview card (child of marker) */
+          .cp-marker-preview {
+            position: absolute;
+            left: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            background: var(--bg-dock-panel);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: var(--text-primary);
+            pointer-events: none;
+            opacity: 0;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            transition: opacity 0.12s ease;
+            white-space: normal;
+            z-index: 999994;
+          }
+          .cp-marker-preview.flip {
+            left: auto;
+            right: calc(100% + 8px);
+          }
+          .cp-marker-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+          }
+          .cp-marker-preview-text {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .cp-comment-marker { transition: none; }
+            .cp-marker-preview { transition: none; }
           }
 
           /* --- Pinned Stack Cards --- */
@@ -1080,36 +1579,6 @@ const UI_HTML = `
           }
           .cp-note-item.resolved {
             opacity: 0.55;
-          }
-
-          .cp-vibe-chip {
-            padding: 4px 9px;
-            background: #262626;
-            border: 1px solid #383838;
-            border-radius: 6px;
-            color: #cccccc;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-          }
-          .cp-vibe-chip:hover {
-            background: #383838;
-            color: #ffffff;
-            border-color: #555555;
-          }
-          :host(.light-mode) .cp-vibe-chip {
-            background: #ffffff;
-            border-color: #d9d9dc;
-            color: #474553;
-          }
-          :host(.light-mode) .cp-vibe-chip:hover {
-            background: #f5f5f6;
-            color: #030014;
-            border-color: #c0bfc4;
           }
 
           #cp-pin-bar {
@@ -1433,9 +1902,10 @@ const UI_HTML = `
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
               </div>
 
-              <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack">
+              <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack" style="position:relative;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                 <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
+                <span class="cp-mcp-dot" id="cp-mcp-dot" title="MCP: Not connected"></span>
               </div>
             </div>
 
@@ -1474,7 +1944,7 @@ const UI_HTML = `
                 <svg id="cp-mode-sidebar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><polyline points="10 9 7 12 10 15"/></svg>
                 <svg id="cp-mode-float-icon" style="display:none;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               </button>
-              <button class="cp-flyout-tool-btn" id="cp-flyout-snap-btn" title="Take Screenshot (Website UI)"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+              <button class="cp-flyout-tool-btn" id="cp-flyout-snap-btn" title="Take Screenshot" aria-haspopup="menu" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
               <button class="cp-flyout-tool-btn" id="cp-flyout-close" title="Close (Esc)"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
@@ -1509,24 +1979,11 @@ const UI_HTML = `
             </div>
 
             <div class="cp-flyout-actions">
-              <button class="cp-btn-bento primary" id="cp-copy-ai" style="grid-column: span 2; justify-content: center; font-weight: 600; font-size: 12px; padding: 9px 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy AI Context</button>
-              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
+              <button class="cp-btn-bento primary" id="cp-copy-ai" style="justify-content: center; font-weight: 600; font-size: 11.5px; padding: 9px 10px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy AI Context</button>
+              <button class="cp-btn-bento primary" id="cp-send-agent-btn" style="justify-content: center; font-weight: 600; font-size: 11.5px; padding: 9px 10px;">${ICONS.send} Send to Agent</button>
+              <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
               <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing Overlay</button>
-            </div>
-
-            <!-- Vibe Prompt Starters -->
-            <div style="padding:10px 20px; border-top:1px solid var(--border-glass); background:var(--bg-surface-sunken);">
-              <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="display:inline-flex; align-items:center; gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Vibe Prompts</span>
-                <span style="font-size:9.5px; color:var(--text-muted);">1-Click Copy</span>
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;" id="cp-vibe-prompts">
-                <button class="cp-vibe-chip" data-vibe="redesign" title="Prompt AI to modernize and redesign this component"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Redesign</button>
-                <button class="cp-vibe-chip" data-vibe="responsive" title="Prompt AI to make this responsive on mobile"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg> Mobile Polish</button>
-                <button class="cp-vibe-chip" data-vibe="theme" title="Prompt AI to restyle colors, spacing, typography"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Style & Colors</button>
-                <button class="cp-vibe-chip" data-vibe="refactor" title="Prompt AI to clean up code and add TypeScript safety"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Clean Code</button>
-              </div>
             </div>
 
             <!-- Persistent Notes Section in Sidebar -->
@@ -1535,7 +1992,7 @@ const UI_HTML = `
                 <span style="display:inline-flex; align-items:center; gap:5px;">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Notes (<span id="cp-notes-count">0</span>)
                 </span>
-                <button id="cp-notes-copy-all" class="cp-vibe-chip" style="font-size:9.5px; padding:2px 6px;" title="Copy all notes as AI prompt">Copy All Notes</button>
+                <button id="cp-notes-copy-all" class="cp-btn-bento" style="font-size:9.5px; padding:2px 6px;" title="Copy all notes as AI prompt">Copy All Notes</button>
               </div>
               <div id="cp-notes-list" style="display:flex; flex-direction:column; gap:6px; max-height:130px; overflow-y:auto;">
                 <div style="font-size:11px; color:var(--text-muted); font-style:italic;">No notes yet. Click the note icon on any element to add persistent notes.</div>
@@ -1551,6 +2008,7 @@ const UI_HTML = `
               <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
                 <input type="text" id="cp-task-input" placeholder="Overall goal (optional, e.g. 'Align cards to dark theme')" style="width:100%; box-sizing:border-box; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:8px; padding:7px 10px; color:var(--text-primary); font-family:var(--font-sans); font-size:11.5px; outline:none; transition: border-color 0.2s;" />
                 <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%; font-size:11.5px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
+                <button class="cp-btn-bento" id="cp-pin-send-agent" style="width:100%; font-size:11.5px; justify-content:center;">${ICONS.send} Send Pinned Tasks to Agent</button>
               </div>
             </div>
             </div>
@@ -1610,6 +2068,37 @@ const UI_HTML = `
                 </div>
               </div>
 
+              <div class="cp-settings-section">
+                <div class="cp-settings-section-title">AI Agents</div>
+                <div class="cp-settings-card">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:11px; color:var(--text-secondary);">MCP Connection</span>
+                    <span id="cp-mcp-status-label" style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted);">Not connected</span>
+                  </div>
+                  <button class="cp-btn-bento" id="cp-mcp-setup-btn" style="width:100%; justify-content:center;">${ICONS.sparkles} Open Setup Guide</button>
+                </div>
+              </div>
+
+              <!-- MCP Setup Modal (injected into settings) -->
+              <div id="cp-mcp-modal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center;">
+                <div style="width:420px; max-width:90vw; max-height:80vh; background:var(--bg-dock-panel); backdrop-filter:blur(20px); border:1px solid var(--border-glass); border-radius:14px; box-shadow:0 24px 64px rgba(0,0,0,0.4); padding:20px; overflow-y:auto;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                    <span style="font-weight:600; font-size:14px; color:var(--text-primary);">Connect AI Agent</span>
+                    <button id="cp-mcp-modal-close" class="cp-icon-btn" aria-label="Close">${ICONS.x}</button>
+                  </div>
+                  <div style="display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap;" id="cp-mcp-tabs">
+                    <button class="cp-btn-bento primary cp-mcp-tab" data-tab="claude" style="font-size:10.5px; padding:4px 10px;">Claude Code</button>
+                    <button class="cp-btn-bento cp-mcp-tab" data-tab="cursor" style="font-size:10.5px; padding:4px 10px;">Cursor</button>
+                    <button class="cp-btn-bento cp-mcp-tab" data-tab="windsurf" style="font-size:10.5px; padding:4px 10px;">Windsurf</button>
+                    <button class="cp-btn-bento cp-mcp-tab" data-tab="codex" style="font-size:10.5px; padding:4px 10px;">Codex</button>
+                    <button class="cp-btn-bento cp-mcp-tab" data-tab="antigravity" style="font-size:10.5px; padding:4px 10px;">Antigravity</button>
+                  </div>
+                  <div id="cp-mcp-tab-content">
+                    <!-- Tab panels injected by JS -->
+                  </div>
+                </div>
+              </div>
+
               <div class="cp-settings-section" style="margin-top:auto; padding-top:12px; border-top:1px solid var(--border-subtle); font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
                 <span>Agent Hover v0.1.1</span>
                 <span id="cp-bridge-status-badge" class="cp-badge cp-badge-emerald" style="min-height:18px; font-size:9.5px; padding:1px 6px;">Bridge Active</span>
@@ -1630,6 +2119,10 @@ const UI_HTML = `
               <button id="cp-sel-copy-btn" title="Copy AI Prompt (Click to copy)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
                 <span id="cp-sel-copy-label">Copy Prompt</span>
+              </button>
+              <button id="cp-sel-send-btn" title="Send Context to Agent" style="background:#2c2c2e; border:1px solid #48484a; color:#ffffff; font-weight:600; padding:2px 7px;">
+                ${ICONS.send}
+                <span id="cp-sel-send-label">Send</span>
               </button>
               <button id="cp-sel-note-btn" title="Add Note / Comment">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1655,24 +2148,65 @@ const UI_HTML = `
         <div id="cp-distance-layer"></div>
         <div id="cp-comments-layer" style="position:fixed; inset:0; pointer-events:none; z-index:999996;"></div>
 
-        <!-- Inline Note Popover -->
-        <div id="cp-note-popover" style="display:none; position:fixed; z-index:999999; width:320px; background:var(--bg-dock-panel); backdrop-filter:var(--blur); border:1px solid var(--border-glass); border-radius:12px; box-shadow:var(--shadow-dock); color:var(--text-primary); padding:12px; pointer-events:auto;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-            <span style="font-weight:600; font-size:11.5px; display:inline-flex; align-items:center; gap:6px; color:var(--text-primary);">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Element Note
-            </span>
-            <button id="cp-note-popover-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:2px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <!-- Inline Note Popover (redesigned, class-based) -->
+        <div id="cp-note-popover" role="dialog" aria-label="Note">
+          <div class="cp-note-header">
+            <div class="cp-note-title">${ICONS.messageSquare}<span id="cp-note-popover-label">New note</span></div>
+            <div style="display:flex;gap:2px;">
+              <button id="cp-note-resolve" class="cp-icon-btn" aria-label="Resolve" title="Mark as resolved">${ICONS.check}</button>
+              <button id="cp-note-popover-close" class="cp-icon-btn" aria-label="Close">${ICONS.x}</button>
+            </div>
           </div>
-          <div style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:6px;" id="cp-note-popover-target"></div>
-          <textarea id="cp-note-input" placeholder="Add an inline note or task for this element... (persists across restarts)" style="width:100%; box-sizing:border-box; min-height:70px; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:6px; padding:8px; color:var(--text-primary); font-family:var(--font-sans); font-size:12px; resize:vertical; outline:none; margin-bottom:8px;"></textarea>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <button class="cp-btn-bento" id="cp-note-delete" style="display:none; padding:4px 8px; font-size:11px; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> Delete</button>
-            <div style="display:flex; gap:6px; margin-left:auto;">
-              <button class="cp-btn-bento" id="cp-note-cancel" style="padding:4px 10px; font-size:11px;">Cancel</button>
-              <button class="cp-btn-bento primary" id="cp-note-save" style="padding:4px 12px; font-size:11px;">Save Note</button>
+          <div class="cp-note-target">
+            <span id="cp-note-popover-target"></span>
+            <span class="cp-file-badge" id="cp-note-popover-file"></span>
+          </div>
+          <textarea id="cp-note-input" class="cp-note-textarea" placeholder="Add a note for this element..."></textarea>
+          <div class="cp-note-error" id="cp-note-error"></div>
+          <div class="cp-note-footer">
+            <button class="cp-btn-ghost cp-btn-danger" id="cp-note-delete">${ICONS.trash} Delete</button>
+            <div class="cp-note-actions">
+              <button class="cp-btn-ghost" id="cp-note-cancel">Cancel</button>
+              <button class="cp-btn-primary" id="cp-note-save">Save</button>
+              <button class="cp-btn-primary" id="cp-note-send-agent" title="Save & Send to Agent">${ICONS.send} Send to Agent</button>
             </div>
           </div>
         </div>
+
+        <!-- Screenshot Mode Dropdown -->
+        <div id="cp-snap-dropdown" role="menu" aria-label="Screenshot mode">
+          <button class="cp-snap-option" role="menuitem" data-mode="component">
+            <span class="cp-snap-option-label">${ICONS.boxSelect} Selected component</span>
+            <span class="cp-snap-option-caption" id="cp-snap-component-name">None selected</span>
+          </button>
+          <button class="cp-snap-option" role="menuitem" data-mode="viewport">
+            <span class="cp-snap-option-label">${ICONS.monitor} Viewport</span>
+            <span class="cp-snap-option-caption">What you see now</span>
+          </button>
+          <button class="cp-snap-option" role="menuitem" data-mode="fullpage">
+            <span class="cp-snap-option-label">${ICONS.arrowsVertical} Full page</span>
+            <span class="cp-snap-option-caption" id="cp-snap-fullpage-size">Whole scrollable page</span>
+          </button>
+          <div class="cp-snap-message" id="cp-snap-message"></div>
+        </div>
+
+        <!-- Screenshot Preview Card -->
+        <div id="cp-snap-preview" role="status" aria-live="polite">
+          <div class="cp-snap-preview-header">
+            <span class="cp-snap-preview-title">Screenshot captured</span>
+            <button id="cp-snap-preview-close" class="cp-icon-btn" aria-label="Close">${ICONS.x}</button>
+          </div>
+          <img id="cp-snap-preview-img" class="cp-snap-preview-img" alt="Screenshot preview" />
+          <div class="cp-snap-preview-meta" id="cp-snap-preview-meta"></div>
+          <div class="cp-snap-preview-status" id="cp-snap-preview-status"></div>
+          <div class="cp-snap-preview-actions">
+            <button class="cp-btn-ghost" id="cp-snap-download">${ICONS.download} Download</button>
+            <button class="cp-btn-primary" id="cp-snap-copy">${ICONS.copy} Copy</button>
+          </div>
+        </div>
+
+        <!-- Region Hint Overlay (screenshot mode hover) -->
+        <div id="cp-region-hint"><span class="cp-region-label" id="cp-region-label"></span></div>
 
         <!-- Pinned Task Dialog (Two-choice flow: Copy Now vs Add More) -->
         <div id="cp-pin-dialog" style="display:none; position:fixed; z-index:999999; width:340px; background:var(--bg-dock-panel); backdrop-filter:var(--blur); border:1px solid var(--border-glass); border-radius:14px; box-shadow:var(--shadow-dock); color:var(--text-primary); padding:14px; pointer-events:auto;">
@@ -1717,21 +2251,6 @@ const UI_HTML = `
         </div>
 `;
 
-const ICONS = {
-  clipboard: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`,
-  crosshair: `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>`,
-  code: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-  pin: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`,
-  camera: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`,
-  x: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  lock: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
-  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
-  comment: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
-  check: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-  trash: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
-  download: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`
-};
 
 function generateOverlayBootstrap(port: number, editor: string): string {
   return `
@@ -1957,6 +2476,136 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           showCallout('Editor: Windsurf', 'SET');
         };
       }
+
+      // --- MCP Setup Modal ---
+      const MCP_CONFIGS = {
+        claude: {
+          title: 'Claude Code',
+          cli: 'claude mcp add agent-hover -- npx -y @agent-hover/mcp',
+          fileLabel: 'Or add to .mcp.json (project) or ~/.claude.json (global):',
+          snippet: JSON.stringify({
+            mcpServers: {
+              'agent-hover': {
+                command: 'npx',
+                args: ['-y', '@agent-hover/mcp']
+              }
+            }
+          }, null, 2),
+          lang: 'json'
+        },
+        cursor: {
+          title: 'Cursor',
+          fileLabel: 'Add to .cursor/mcp.json (project) or ~/.cursor/mcp.json (global):',
+          snippet: JSON.stringify({
+            mcpServers: {
+              'agent-hover': {
+                command: 'npx',
+                args: ['-y', '@agent-hover/mcp']
+              }
+            }
+          }, null, 2),
+          lang: 'json'
+        },
+        windsurf: {
+          title: 'Windsurf',
+          fileLabel: 'Add to ~/.codeium/windsurf/mcp_config.json:',
+          snippet: JSON.stringify({
+            mcpServers: {
+              'agent-hover': {
+                command: 'npx',
+                args: ['-y', '@agent-hover/mcp']
+              }
+            }
+          }, null, 2),
+          lang: 'json'
+        },
+        codex: {
+          title: 'Codex',
+          cli: 'codex mcp add agent-hover -- npx -y @agent-hover/mcp',
+          fileLabel: 'Or add to ~/.codex/config.toml (global) or .codex/config.toml (project):',
+          snippet: ['[mcp_servers.agent-hover]', 'command = "npx"', 'args = ["-y", "@agent-hover/mcp"]'].join(String.fromCharCode(10)),
+          lang: 'toml'
+        },
+        antigravity: {
+          title: 'Antigravity',
+          cli: 'agy mcp add agent-hover -- npx -y @agent-hover/mcp',
+          fileLabel: 'Or add to ~/.gemini/config/mcp_config.json:',
+          snippet: JSON.stringify({
+            mcpServers: {
+              'agent-hover': {
+                command: 'npx',
+                args: ['-y', '@agent-hover/mcp']
+              }
+            }
+          }, null, 2),
+          lang: 'json'
+        }
+      };
+
+      function renderMcpTab(key) {
+        const cfg = MCP_CONFIGS[key];
+        if (!cfg) return;
+        const content = shadow.getElementById('cp-mcp-tab-content');
+        if (!content) return;
+
+        let html = '';
+        if (cfg.cli) {
+          html += '<div style="margin-bottom:10px; font-size:11px; font-weight:500; color:var(--text-primary);">Run in terminal:</div>';
+          html += '<div style="position:relative; background:var(--bg-surface-sunken); border:1px solid var(--border-glass); border-radius:8px; padding:10px 12px; font-family:var(--font-mono); font-size:11px; word-break:break-all; color:var(--text-secondary); margin-bottom:12px;" id="cp-mcp-cli-block">' + escapeHtml(cfg.cli) + '<button class="cp-btn-bento" id="cp-mcp-copy-cli" style="position:absolute; top:6px; right:6px; font-size:9px; padding:2px 6px;">' + ICONS.copy + '</button></div>';
+        }
+        html += '<div style="margin-bottom:6px; font-size:11px; color:var(--text-muted);">' + escapeHtml(cfg.fileLabel) + '</div>';
+        html += '<div style="position:relative; background:var(--bg-surface-sunken); border:1px solid var(--border-glass); border-radius:8px; padding:10px 12px; font-family:var(--font-mono); font-size:10.5px; white-space:pre-wrap; color:var(--text-secondary); line-height:1.5;" id="cp-mcp-snippet-block">' + escapeHtml(cfg.snippet) + '<button class="cp-btn-bento" id="cp-mcp-copy-snippet" style="position:absolute; top:6px; right:6px; font-size:9px; padding:2px 6px;">' + ICONS.copy + '</button></div>';
+
+        content.innerHTML = html;
+
+        // Tab highlighting
+        shadow.querySelectorAll('.cp-mcp-tab').forEach(t => {
+          t.classList.toggle('primary', t.getAttribute('data-tab') === key);
+        });
+
+        // Copy handlers
+        const copyCli = shadow.getElementById('cp-mcp-copy-cli');
+        if (copyCli) {
+          copyCli.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(cfg.cli);
+              copyCli.innerHTML = ICONS.check;
+              setTimeout(() => { copyCli.innerHTML = ICONS.copy; }, 1500);
+            } catch (_) {}
+          };
+        }
+        const copySnippet = shadow.getElementById('cp-mcp-copy-snippet');
+        if (copySnippet) {
+          copySnippet.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(cfg.snippet);
+              copySnippet.innerHTML = ICONS.check;
+              setTimeout(() => { copySnippet.innerHTML = ICONS.copy; }, 1500);
+            } catch (_) {}
+          };
+        }
+      }
+
+      // Open/close modal
+      const mcpSetupBtn = shadow.getElementById('cp-mcp-setup-btn');
+      const mcpModal = shadow.getElementById('cp-mcp-modal');
+      if (mcpSetupBtn && mcpModal) {
+        mcpSetupBtn.onclick = () => {
+          mcpModal.style.display = 'flex';
+          renderMcpTab('claude');
+        };
+      }
+      shadow.getElementById('cp-mcp-modal-close')?.addEventListener('click', () => {
+        if (mcpModal) mcpModal.style.display = 'none';
+      });
+      mcpModal?.addEventListener('click', (e) => {
+        if (e.target === mcpModal) mcpModal.style.display = 'none';
+      });
+
+      // Tab switching
+      shadow.querySelectorAll('.cp-mcp-tab').forEach(tab => {
+        tab.onclick = () => renderMcpTab(tab.getAttribute('data-tab'));
+      });
 
       // Dock Orientation Controller
       let currentDockOrient = 'vertical';
@@ -2405,6 +3054,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let selectedElement = null;
       let comments = [];
       let editingComment = null;
+      let activeNoteMarker = null;
       let pendingPinTarget = null;
       let currentPins = [];
 
@@ -2483,7 +3133,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const layer = shadow.getElementById('cp-comments-layer');
         if (!layer) return;
         layer.innerHTML = '';
+        const notePopoverOpen = shadow.getElementById('cp-note-popover')?.classList.contains('open');
 
+        // Build marker data with positions
+        const markerData = [];
         comments.forEach((c, index) => {
           let el = null;
           if (c.selector) {
@@ -2497,18 +3150,120 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const rect = el.getBoundingClientRect();
           if (rect.width === 0 && rect.height === 0) return;
 
-          const marker = document.createElement('div');
-          marker.className = 'cp-comment-marker' + (c.resolved ? ' resolved' : '');
-          marker.style.top = Math.max(8, rect.top) + 'px';
-          marker.style.left = Math.min(window.innerWidth - 20, rect.right) + 'px';
-          marker.title = (c.component ? '<' + c.component + ' />: ' : '') + c.text;
-          marker.innerHTML = ICONS.comment + '<span style="margin-left:3px; font-size:10px;">' + (index + 1) + '</span>';
-          marker.onclick = (e) => {
-            e.stopPropagation();
-            openNotePopover({ element: el, name: c.component || el.tagName.toLowerCase() }, c);
-          };
-          layer.appendChild(marker);
+          // Anchor at bottom-left corner of the element
+          const x = Math.max(12, Math.min(window.innerWidth - 12, rect.left));
+          const y = Math.max(24, rect.bottom);
+          markerData.push({ c, index, el, x, y, rect });
         });
+
+        // Cluster detection: group markers within 14px of each other
+        const CLUSTER_DIST = 14;
+        const used = new Set();
+        const clusters = [];
+
+        for (let i = 0; i < markerData.length; i++) {
+          if (used.has(i)) continue;
+          const group = [i];
+          used.add(i);
+          for (let j = i + 1; j < markerData.length; j++) {
+            if (used.has(j)) continue;
+            const dx = markerData[i].x - markerData[j].x;
+            const dy = markerData[i].y - markerData[j].y;
+            if (Math.sqrt(dx * dx + dy * dy) < CLUSTER_DIST) {
+              group.push(j);
+              used.add(j);
+            }
+          }
+          clusters.push(group);
+        }
+
+        clusters.forEach((group) => {
+          if (group.length > 1) {
+            // Render cluster marker
+            const avg = group.reduce((a, i) => ({ x: a.x + markerData[i].x, y: a.y + markerData[i].y }), { x: 0, y: 0 });
+            avg.x /= group.length;
+            avg.y /= group.length;
+
+            const clusterMarker = document.createElement('div');
+            clusterMarker.className = 'cp-comment-marker cluster';
+            clusterMarker.style.left = avg.x + 'px';
+            clusterMarker.style.top = avg.y + 'px';
+            clusterMarker.setAttribute('role', 'button');
+            clusterMarker.tabIndex = 0;
+            clusterMarker.setAttribute('aria-label', group.length + ' notes');
+            clusterMarker.innerHTML = '<span class="cp-marker-num">' + group.length + '</span>';
+
+            // Preview for cluster
+            if (!notePopoverOpen) {
+              const names = group.map(i => markerData[i].c.component || 'Element').join(', ');
+              const flipClass = avg.x > window.innerWidth - 240 ? ' flip' : '';
+              clusterMarker.innerHTML += '<span class="cp-marker-preview' + flipClass + '">' +
+                '<span class="cp-marker-preview-header">' + group.length + ' notes</span>' +
+                '<span class="cp-marker-preview-text">' + escapeHtml(names) + '</span></span>';
+            }
+
+            // Click expands cluster by spreading members
+            clusterMarker.onclick = (e) => {
+              e.stopPropagation();
+              clusterMarker.remove();
+              group.forEach((mi, offset) => {
+                const m = markerData[mi];
+                const spreadX = m.x + (offset - (group.length - 1) / 2) * 28;
+                createSingleMarker(m, layer, notePopoverOpen, spreadX, m.y);
+              });
+            };
+            clusterMarker.onkeydown = (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clusterMarker.click(); }
+            };
+            layer.appendChild(clusterMarker);
+          } else {
+            const m = markerData[group[0]];
+            createSingleMarker(m, layer, notePopoverOpen, m.x, m.y);
+          }
+        });
+      }
+
+      function createSingleMarker(m, layer, notePopoverOpen, x, y) {
+        const { c, index, el } = m;
+        const componentName = c.component || el.tagName.toLowerCase();
+        const marker = document.createElement('div');
+        marker.className = 'cp-comment-marker' + (c.resolved ? ' resolved' : '');
+        if (activeNoteMarker === marker) marker.classList.add('active');
+        marker.style.left = x + 'px';
+        marker.style.top = y + 'px';
+        marker.setAttribute('role', 'button');
+        marker.tabIndex = 0;
+        marker.setAttribute('aria-label', 'Note ' + (index + 1) + ' on ' + componentName);
+
+        // Content: number for normal, check icon for resolved
+        if (c.resolved) {
+          marker.innerHTML = ICONS.check;
+        } else {
+          marker.innerHTML = '<span class="cp-marker-num">' + (index + 1) + '</span>';
+        }
+
+        // Preview card (hidden when popover is open)
+        if (!notePopoverOpen) {
+          const flipClass = x > window.innerWidth - 240 ? ' flip' : '';
+          const previewText = escapeHtml(c.text || '').slice(0, 80);
+          marker.innerHTML += '<span class="cp-marker-preview' + flipClass + '">' +
+            '<span class="cp-marker-preview-header">#' + (index + 1) + ' ' + escapeHtml(componentName) + '</span>' +
+            '<span class="cp-marker-preview-text">' + previewText + '</span></span>';
+        }
+
+        marker.onclick = (e) => {
+          e.stopPropagation();
+          activeNoteMarker = marker;
+          openNotePopover({ element: el, name: componentName }, c, marker);
+        };
+        marker.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); marker.click(); }
+          if (e.key === 'Escape') {
+            const popover = shadow.getElementById('cp-note-popover');
+            if (popover?.classList.contains('open')) closeNotePopover();
+          }
+        };
+        layer.appendChild(marker);
       }
 
       function renderSidebarNotes() {
@@ -2604,57 +3359,143 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         });
       }
 
-      function openNotePopover(target, comment = null) {
+      function openNotePopover(target, comment = null, markerEl = null) {
         editingComment = comment;
+        activeNoteMarker = markerEl;
         const popover = shadow.getElementById('cp-note-popover');
-        const targetEl = shadow.getElementById('cp-note-popover-target');
+        const labelEl = shadow.getElementById('cp-note-popover-label');
+        const targetNameEl = shadow.getElementById('cp-note-popover-target');
+        const fileBadge = shadow.getElementById('cp-note-popover-file');
         const inputEl = shadow.getElementById('cp-note-input');
+        const errorEl = shadow.getElementById('cp-note-error');
         const delBtn = shadow.getElementById('cp-note-delete');
+        const resolveBtn = shadow.getElementById('cp-note-resolve');
         if (!popover || !inputEl) return;
+
+        // Close any other floating layers (screenshot dropdown)
+        closeSnapDropdown();
 
         const compName = comment?.component || target?.name || selectedTarget?.name || 'Element';
         const fileStr = comment?.file || lastResolved?.file || '';
-        targetEl.textContent = (compName ? '<' + compName + ' />' : '') + (fileStr ? ' (' + fileStr.split('/').pop() + ')' : '');
-        inputEl.value = comment?.text || '';
 
+        // Header label
+        if (comment) {
+          const noteIdx = comments.indexOf(comment);
+          labelEl.textContent = 'Editing note #' + (noteIdx + 1);
+        } else {
+          labelEl.textContent = 'New note';
+        }
+
+        // Target info
+        targetNameEl.textContent = compName ? '<' + compName + ' />' : '';
+        fileBadge.textContent = fileStr ? fileStr.split('/').pop() : '';
+        fileBadge.style.display = fileStr ? '' : 'none';
+
+        inputEl.value = comment?.text || '';
+        errorEl.textContent = '';
+
+        // Show/hide delete and resolve for existing notes only
         if (comment) {
           delBtn.style.display = 'inline-flex';
+          resolveBtn.style.display = 'inline-flex';
+          resolveBtn.title = comment.resolved ? 'Reopen' : 'Mark as resolved';
+          resolveBtn.setAttribute('aria-label', comment.resolved ? 'Reopen' : 'Resolve');
+          resolveBtn.innerHTML = comment.resolved ? ICONS.undo : ICONS.check;
+
           delBtn.onclick = async () => {
             await fetch(BRIDGE + '/api/comments', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'delete', id: comment.id })
             });
-            popover.style.display = 'none';
+            closeNotePopover();
             loadComments();
             showCallout('Note deleted', 'NOTE');
           };
+
+          resolveBtn.onclick = async () => {
+            await fetch(BRIDGE + '/api/comments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'toggle-resolve', id: comment.id })
+            });
+            closeNotePopover();
+            loadComments();
+            showCallout(comment.resolved ? 'Note reopened' : 'Note resolved', 'SAVED');
+          };
         } else {
           delBtn.style.display = 'none';
+          resolveBtn.style.display = 'none';
         }
 
-        if (selectedRect) {
-          let top = selectedRect.bottom + 10;
-          if (top + 190 > window.innerHeight) top = Math.max(20, selectedRect.top - 200);
-          let left = Math.max(20, Math.min(window.innerWidth - 340, selectedRect.left));
-          popover.style.top = top + 'px';
-          popover.style.left = left + 'px';
-          popover.style.transform = 'none';
+        // Position: anchor beside the marker or selected element
+        const MARGIN = 8;
+        let anchorX, anchorY;
+        if (markerEl) {
+          const mr = markerEl.getBoundingClientRect();
+          anchorX = mr.right + 16;
+          anchorY = mr.top - 24;
+        } else if (selectedRect) {
+          anchorX = selectedRect.right + 16;
+          anchorY = selectedRect.top;
         } else {
-          popover.style.top = '25%';
-          popover.style.left = '50%';
-          popover.style.transform = 'translate(-50%, -50%)';
+          anchorX = window.innerWidth / 2 - 170;
+          anchorY = window.innerHeight * 0.25;
         }
 
-        popover.style.display = 'block';
+        // Flip left if no room on right
+        if (anchorX + 340 + MARGIN > window.innerWidth) {
+          if (markerEl) {
+            const mr = markerEl.getBoundingClientRect();
+            anchorX = mr.left - 340 - 16;
+          } else {
+            anchorX = window.innerWidth - 340 - MARGIN;
+          }
+        }
+        // Clamp inside viewport
+        anchorX = Math.max(MARGIN, Math.min(window.innerWidth - 340 - MARGIN, anchorX));
+        anchorY = Math.max(MARGIN, Math.min(window.innerHeight - 300 - MARGIN, anchorY));
+
+        popover.style.top = anchorY + 'px';
+        popover.style.left = anchorX + 'px';
+
+        // Animate open using requestAnimationFrame for display+class toggle
+        requestAnimationFrame(() => {
+          popover.classList.add('open');
+        });
+
+        // Set active state on marker
+        if (markerEl) markerEl.classList.add('active');
+
+        // Re-render markers to hide previews
+        renderCommentMarkers();
+
         setTimeout(() => inputEl.focus(), 50);
+
+        // Clear error on input
+        inputEl.oninput = () => { errorEl.textContent = ''; };
+      }
+
+      function closeNotePopover() {
+        const popover = shadow.getElementById('cp-note-popover');
+        if (popover) popover.classList.remove('open');
+        // Remove active state from markers and return focus
+        if (activeNoteMarker) {
+          activeNoteMarker.classList.remove('active');
+          try { activeNoteMarker.focus(); } catch (_) {}
+        }
+        activeNoteMarker = null;
+        editingComment = null;
+        renderCommentMarkers();
       }
 
       async function saveNote() {
         const inputEl = shadow.getElementById('cp-note-input');
+        const errorEl = shadow.getElementById('cp-note-error');
         const text = inputEl ? inputEl.value.trim() : '';
         if (!text) {
-          showCallout('Please enter a note first', 'TIP');
+          if (errorEl) errorEl.textContent = 'Enter a note first';
+          if (inputEl) inputEl.focus();
           return;
         }
 
@@ -2664,7 +3505,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'update', id: editingComment.id, text })
           });
-          showCallout('Note updated (persists across restarts)', 'SAVED');
+          showCallout('Note updated', 'SAVED');
         } else {
           const compName = selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
           const file = lastResolved?.file || lastCopiedContext?.source?.file || '';
@@ -2679,20 +3520,36 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               comment: { file, line, component: compName, selector, text }
             })
           });
-          showCallout('Note saved (persists across restarts)', 'SAVED');
+          showCallout('Note saved', 'SAVED');
         }
 
-        shadow.getElementById('cp-note-popover').style.display = 'none';
+        closeNotePopover();
         loadComments();
       }
 
+      // Note popover keyboard: Cmd/Ctrl+Enter saves, Escape closes
+      shadow.getElementById('cp-note-input')?.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          saveNote();
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeNotePopover();
+        }
+      });
+
       shadow.getElementById('cp-note-save').onclick = saveNote;
-      shadow.getElementById('cp-note-cancel').onclick = () => {
-        shadow.getElementById('cp-note-popover').style.display = 'none';
-      };
-      shadow.getElementById('cp-note-popover-close').onclick = () => {
-        shadow.getElementById('cp-note-popover').style.display = 'none';
-      };
+      shadow.getElementById('cp-note-cancel').onclick = () => closeNotePopover();
+      shadow.getElementById('cp-note-popover-close').onclick = () => closeNotePopover();
+
+      // Click outside closes popover
+      shadow.addEventListener('click', (e) => {
+        const popover = shadow.getElementById('cp-note-popover');
+        if (popover?.classList.contains('open') && !popover.contains(e.target) && !e.target.closest('.cp-comment-marker')) {
+          closeNotePopover();
+        }
+      });
 
       const notesCopyAllBtn = shadow.getElementById('cp-notes-copy-all');
       if (notesCopyAllBtn) {
@@ -2866,6 +3723,32 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
+      const selSendBtn = shadow.getElementById('cp-sel-send-btn');
+      const selSendLabel = shadow.getElementById('cp-sel-send-label');
+      if (selSendBtn) {
+        selSendBtn.onclick = async (e) => {
+          e.stopPropagation();
+          let promptText = '';
+          let compName = '';
+          let filePath = '';
+          if (lastCopiedContext) {
+            promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
+            compName = lastCopiedContext.component?.name || '';
+            filePath = lastCopiedContext.source?.file || '';
+          } else if (selectedTarget) {
+            promptText = formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack);
+            compName = selectedTarget.name || '';
+          }
+          if (!promptText) {
+            showCallout('Select a component first', 'TIP', 2000);
+            return;
+          }
+          if (selSendLabel) selSendLabel.textContent = 'Sent!';
+          setTimeout(() => { if (selSendLabel) selSendLabel.textContent = 'Send'; }, 1600);
+          await dispatchToAgent(promptText, { type: 'selection', component: compName, file: filePath });
+        };
+      }
+
       if (selNoteBtn) {
         selNoteBtn.onclick = (e) => {
           e.stopPropagation();
@@ -2879,9 +3762,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       if (selSnapBtn) {
         selSnapBtn.onclick = async (e) => {
           e.stopPropagation();
-          const targetEl = selectedTarget?.element || selectedElement || document.body;
-          const targetName = selectedTarget?.name || 'component';
-          await downloadCleanScreenshot(targetEl, targetName);
+          await handleSnapMode('component');
         };
       }
 
@@ -2936,62 +3817,97 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
-      // Vibe Prompt Starters Click Handler
-      const vibePromptsContainer = shadow.getElementById('cp-vibe-prompts');
-      if (vibePromptsContainer) {
-        vibePromptsContainer.onclick = async (e) => {
-          const btn = e.target.closest('.cp-vibe-chip');
-          if (!btn) return;
-          const vibeType = btn.getAttribute('data-vibe');
-
-          let targetCtx = lastCopiedContext;
-          if (!targetCtx && selectedTarget) {
-            try {
-              const compToResolve = selectedTarget.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
-              const res = await resolveComponent(compToResolve);
-              if (res) {
-                const fetchRes = await fetch(BRIDGE + '/api/context', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ file: res.file, line: res.line, level: 'standard' })
-                });
-                targetCtx = await fetchRes.json();
-                lastCopiedContext = targetCtx;
-              }
-            } catch(err) {}
-          }
-
-          const compName = targetCtx?.component?.name || selectedTarget?.name || 'Component';
-          const filePath = targetCtx?.source?.file || lastResolved?.file || '';
-          const lineNum = targetCtx?.source?.startLine || lastResolved?.line || '';
-          const locStr = filePath ? ' (' + filePath + (lineNum ? ':' + lineNum : '') + ')' : '';
-
-          let taskDesc = '';
-          if (vibeType === 'redesign') {
-            taskDesc = 'Please modernize and redesign <' + compName + ' />' + locStr + ' with a sleek, premium UI aesthetic. Keep existing props and functionality intact while elevating spacing, typography, colors, and micro-interactions.';
-          } else if (vibeType === 'responsive') {
-            taskDesc = 'Please make <' + compName + ' />' + locStr + ' fully responsive across mobile, tablet, and desktop screens. Ensure flex and grid layouts wrap naturally and font sizes adapt seamlessly.';
-          } else if (vibeType === 'theme') {
-            taskDesc = 'Please restyle <' + compName + ' />' + locStr + ' to harmonize colors, contrast, and visual hierarchy. Refine backgrounds, borders, and text contrast.';
-          } else if (vibeType === 'refactor') {
-            taskDesc = 'Please refactor <' + compName + ' />' + locStr + ' for cleaner structure, optimal React rendering performance, and strict TypeScript types while preserving exact behavior.';
-          }
-
-          const nl = String.fromCharCode(10);
-          let promptText = '### Vibe Task: ' + taskDesc + nl + nl;
-          if (targetCtx) {
-            promptText += formatContextForAiPrompt(targetCtx, currentStack, taskDesc);
-          } else if (selectedTarget) {
-            promptText += formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack, taskDesc);
-          } else {
-            promptText += '- Target: <' + compName + ' />' + locStr;
-          }
-
+      // --- Dispatch to AI Agent (WebSocket & Bridge /api/agent/send) ---
+      async function dispatchToAgent(promptText, extra = {}) {
+        if (!promptText) return;
+        try {
           await navigator.clipboard.writeText(promptText);
-          const origHtml = btn.innerHTML;
-          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
-          showCallout('Prompt Copied for AI', 'COPIED');
-          setTimeout(() => { btn.innerHTML = origHtml; }, 1600);
+        } catch (_) {}
+
+        try {
+          const res = await fetch(BRIDGE + '/api/agent/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: promptText,
+              ...extra,
+              timestamp: Date.now()
+            })
+          });
+          const data = await res.json();
+          if (data && data.ok) {
+            showCallout('Sent to Agent', 'SUCCESS', 2500);
+          } else {
+            showCallout('Copied to clipboard', 'COPIED', 2000);
+          }
+        } catch (err) {
+          showCallout('Copied to clipboard', 'COPIED', 2000);
+        }
+      }
+
+      // Flyout Send to Agent Button
+      const sendAgentBtn = shadow.getElementById('cp-send-agent-btn');
+      if (sendAgentBtn) {
+        sendAgentBtn.onclick = async () => {
+          let promptText = '';
+          let compName = '';
+          let filePath = '';
+          if (lastCopiedContext) {
+            promptText = formatContextForAiPrompt(lastCopiedContext, currentStack);
+            compName = lastCopiedContext.component?.name || '';
+            filePath = lastCopiedContext.source?.file || '';
+          } else if (selectedTarget) {
+            promptText = formatDomElementPrompt(selectedTarget, lastComputedStyles || extractComputedStyles(selectedTarget.element || selectedElement), currentStack);
+            compName = selectedTarget.name || '';
+          }
+          if (!promptText) {
+            showCallout('Select a component first', 'TIP', 2000);
+            return;
+          }
+          const origHtml = sendAgentBtn.innerHTML;
+          sendAgentBtn.innerHTML = ICONS.check + ' Sent!';
+          setTimeout(() => { sendAgentBtn.innerHTML = origHtml; }, 1600);
+          await dispatchToAgent(promptText, { type: 'component-context', component: compName, file: filePath });
+        };
+      }
+
+      // Note Popover Send to Agent Button
+      const noteSendAgentBtn = shadow.getElementById('cp-note-send-agent');
+      if (noteSendAgentBtn) {
+        noteSendAgentBtn.onclick = async () => {
+          const input = shadow.getElementById('cp-note-input');
+          const text = input ? input.value.trim() : '';
+          if (!text) {
+            const errEl = shadow.getElementById('cp-note-error');
+            if (errEl) errEl.textContent = 'Please enter a note';
+            return;
+          }
+          saveNote();
+          const compName = selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
+          const file = lastResolved?.file || lastCopiedContext?.source?.file || '';
+          const line = lastResolved?.line || lastCopiedContext?.source?.startLine || '';
+          const targetStr = compName ? '<' + compName + ' />' : 'Element';
+          const locStr = file ? ' (' + file + (line ? ':' + line : '') + ')' : '';
+          const notePrompt = '### Note for ' + targetStr + locStr + String.fromCharCode(10) + String.fromCharCode(10) + text;
+          await dispatchToAgent(notePrompt, { type: 'note', component: compName, file, line, text });
+        };
+      }
+
+      // Pin Stack Send to Agent Button
+      const pinSendAgentBtn = shadow.getElementById('cp-pin-send-agent');
+      if (pinSendAgentBtn) {
+        pinSendAgentBtn.onclick = async () => {
+          if (!currentPins || currentPins.length === 0) {
+            showCallout('Pin components first', 'TIP');
+            return;
+          }
+          const taskInputEl = shadow.getElementById('cp-task-input');
+          const overallGoal = taskInputEl ? taskInputEl.value.trim() : '';
+          const prompt = generatePinsMarkdown(overallGoal);
+          const origHtml = pinSendAgentBtn.innerHTML;
+          pinSendAgentBtn.innerHTML = ICONS.check + ' Sent to Agent!';
+          setTimeout(() => { pinSendAgentBtn.innerHTML = origHtml; }, 1600);
+          await dispatchToAgent(prompt, { type: 'pinned-stack', count: currentPins.length, goal: overallGoal });
         };
       }
 
@@ -3056,15 +3972,342 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
       shadow.getElementById('cp-editor-btn').onclick = openInEditor;
 
-      // Direct Screenshot of Website UI
+      // --- Screenshot Mode System ---
+      let snapBusy = false;
+      let snapPreviewBlobUrl = null;
+      let lastCapturedDataUrl = null;
+      let lastCapturedFilename = null;
+
+      function closeSnapDropdown() {
+        const dd = shadow.getElementById('cp-snap-dropdown');
+        if (dd) dd.classList.remove('open');
+        const btn = shadow.getElementById('cp-flyout-snap-btn');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        hideRegionHint();
+        const msg = shadow.getElementById('cp-snap-message');
+        if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+      }
+
+      function hideRegionHint() {
+        const hint = shadow.getElementById('cp-region-hint');
+        if (hint) { hint.className = ''; hint.style.display = 'none'; hint.style.cssText = ''; }
+      }
+
+      function showRegionHint(mode) {
+        const hint = shadow.getElementById('cp-region-hint');
+        const label = shadow.getElementById('cp-region-label');
+        if (!hint) return;
+        hideRegionHint();
+
+        if (mode === 'component') {
+          const el = selectedTarget?.element || selectedElement;
+          if (el && el.isConnected) {
+            const r = el.getBoundingClientRect();
+            hint.className = 'component';
+            hint.style.display = 'block';
+            hint.style.position = 'fixed';
+            hint.style.left = r.left + 'px';
+            hint.style.top = r.top + 'px';
+            hint.style.width = r.width + 'px';
+            hint.style.height = r.height + 'px';
+            if (label) label.textContent = 'Element bounds';
+          }
+        } else if (mode === 'viewport') {
+          hint.className = 'viewport';
+          hint.style.display = 'block';
+          hint.style.position = 'fixed';
+          if (label) label.textContent = 'Visible viewport';
+        } else if (mode === 'fullpage') {
+          const w = document.documentElement.scrollWidth;
+          const h = document.documentElement.scrollHeight;
+          const sizeLabel = shadow.getElementById('cp-snap-fullpage-size');
+          if (sizeLabel) sizeLabel.textContent = 'Full scroll height, ' + w + ' x ' + h + ' px';
+        }
+      }
+
+      function openSnapDropdown() {
+        const dd = shadow.getElementById('cp-snap-dropdown');
+        const btn = shadow.getElementById('cp-flyout-snap-btn');
+        if (!dd || !btn) return;
+
+        // Close note popover
+        closeNotePopover();
+
+        // Position dropdown under the button using fixed viewport coordinates
+        const btnRect = btn.getBoundingClientRect();
+        let top = btnRect.bottom + 4;
+        let left = btnRect.right - 240;
+
+        // Flip above if no room below
+        if (btnRect.bottom + 200 > window.innerHeight) {
+          top = btnRect.top - 200;
+        }
+        // Clamp
+        left = Math.max(8, left);
+        dd.style.top = top + 'px';
+        dd.style.left = left + 'px';
+
+        // Update component name caption
+        const compCaption = shadow.getElementById('cp-snap-component-name');
+        if (compCaption) {
+          const name = selectedTarget?.name || (selectedElement ? selectedElement.tagName.toLowerCase() : null);
+          compCaption.textContent = name ? '<' + name + ' />' : 'None selected';
+        }
+
+        dd.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+
+        // Focus the right row
+        const options = dd.querySelectorAll('.cp-snap-option');
+        const hasSelection = selectedTarget?.element || selectedElement;
+        const focusIdx = hasSelection ? 0 : 1;
+        if (options[focusIdx]) options[focusIdx].focus();
+      }
+
       const flyoutSnapBtn = shadow.getElementById('cp-flyout-snap-btn');
       if (flyoutSnapBtn) {
-        flyoutSnapBtn.onclick = async () => {
-          const targetEl = selectedTarget?.element || selectedElement || document.body;
-          const targetName = selectedTarget?.name || (selectedElement ? 'component' : 'website');
-          await downloadCleanScreenshot(targetEl, targetName);
+        flyoutSnapBtn.onclick = () => {
+          const dd = shadow.getElementById('cp-snap-dropdown');
+          if (dd?.classList.contains('open')) {
+            closeSnapDropdown();
+          } else {
+            openSnapDropdown();
+          }
         };
       }
+
+      // Dropdown keyboard navigation
+      shadow.getElementById('cp-snap-dropdown')?.addEventListener('keydown', (e) => {
+        const options = Array.from(shadow.querySelectorAll('.cp-snap-option'));
+        const idx = options.indexOf(e.target);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const next = e.key === 'ArrowDown' ? (idx + 1) % options.length : (idx - 1 + options.length) % options.length;
+          options[next]?.focus();
+        }
+        if (e.key === 'Home') { e.preventDefault(); options[0]?.focus(); }
+        if (e.key === 'End') { e.preventDefault(); options[options.length - 1]?.focus(); }
+        if (e.key === 'Escape' || e.key === 'Tab') {
+          e.preventDefault();
+          closeSnapDropdown();
+          flyoutSnapBtn?.focus();
+        }
+      });
+
+      // Dropdown option hover/focus region hints
+      shadow.querySelectorAll('.cp-snap-option').forEach((opt) => {
+        const mode = opt.getAttribute('data-mode');
+        opt.addEventListener('mouseenter', () => showRegionHint(mode));
+        opt.addEventListener('focus', () => showRegionHint(mode));
+        opt.addEventListener('mouseleave', () => hideRegionHint());
+        opt.addEventListener('blur', () => hideRegionHint());
+
+        opt.addEventListener('click', () => handleSnapMode(mode));
+      });
+
+      // Click outside closes dropdown
+      shadow.addEventListener('click', (e) => {
+        const dd = shadow.getElementById('cp-snap-dropdown');
+        if (dd?.classList.contains('open') && !dd.contains(e.target) && e.target !== flyoutSnapBtn && !flyoutSnapBtn?.contains(e.target)) {
+          closeSnapDropdown();
+        }
+      });
+
+      async function handleSnapMode(mode) {
+        if (snapBusy) return;
+
+        if (mode === 'component') {
+          const el = selectedTarget?.element || selectedElement;
+          if (!el || !el.isConnected) {
+            showCallout('Select a component on the page first', 'WARNING', 2000);
+            const msg = shadow.getElementById('cp-snap-message');
+            if (msg) {
+              msg.textContent = 'Click an element on the page first, or pick Viewport.';
+              msg.style.display = 'block';
+            }
+            return;
+          }
+        }
+
+        closeSnapDropdown();
+        hideRegionHint();
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        snapBusy = true;
+        const modeLabel = mode === 'component' ? 'Component' : mode === 'viewport' ? 'Viewport' : 'Full page';
+        showCallout(mode === 'fullpage' ? 'Capturing full page...' : 'Capturing...', 'SNAP', 1500);
+
+        try {
+          let el, captureOpts;
+          if (mode === 'component') {
+            el = selectedTarget?.element || selectedElement;
+          } else if (mode === 'viewport') {
+            el = document.documentElement;
+            captureOpts = { width: window.innerWidth, height: window.innerHeight, scrollX: window.scrollX, scrollY: window.scrollY };
+          } else {
+            el = document.documentElement;
+            captureOpts = { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight };
+          }
+
+          const dataUrl = await captureElement(el, captureOpts);
+          if (!dataUrl) {
+            showCallout(mode === 'fullpage' ? 'Page is too long to capture in one image' : 'Capture failed. Try Viewport instead.', 'ERROR', 3000);
+            snapBusy = false;
+            return;
+          }
+
+          // Flash after capture completes
+          triggerShutterFlash();
+
+          // Get image dimensions for meta line
+          const img = new Image();
+          img.onload = () => {
+            const filename = mode + '-' + Date.now() + '.png';
+            lastCapturedDataUrl = dataUrl;
+            lastCapturedFilename = filename;
+            showSnapPreview(dataUrl, modeLabel + ', ' + img.naturalWidth + ' x ' + img.naturalHeight, filename);
+          };
+          img.onerror = () => {
+            const filename = mode + '-' + Date.now() + '.png';
+            lastCapturedDataUrl = dataUrl;
+            lastCapturedFilename = filename;
+            showSnapPreview(dataUrl, modeLabel, filename);
+          };
+          img.src = dataUrl;
+
+          // Save to bridge for agent workflow
+          let savedForAgent = false;
+          try {
+            const res = await fetch(BRIDGE + '/api/screenshot/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ dataUrl, filename: mode })
+            });
+            const result = await res.json();
+            savedForAgent = result?.success;
+          } catch (_) {}
+
+          // Update status line
+          setTimeout(() => {
+            const statusEl = shadow.getElementById('cp-snap-preview-status');
+            if (statusEl) {
+              if (savedForAgent) {
+                statusEl.className = 'cp-snap-preview-status success';
+                statusEl.innerHTML = ICONS.check + ' Saved for the agent';
+              } else {
+                statusEl.className = 'cp-snap-preview-status error';
+                statusEl.innerHTML = 'Could not save for the agent';
+              }
+            }
+          }, 100);
+
+        } catch (err) {
+          showCallout('Capture failed. Try Viewport instead.', 'ERROR', 3000);
+        }
+        snapBusy = false;
+      }
+
+      function showSnapPreview(dataUrl, meta, filename) {
+        const card = shadow.getElementById('cp-snap-preview');
+        const img = shadow.getElementById('cp-snap-preview-img');
+        const metaEl = shadow.getElementById('cp-snap-preview-meta');
+        const statusEl = shadow.getElementById('cp-snap-preview-status');
+        if (!card) return;
+
+        // Revoke previous blob URL
+        if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
+
+        // Create blob URL for thumbnail
+        const blob = dataUrlToBlob(dataUrl);
+        if (blob) {
+          snapPreviewBlobUrl = URL.createObjectURL(blob);
+          img.src = snapPreviewBlobUrl;
+        } else {
+          img.src = dataUrl;
+        }
+
+        metaEl.textContent = meta || '';
+        statusEl.textContent = '';
+        statusEl.className = 'cp-snap-preview-status';
+
+        // Reset button labels
+        const dlBtn = shadow.getElementById('cp-snap-download');
+        const cpBtn = shadow.getElementById('cp-snap-copy');
+        if (dlBtn) dlBtn.innerHTML = ICONS.download + ' Download';
+        if (cpBtn) cpBtn.innerHTML = ICONS.copy + ' Copy';
+
+        requestAnimationFrame(() => { card.classList.add('open'); });
+      }
+
+      function closeSnapPreview() {
+        const card = shadow.getElementById('cp-snap-preview');
+        if (card) card.classList.remove('open');
+        if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
+        lastCapturedDataUrl = null;
+        lastCapturedFilename = null;
+      }
+
+      // Preview card close button
+      shadow.getElementById('cp-snap-preview-close')?.addEventListener('click', closeSnapPreview);
+
+      // Escape closes preview
+      shadow.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const preview = shadow.getElementById('cp-snap-preview');
+          if (preview?.classList.contains('open')) closeSnapPreview();
+        }
+      });
+
+      // Download button
+      shadow.getElementById('cp-snap-download')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!lastCapturedDataUrl) return;
+        const blob = dataUrlToBlob(lastCapturedDataUrl);
+        if (!blob) return;
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = lastCapturedFilename || 'screenshot.png';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            try { document.body.removeChild(a); } catch(_) {}
+            URL.revokeObjectURL(url);
+          }, 3000);
+          const btn = shadow.getElementById('cp-snap-download');
+          if (btn) {
+            btn.innerHTML = ICONS.check + ' Downloaded';
+            setTimeout(() => { btn.innerHTML = ICONS.download + ' Download'; }, 1500);
+          }
+          showCallout('Screenshot downloaded', 'SAVED', 2000);
+        } catch (_) {}
+      });
+
+      // Copy button
+      shadow.getElementById('cp-snap-copy')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!lastCapturedDataUrl) return;
+        const blob = dataUrlToBlob(lastCapturedDataUrl);
+        const btn = shadow.getElementById('cp-snap-copy');
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            if (btn) {
+              btn.innerHTML = ICONS.check + ' Copied';
+              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy'; }, 1500);
+            }
+            showCallout('Screenshot copied to clipboard', 'COPIED', 2000);
+          } catch (_) {
+            if (btn) {
+              btn.innerHTML = 'Copy failed';
+              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy'; }, 2000);
+            }
+            showCallout('Browser blocked clipboard access. Use Download.', 'WARNING', 3000);
+          }
+        }
+      });
 
       shadow.getElementById('cp-pin-btn').onclick = async () => {
         const targetToPin = selectedTarget?.isDomElement && currentStack.length > 1 ? currentStack[1] : selectedTarget;
@@ -4086,15 +5329,32 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         } catch (_) {}
       }
 
-      async function captureElement(element) {
+      async function captureElement(element, opts) {
+        if (!element) return null;
         // Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
         const rootContainer = shadow.host || container;
-        const prevDisplay = rootContainer.style.display;
-        rootContainer.style.display = 'none';
+        const prevVisibility = rootContainer.style.visibility;
+        rootContainer.style.visibility = 'hidden';
+
+        // Capture filter: exclude agent-hover UI, preview card, dropdown, markers, popover, flash
+        const captureFilter = (node) => {
+          if (!node) return true;
+          if (node.id === 'agent-hover-root' || node === container) return false;
+          if (node.id === 'ah-shutter-flash') return false;
+          if (node.classList && node.classList.contains && (
+            node.classList.contains('agent-hover-ignore') ||
+            node.classList.contains('cp-comment-marker') ||
+            node.classList.contains('cp-marker-preview')
+          )) return false;
+          return true;
+        };
 
         try {
-          const isFullPage = element === document.body || element === document.documentElement;
-          if (!isFullPage && element.getBoundingClientRect) {
+          const isViewport = opts && opts.scrollX !== undefined;
+          const isFullPage = opts && opts.height > window.innerHeight;
+          const isComponent = !isViewport && !isFullPage;
+
+          if (isComponent && element.getBoundingClientRect) {
             const rect = element.getBoundingClientRect();
             const inViewport = rect.top >= 0 && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
             if (!inViewport && element.scrollIntoView) {
@@ -4103,41 +5363,67 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             }
           }
 
-          const scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
+          let scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
           const solidBg = getInheritedBackgroundColor(element);
 
-          // 1. Primary: Use modernScreenshot (high-res, no text/flex clipping, zero overlap)
-          if (window.modernScreenshot && window.modernScreenshot.domToPng) {
-            const dataUrl = await window.modernScreenshot.domToPng(element, {
-              scale: scale,
-              backgroundColor: solidBg,
-              filter: (node) => {
-                if (node && (node.id === 'agent-hover-root' || node === container)) return false;
-                if (node && node.id === 'ah-shutter-flash') return false;
-                if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
-                return true;
-              }
-            });
-            return dataUrl;
+          // Build capture options
+          const captureOpts = {
+            scale,
+            backgroundColor: solidBg,
+            filter: captureFilter,
+          };
+
+          // Viewport mode: capture at viewport dimensions with scroll offset
+          if (isViewport) {
+            captureOpts.width = opts.width || window.innerWidth;
+            captureOpts.height = opts.height || window.innerHeight;
+            // Offset by scroll position through the clone's style
+            captureOpts.style = {
+              transform: 'translate(-' + (opts.scrollX || 0) + 'px, -' + (opts.scrollY || 0) + 'px)',
+              transformOrigin: 'top left',
+            };
           }
 
-          // 2. Fallback: domtoimage
-          if (window.domtoimage) {
-            const rect = !isFullPage && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
-            const captureWidth = Math.max(Math.round(isFullPage ? window.innerWidth : (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300))), 10);
-            const captureHeight = Math.max(Math.round(isFullPage ? window.innerHeight : (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200))), 10);
+          // Full page mode: pass dimensions without mutating live DOM
+          if (isFullPage) {
+            captureOpts.width = opts.width || document.documentElement.scrollWidth;
+            captureOpts.height = opts.height || document.documentElement.scrollHeight;
+          }
+
+          // Primary: Use modernScreenshot
+          if (window.modernScreenshot && window.modernScreenshot.domToPng) {
+            try {
+              const dataUrl = await window.modernScreenshot.domToPng(element, captureOpts);
+              if (dataUrl) return dataUrl;
+            } catch (err) {
+              // Retry full page at lower scale on canvas failure
+              if (isFullPage && scale > 1) {
+                console.warn('[agent-hover] Full page capture failed at scale ' + scale + ', retrying at scale 1');
+                captureOpts.scale = 1;
+                try {
+                  const dataUrl = await window.modernScreenshot.domToPng(element, captureOpts);
+                  if (dataUrl) return dataUrl;
+                } catch (_) {}
+              }
+            }
+          }
+
+          // Fallback: domtoimage
+          if (window.domtoimage && window.domtoimage.toPng) {
+            const rect = isComponent && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+            const captureWidth = Math.max(Math.round(
+              opts?.width || (isComponent ? (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300)) : window.innerWidth)
+            ), 10);
+            const captureHeight = Math.max(Math.round(
+              opts?.height || (isComponent ? (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200)) : window.innerHeight)
+            ), 10);
             const dataUrl = await window.domtoimage.toPng(element, {
               width: captureWidth,
               height: captureHeight,
               pixelRatio: scale,
               bgcolor: solidBg,
               imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=',
-              filter: (node) => {
-                if (node && (node.id === 'agent-hover-root' || node === container)) return false;
-                if (node && node.id === 'ah-shutter-flash') return false;
-                if (node && node.classList && node.classList.contains && node.classList.contains('agent-hover-ignore')) return false;
-                return true;
-              }
+              filter: captureFilter,
             });
             return dataUrl;
           }
@@ -4148,7 +5434,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           console.error('[agent-hover] Screenshot capture failed:', err);
           return null;
         } finally {
-          rootContainer.style.display = prevDisplay || 'block';
+          rootContainer.style.visibility = prevVisibility || 'visible';
         }
       }
 
@@ -4237,13 +5523,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
         if (diskSaved || browserDownloaded) {
           if (clipboardCopied && diskSaved) {
-            showCallout('📸 Screenshot saved & copied to clipboard!', 'SAVED', 3500);
+            showCallout('Screenshot saved and copied to clipboard', 'SAVED', 3500);
           } else if (clipboardCopied) {
-            showCallout('📸 Downloaded & copied to clipboard!', 'SAVED', 3000);
+            showCallout('Downloaded and copied to clipboard', 'SAVED', 3000);
           } else if (diskSaved) {
-            showCallout('📸 Saved to .agent-hover/screenshots/', 'SAVED', 3000);
+            showCallout('Saved to .agent-hover/screenshots/', 'SAVED', 3000);
           } else {
-            showCallout('📸 Clean screenshot downloaded', 'SAVED', 3000);
+            showCallout('Screenshot downloaded', 'SAVED', 3000);
           }
         } else {
           showCallout('Failed to save screenshot', 'ERROR', 2500);
@@ -5106,10 +6392,119 @@ function generateOverlayBootstrap(port: number, editor: string): string {
                   body: JSON.stringify(postBody)
                 }).catch(e => console.error(e));
               });
+            } else if (payload.type === 'list-components') {
+              // Walk React fiber tree to collect visible components
+              const { requestId, filter, limit, includeLibrary } = payload.data || {};
+              const maxCount = limit || 50;
+              const filterLower = (filter || '').toLowerCase();
+              const allComponents = [];
+
+              function walkFiber(fiber, depth) {
+                if (!fiber || allComponents.length >= maxCount * 2) return;
+                if (fiber.tag === 0 || fiber.tag === 1 || fiber.tag === 11 || fiber.tag === 15) {
+                  const name = fiber.type?.displayName || fiber.type?.name || '';
+                  if (name && name !== 'Fragment') {
+                    // Skip library components unless explicitly included
+                    const source = fiber._debugSource;
+                    const fileName = source?.fileName || '';
+                    if (!includeLibrary && fileName.includes('node_modules')) {
+                      // skip
+                    } else if (!filterLower || name.toLowerCase().includes(filterLower)) {
+                      // Get bounding rect from DOM
+                      let domNode = null;
+                      try {
+                        let n = fiber;
+                        while (n) {
+                          if (n.stateNode && n.stateNode instanceof HTMLElement) { domNode = n.stateNode; break; }
+                          n = n.child;
+                        }
+                      } catch (_) {}
+                      const rect = domNode?.getBoundingClientRect?.() || null;
+                      allComponents.push({
+                        name,
+                        file: fileName || undefined,
+                        line: source?.lineNumber || undefined,
+                        visible: rect ? (rect.width > 0 && rect.height > 0) : undefined,
+                        bounds: rect ? { top: Math.round(rect.top), left: Math.round(rect.left), width: Math.round(rect.width), height: Math.round(rect.height) } : undefined,
+                      });
+                    }
+                  }
+                }
+                if (fiber.child) walkFiber(fiber.child, depth + 1);
+                if (fiber.sibling) walkFiber(fiber.sibling, depth);
+              }
+
+              // Find React root fiber
+              const rootEl = document.getElementById('root') || document.getElementById('app') || document.getElementById('__next') || document.querySelector('[data-reactroot]');
+              let rootFiber = null;
+              if (rootEl) {
+                const containerKey = Object.keys(rootEl).find(k => k.startsWith('__reactContainer'));
+                if (containerKey) {
+                  const container = rootEl[containerKey];
+                  rootFiber = container?.stateNode?.current?.child || container?.current?.child || container?.child;
+                }
+                if (!rootFiber && rootEl.firstElementChild) {
+                  rootFiber = getFiberNode(rootEl.firstElementChild);
+                  while (rootFiber?.return) rootFiber = rootFiber.return;
+                }
+                if (!rootFiber) {
+                  const fiberKey = Object.keys(rootEl).find(k => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
+                  if (fiberKey) {
+                    rootFiber = rootEl[fiberKey];
+                    while (rootFiber?.return) rootFiber = rootFiber.return;
+                  }
+                }
+              }
+              if (rootFiber) {
+                walkFiber(rootFiber, 0);
+              }
+
+              const truncated = allComponents.length > maxCount;
+              const result = {
+                components: allComponents.slice(0, maxCount),
+                total: allComponents.length,
+                truncated,
+              };
+
+              if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'component-list-response', requestId, data: result }));
+              }
             }
           } catch(e) {}
         };
       }
+
+      // MCP status polling: check every 10s
+      let mcpStatusInterval = null;
+      function pollMcpStatus() {
+        fetch(BRIDGE + '/api/mcp-status')
+          .then(r => r.json())
+          .then(d => {
+            const dot = shadow.getElementById('cp-mcp-dot');
+            const label = shadow.getElementById('cp-mcp-status-label');
+            if (dot) {
+              if (d.connected) {
+                dot.classList.add('connected');
+                dot.title = 'MCP: Connected';
+              } else {
+                dot.classList.remove('connected');
+                dot.title = 'MCP: Not connected';
+              }
+            }
+            if (label) {
+              label.textContent = d.connected ? 'Connected' : 'Not connected';
+              label.style.color = d.connected ? 'var(--accent-emerald, #10b981)' : 'var(--text-muted)';
+            }
+          })
+          .catch(() => {
+            const dot = shadow.getElementById('cp-mcp-dot');
+            const label = shadow.getElementById('cp-mcp-status-label');
+            if (dot) { dot.classList.remove('connected'); dot.title = 'MCP: Not connected'; }
+            if (label) { label.textContent = 'Not connected'; label.style.color = 'var(--text-muted)'; }
+          });
+      }
+      pollMcpStatus();
+      mcpStatusInterval = setInterval(pollMcpStatus, 10000);
 
       fetch(BRIDGE + '/api/freeze', {
         method: 'POST',

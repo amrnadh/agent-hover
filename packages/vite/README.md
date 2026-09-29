@@ -1,5 +1,7 @@
 # @agent-hover/vite
 
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/vite)](https://www.npmjs.com/package/@agent-hover/vite)
+
 > Point at your UI. Your agent understands it.
 
 Vite dev-mode plugin and local bridge server for [Agent Hover](https://github.com/Arc-coder07/agent-hover). Turns your running React application into a navigable, token-aware visual map that connects directly to AI agents.

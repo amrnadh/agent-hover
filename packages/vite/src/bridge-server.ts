@@ -32,6 +32,8 @@ export class BridgeServer {
   private wss: WebSocketServer | null = null;
   private projectRoot: string;
   private port: number;
+  private lastMcpHello = 0;
+  private latestAgentTask: any = null;
   private initialPort: number;
 
   private contextBuilder: ContextBuilder;
@@ -123,6 +125,19 @@ export class BridgeServer {
   private setupRoutes() {
     this.app.use(cors());
     this.app.use(express.json({ limit: '50mb' }));
+
+    // Security: only allow requests from localhost
+    this.app.use((req, res, next) => {
+      const host = req.headers.host || '';
+      const origin = req.headers.origin || '';
+      const isLocalHost = host.startsWith('localhost:') || host.startsWith('127.0.0.1:');
+      const isLocalOrigin = !origin || origin.includes('localhost') || origin.includes('127.0.0.1');
+      if (!isLocalHost && !isLocalOrigin) {
+        res.status(403).json({ error: 'Forbidden: non-local request' });
+        return;
+      }
+      next();
+    });
 
     // Health check
     this.app.get('/api/health', (_req, res) => {
@@ -700,6 +715,11 @@ export class BridgeServer {
           return;
         }
 
+        if (dataUrl.length > 50 * 1024 * 1024) {
+          res.status(413).json({ error: 'Screenshot data exceeds 50MB limit' });
+          return;
+        }
+
         const fs = await import('fs/promises');
         const path = await import('path');
         const screenshotsDir = path.join(this.projectRoot, '.agent-hover', 'screenshots');
@@ -707,7 +727,7 @@ export class BridgeServer {
 
         const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Data, 'base64');
-        const cleanName = (filename || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const cleanName = (filename || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100);
         const fileNameWithExt = `${cleanName}_${Date.now()}.png`;
         const filePath = path.join(screenshotsDir, fileNameWithExt);
         await fs.writeFile(filePath, buffer);
@@ -770,6 +790,80 @@ export class BridgeServer {
         const message = error instanceof Error ? error.message : 'Failed to get screenshot';
         res.status(500).json({ error: message });
       }
+    });
+
+    // MCP heartbeat
+    this.app.post('/api/mcp/hello', (req, res) => {
+      this.lastMcpHello = Date.now();
+      res.json({ ok: true });
+    });
+
+    this.app.get('/api/mcp-status', (_req, res) => {
+      const connected = (Date.now() - this.lastMcpHello) < 30000;
+      res.json({ connected, lastSeen: this.lastMcpHello > 0 ? new Date(this.lastMcpHello).toISOString() : null });
+    });
+
+    this.app.get('/api/components', (req, res) => {
+      const filter = (req.query.filter as string) || '';
+      const limit = parseInt(req.query.limit as string) || 50;
+      const includeLibrary = req.query.includeLibrary === 'true';
+      
+      if (this.clients.size === 0) {
+        res.status(503).json({ error: 'No browser overlay connected. Open your app in the browser with Agent Hover active.' });
+        return;
+      }
+      
+      const requestId = `components-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      
+      const componentPromise = new Promise<any>((resolve) => {
+        const timer = setTimeout(() => {
+          this.pendingCaptures.delete(requestId);
+          resolve({ error: 'Component listing timed out after 3s. The browser overlay may not be active.' });
+        }, 3000);
+        this.pendingCaptures.set(requestId, { resolve, timer });
+      });
+      
+      const wsMessage = JSON.stringify({
+        type: 'list-components',
+        data: { requestId, filter, limit, includeLibrary },
+      });
+      this.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(wsMessage);
+        }
+      });
+      
+      componentPromise.then((result) => {
+        if (result.error) {
+          res.status(408).json(result);
+        } else {
+          res.json(result);
+        }
+      });
+    });
+
+    // Send task/context to AI Agent
+    this.app.post('/api/agent/send', (req, res) => {
+      const task = req.body || {};
+      this.latestAgentTask = {
+        ...task,
+        receivedAt: new Date().toISOString()
+      };
+      const message = JSON.stringify({
+        type: 'agent-task-dispatched',
+        data: this.latestAgentTask
+      });
+      this.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      });
+      console.log(`[agent-hover] 🤖 Task sent to agent: "${task.component || task.title || 'Component context'}"`);
+      res.json({ ok: true, task: this.latestAgentTask });
+    });
+
+    this.app.get('/api/agent/latest', (_req, res) => {
+      res.json({ task: this.latestAgentTask });
     });
 
     // Open in editor
@@ -1091,6 +1185,22 @@ export class BridgeServer {
             this.clients.delete(ws);
           });
 
+          ws.on('message', (data) => {
+            try {
+              const parsed = JSON.parse(data.toString());
+              if (parsed.type === 'component-list-response' && parsed.requestId) {
+                const pending = this.pendingCaptures.get(parsed.requestId);
+                if (pending) {
+                  clearTimeout(pending.timer);
+                  pending.resolve(parsed.data);
+                  this.pendingCaptures.delete(parsed.requestId);
+                }
+              }
+            } catch (e) {
+              // Ignore invalid JSON
+            }
+          });
+
           // Send current state to new connections
           ws.send(
             JSON.stringify({
@@ -1121,7 +1231,7 @@ export class BridgeServer {
 
       server.once('error', errorHandler);
       server.once('listening', listenHandler);
-      server.listen(this.port);
+      server.listen(this.port, '127.0.0.1');
     });
   }
 

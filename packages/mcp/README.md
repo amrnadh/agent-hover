@@ -1,5 +1,7 @@
 # @agent-hover/mcp
 
+[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/mcp)](https://www.npmjs.com/package/@agent-hover/mcp)
+
 > Model Context Protocol (MCP) server for [Agent Hover](https://github.com/Arc-coder07/agent-hover).
 
 Connects AI coding agents (**Claude Desktop**, **Claude Code**, **Cursor**, **Windsurf**) directly to your running React development environment. Instead of manually copying and pasting prompt snippets, AI agents can query live component ASTs, inspect pinned relationships, retrieve rendered styles, and verify visual diffs programmatically over stdio.
@@ -102,6 +104,13 @@ Compares before-and-after screenshots to compute pixel difference percentages an
 - **Parameters:**
   - `file` (string, required): Relative path to component file.
   - `component` (string, required): Component name.
+
+### 7. `list_components`
+List all visible React components on the current page with their names, source files, and line numbers. Use this as the first step to understand what components are rendered.
+- **Parameters:**
+  - `filter` (string, optional): Case-insensitive substring filter for component names.
+  - `limit` (number, optional): Maximum number of components to return (default: 50).
+  - `includeLibrary` (boolean, optional): Include components from node_modules (default: false).
 
 ## License
 

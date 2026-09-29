@@ -47,8 +47,7 @@
     "react",
     "ai-agent",
     "mcp",
-    "devtools",
-    "vibe-coding"
+    "devtools"
   ],
   "license": "MIT"
 }

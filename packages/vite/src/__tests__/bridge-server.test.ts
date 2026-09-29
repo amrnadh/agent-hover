@@ -160,7 +160,7 @@ describe('BridgeServer Integration Tests', () => {
     });
 
     await new Promise<void>((resolve) => {
-      blockerServer.listen(collisionPort, () => resolve());
+      blockerServer.listen(collisionPort, '127.0.0.1', () => resolve());
     });
 
     try {

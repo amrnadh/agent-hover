@@ -312,6 +312,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["file", "component"],
         },
       },
+      {
+        name: "list_components",
+        description: "List all visible React components on the current page with their names, source files, and line numbers. Use this as the first step to understand what components are rendered.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            filter: {
+              type: "string",
+              description: "Optional case-insensitive substring filter for component names",
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of components to return (default: 50)",
+            },
+            includeLibrary: {
+              type: "boolean",
+              description: "Include components from node_modules (default: false)",
+            },
+          },
+        },
+      },
+      {
+        name: "get_latest_agent_task",
+        description: "Get the latest component context, instruction, or note sent by the developer from the Agent Hover browser UI using the 'Send to Agent' button.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -463,6 +492,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "list_components": {
+        const filter = (args?.filter as string | undefined) ?? "";
+        const limit = (args?.limit as number | undefined) ?? 50;
+        const includeLibrary = (args?.includeLibrary as boolean | undefined) ?? false;
+        
+        const params = new URLSearchParams();
+        if (filter) params.set('filter', filter);
+        params.set('limit', String(limit));
+        if (includeLibrary) params.set('includeLibrary', 'true');
+        
+        const result = await getFromBridge(`/api/components?${params.toString()}`);
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
+      case "get_latest_agent_task": {
+        const result = await getFromBridge("/api/agent/latest");
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
       default:
         return {
           content: [
@@ -490,6 +542,21 @@ async function main(): Promise<void> {
   console.error(
     `Agent Hover MCP server running on stdio (bridge port: ${bridgePort})`
   );
+  
+  // Send heartbeat to bridge server
+  const sendHeartbeat = async () => {
+    try {
+      await fetch(`${bridgeBaseUrl}/api/mcp/hello`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pid: process.pid, version: '0.1.1' }),
+      });
+    } catch (_) {
+      // Bridge may not be running yet
+    }
+  };
+  sendHeartbeat();
+  setInterval(sendHeartbeat, 15000);
 }
 
 // Start the server, logging any unhandled startup errors to stderr
