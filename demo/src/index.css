@@ -1,1 +1,70 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 210 14% 17%;
+  --primary: 210 14% 17%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 184 5% 55%;
+  --accent: 239 84% 67%;
+  --accent-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --ring: 239 84% 67%;
+  --radius: 0.5rem;
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Inter', sans-serif;
+  --shadow-dashboard: 0 25px 80px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --dashboard-glass: rgba(255, 255, 255, 0.45);
+  --dashboard-glass-border: rgba(255, 255, 255, 0.5);
+}
+
+.dark {
+  --background: 224 25% 6%;
+  --foreground: 210 20% 98%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 224 25% 6%;
+  --secondary: 224 20% 12%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 224 20% 14%;
+  --muted-foreground: 215 16% 68%;
+  --accent: 239 84% 70%;
+  --accent-foreground: 0 0% 100%;
+  --border: 224 16% 22%;
+  --ring: 239 84% 70%;
+  --shadow-dashboard: 0 25px 80px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --dashboard-glass: rgba(20, 24, 33, 0.7);
+  --dashboard-glass-border: rgba(255, 255, 255, 0.12);
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-border: hsl(var(--border));
+  --color-ring: hsl(var(--ring));
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+

@@ -1,17 +1,23 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import AgentHover from '@agent-hover/vite';
 import tailwindcss from '@tailwindcss/vite';
-import componentPointer from '@agent-hover/vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
 
-export default defineConfig({
-  server: {
-    watch: {
-      ignored: ['**/.agent-hover/**'],
+export default defineConfig(() => {
+  return {
+    plugins: [react(), AgentHover(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(import.meta.dirname, '.'),
+      },
     },
-  },
-  plugins: [
-    react(),
-    tailwindcss(),
-    componentPointer(),
-  ],
+    server: {
+      // Development server configuration
+      hmr: true,
+      watch: {
+        ignored: ['**/.agent-hover/**'],
+      },
+    },
+  };
 });
