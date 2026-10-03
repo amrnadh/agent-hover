@@ -44,7 +44,7 @@ const UI_HTML = `
           :host {
             pointer-events: none;
           }
-          #cp-dock-wrapper, #cp-flyout, #cp-text-editor, #cp-snap-dropdown, #cp-snap-dropdown *, #cp-snap-preview, #cp-snap-preview *, #cp-note-popover, #cp-note-popover *, #cp-mcp-modal, #cp-mcp-modal *, #cp-selection-chip, #cp-selection-chip * {
+          #cp-dock-wrapper, #cp-flyout, #cp-text-editor, #cp-snap-dropdown, #cp-snap-dropdown *, #cp-snap-preview, #cp-snap-preview *, #cp-snap-lightbox, #cp-snap-lightbox *, #cp-note-popover, #cp-note-popover *, #cp-mcp-modal, #cp-mcp-modal *, #cp-selection-chip, #cp-selection-chip * {
             pointer-events: auto;
           }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight {
@@ -418,41 +418,43 @@ const UI_HTML = `
             border-color: rgba(0, 0, 0, 0.12);
           }
 
-          /* --- Note Popover (redesigned, class-based) --- */
+          /* --- Note Popover (Apple Minimalist Redesign) --- */
           #cp-note-popover {
             position: fixed;
             z-index: 999999;
-            width: 340px;
-            background: var(--bg-dock-panel);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            width: 320px;
+            background: rgba(22, 22, 26, 0.88);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 14px;
-            box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.70), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15);
             color: var(--text-primary);
-            padding: 16px;
+            padding: 12px 14px 12px 14px;
             pointer-events: auto;
             visibility: hidden;
             opacity: 0;
-            transform: scale(0.96) translateY(4px);
-            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.2s;
+            transform: scale(0.96) translateY(5px);
+            transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.18s;
           }
           :host(.light-mode) #cp-note-popover {
-            border: 1px solid rgba(0, 0, 0, 0.10);
-            box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+            color: #18181b;
           }
           #cp-note-popover.open {
             visibility: visible;
             opacity: 1;
             transform: scale(1) translateY(0);
-            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0s;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0s;
           }
           .cp-note-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
-            gap: 6px;
+            gap: 8px;
+            margin-bottom: 6px;
           }
           .cp-note-title {
             display: inline-flex;
@@ -460,157 +462,344 @@ const UI_HTML = `
             gap: 6px;
             font-weight: 600;
             font-size: 12px;
+            letter-spacing: -0.01em;
             color: var(--text-primary);
+            line-height: 1.2;
+            min-width: 0;
           }
-          .cp-note-title svg {
-            color: var(--text-primary);
+          :host(.light-mode) .cp-note-title {
+            color: #18181b;
+          }
+          .cp-note-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+          }
+          :host(.light-mode) .cp-note-icon {
+            color: #71717a;
+          }
+          .cp-note-icon svg {
+            width: 13px;
+            height: 13px;
+          }
+          .cp-note-status-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 9.5px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            line-height: 1.2;
+            text-transform: capitalize;
+          }
+          :host(.light-mode) .cp-note-status-badge {
+            background: rgba(5, 150, 105, 0.10);
+            color: #059669;
+            border-color: rgba(5, 150, 105, 0.22);
+          }
+          .cp-note-target-capsule {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+            max-width: 100%;
+            margin-bottom: 9px;
+          }
+          .cp-note-target-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 175px;
+          }
+          :host(.light-mode) .cp-note-target-tag {
+            color: #52525b;
+          }
+          .cp-note-target-sep {
+            font-size: 10px;
+            color: var(--text-muted);
+            opacity: 0.6;
+          }
+          :host(.light-mode) .cp-note-target-sep {
+            color: #a1a1aa;
+          }
+          .cp-file-badge {
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            padding: 1.5px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.3;
+          }
+          :host(.light-mode) .cp-file-badge {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #71717a;
+          }
+          .cp-note-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             flex-shrink: 0;
           }
           .cp-note-header .cp-icon-btn {
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-muted);
             cursor: pointer;
-            padding: 4px;
+            width: 22px;
+            height: 22px;
+            padding: 0;
             border-radius: 6px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.15s ease, color 0.15s ease;
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          .cp-note-header .cp-icon-btn svg {
+            width: 12px;
+            height: 12px;
           }
           .cp-note-header .cp-icon-btn:hover {
-            background: var(--bg-surface-raised);
+            background: rgba(255, 255, 255, 0.14);
             color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-0.5px);
           }
-          .cp-note-target {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+          .cp-note-header .cp-icon-btn:active {
+            transform: scale(0.94);
           }
-          .cp-file-badge {
-            font-family: var(--font-mono);
-            font-size: 10px;
-            background: var(--bg-surface-raised);
-            padding: 1px 6px;
-            border-radius: 4px;
-            border: 1px solid var(--border-glass);
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+          .cp-note-header .cp-resolve-btn:hover {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.25);
+          }
+          .cp-note-header .cp-resolve-btn.resolved {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.18);
+            border-color: rgba(16, 185, 129, 0.35);
+          }
+          .cp-note-header .cp-close-btn:hover {
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.12);
+            border-color: rgba(244, 63, 94, 0.22);
+          }
+          :host(.light-mode) .cp-note-header .cp-icon-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.07);
+            color: #71717a;
+          }
+          :host(.light-mode) .cp-note-header .cp-icon-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            color: #18181b;
+            border-color: rgba(0, 0, 0, 0.12);
+          }
+          :host(.light-mode) .cp-note-header .cp-resolve-btn:hover {
+            color: #059669;
+            background: rgba(5, 150, 105, 0.10);
+            border-color: rgba(5, 150, 105, 0.20);
+          }
+          :host(.light-mode) .cp-note-header .cp-resolve-btn.resolved {
+            color: #059669;
+            background: rgba(5, 150, 105, 0.14);
+            border-color: rgba(5, 150, 105, 0.28);
+          }
+          :host(.light-mode) .cp-note-header .cp-close-btn:hover {
+            color: #e11d48;
+            background: rgba(225, 29, 72, 0.08);
+            border-color: rgba(225, 29, 72, 0.16);
           }
           .cp-note-textarea {
             width: 100%;
             box-sizing: border-box;
-            min-height: 70px;
-            background: rgba(14, 14, 16, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 10px;
+            min-height: 72px;
+            max-height: 200px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 9px;
+            padding: 9px 11px;
             color: var(--text-primary);
             font-family: var(--font-sans);
-            font-size: 12px;
-            resize: vertical;
+            font-size: 12.5px;
+            line-height: 1.5;
+            resize: none;
             outline: none;
-            margin-bottom: 4px;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            margin-bottom: 0;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+          }
+          .cp-note-textarea::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
           }
           .cp-note-textarea:focus {
-            border-color: rgba(255, 255, 255, 0.40);
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.28);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.35);
           }
           :host(.light-mode) .cp-note-textarea {
-            background: #ffffff;
-            border: 1px solid #d9d9dc;
-            color: #121214;
+            background: rgba(0, 0, 0, 0.025);
+            border: 1px solid rgba(0, 0, 0, 0.09);
+            color: #18181b;
+          }
+          :host(.light-mode) .cp-note-textarea::placeholder {
+            color: #a1a1aa;
           }
           :host(.light-mode) .cp-note-textarea:focus {
-            border-color: #121214;
-            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.24);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
           }
           .cp-note-error {
             font-size: 11px;
             color: var(--accent-rose, #f43f5e);
-            min-height: 16px;
-            margin-bottom: 4px;
-            line-height: 16px;
+            line-height: 1.3;
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+            transition: all 0.15s ease;
+          }
+          .cp-note-error:not(:empty) {
+            margin-top: 5px;
+            padding-left: 2px;
           }
           .cp-note-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 8px;
+            gap: 8px;
           }
-          .cp-note-actions {
+          .cp-note-footer-left {
             display: flex;
-            gap: 6px;
+            align-items: center;
+            gap: 4px;
+          }
+          .cp-note-footer-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-left: auto;
           }
-          .cp-btn-ghost {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #b3b3b3;
-            padding: 5px 12px;
-            border-radius: 7px;
-            font-size: 11px;
-            font-family: var(--font-sans);
-            cursor: pointer;
+          .cp-btn-subtle-danger {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            transition: all 0.15s ease;
-          }
-          .cp-btn-ghost:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.20);
-          }
-          .cp-btn-ghost.cp-btn-danger {
-            color: var(--accent-rose, #f43f5e);
-            border-color: rgba(244, 63, 94, 0.3);
-          }
-          .cp-btn-ghost.cp-btn-danger:hover {
-            background: rgba(244, 63, 94, 0.1);
-          }
-          .cp-btn-primary {
-            background: #2c2c2e;
-            border: 1px solid #48484a;
-            color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.35);
-            padding: 5px 14px;
-            border-radius: 7px;
+            gap: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 4px 7px;
+            border-radius: 6px;
             font-size: 11px;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          .cp-btn-subtle-danger svg {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+          }
+          .cp-btn-subtle-danger:hover {
+            color: var(--accent-rose, #f43f5e);
+            background: rgba(244, 63, 94, 0.10);
+            border-color: rgba(244, 63, 94, 0.18);
+            transform: translateY(-0.5px);
+          }
+          .cp-btn-subtle-danger:active {
+            transform: scale(0.96);
+          }
+          :host(.light-mode) .cp-btn-subtle-danger {
+            color: #71717a;
+          }
+          :host(.light-mode) .cp-btn-subtle-danger:hover {
+            color: #e11d48;
+            background: rgba(225, 29, 72, 0.08);
+            border-color: rgba(225, 29, 72, 0.16);
+          }
+          .cp-note-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            color: var(--text-muted);
+            user-select: none;
+          }
+          .cp-kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 15px;
+            height: 16px;
+            padding: 0 3px;
+            font-size: 9.5px;
+            font-family: var(--font-sans);
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 4px;
+            color: var(--text-muted);
+            line-height: 1;
+          }
+          :host(.light-mode) .cp-kbd {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #71717a;
+          }
+          .cp-btn-apple-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background: #ffffff;
+            color: #121214;
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            padding: 5px 13px;
+            border-radius: 7px;
+            font-size: 11.5px;
             font-family: var(--font-sans);
             font-weight: 600;
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.15s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.60);
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
           }
-          .cp-btn-primary:hover {
-            background: #38383a;
-            border-color: #5c5c5e;
-            filter: none;
-          }
-          :host(.light-mode) .cp-btn-primary {
-            background: #18181b;
-            border: 1px solid #27272a;
-            color: #ffffff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-          }
-          :host(.light-mode) .cp-btn-primary:hover {
-            background: #27272a;
-          }
-          :host(.light-mode) .cp-btn-ghost {
-            border-color: #d9d9dc;
-            color: #52525b;
-          }
-          :host(.light-mode) .cp-btn-ghost:hover {
+          .cp-btn-apple-primary:hover {
             background: #f4f4f5;
-            color: #18181b;
+            transform: translateY(-0.5px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.80);
+          }
+          .cp-btn-apple-primary:active {
+            transform: scale(0.97) translateY(0);
+            background: #e4e4e7;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);
+          }
+          :host(.light-mode) .cp-btn-apple-primary {
+            background: #18181b;
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          }
+          :host(.light-mode) .cp-btn-apple-primary:hover {
+            background: #27272a;
+            transform: translateY(-0.5px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+          }
+          :host(.light-mode) .cp-btn-apple-primary:active {
+            transform: scale(0.97) translateY(0);
+            background: #3f3f46;
           }
           @media (prefers-reduced-motion: reduce) {
             #cp-note-popover { transition: none; }
@@ -690,24 +879,28 @@ const UI_HTML = `
             #cp-snap-dropdown { transition: none; }
           }
 
-          /* --- Screenshot Preview Card --- */
+          /* --- Enhanced Screenshot Toast Widget & Full Lightbox Modal --- */
           #cp-snap-preview {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 280px;
+            bottom: 24px;
+            right: 24px;
+            width: 320px;
             background: var(--bg-dock-panel);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border: 1px solid var(--border-glass);
-            border-radius: 14px;
-            box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.06);
+            border-radius: 12px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
             padding: 12px;
             z-index: 999998;
             visibility: hidden;
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(12px);
             transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
           }
           #cp-snap-preview.open {
             visibility: visible;
@@ -715,53 +908,193 @@ const UI_HTML = `
             transform: translateY(0);
             transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0s;
           }
-          .cp-snap-preview-header {
+          .cp-snap-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
           }
-          .cp-snap-preview-title {
-            font-weight: 600;
+          .cp-snap-title {
             font-size: 12px;
+            font-weight: 600;
             color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .cp-snap-close {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border-radius: 50%;
+            background: var(--bg-surface-raised);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            padding: 0;
+          }
+          .cp-snap-close:hover {
+            background: var(--accent-rose);
+            color: #ffffff;
+            border-color: var(--accent-rose);
+            transform: scale(1.05);
+          }
+          .cp-snap-thumb-box {
+            width: 100%;
+            height: 140px;
+            background: var(--bg-surface-sunken);
+            border-radius: 6px;
+            border: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-in;
+            position: relative;
+            overflow: hidden;
           }
           .cp-snap-preview-img {
             width: 100%;
-            max-height: 150px;
+            height: 100%;
             object-fit: contain;
-            border-radius: 8px;
-            border: 1px solid var(--border-glass);
-            margin-bottom: 6px;
-            background: var(--bg-surface-sunken);
+            display: block;
           }
-          .cp-snap-preview-meta {
-            font-size: 10px;
-            font-family: var(--font-mono);
-            color: var(--text-muted);
-            margin-bottom: 4px;
+          .cp-snap-thumb-box:hover .cp-snap-zoom-overlay {
+            opacity: 1;
           }
-          .cp-snap-preview-status {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+          .cp-snap-zoom-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.52);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
             display: flex;
             align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #ffffff;
+            font-size: 11.5px;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            pointer-events: none;
+          }
+          .cp-snap-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10.5px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+          }
+          .cp-snap-preview-status {
+            display: inline-flex;
+            align-items: center;
             gap: 4px;
+            font-size: 10.5px;
           }
           .cp-snap-preview-status.success { color: var(--accent-emerald, #10b981); }
           .cp-snap-preview-status.error { color: var(--accent-rose, #f43f5e); }
-          .cp-snap-preview-actions {
-            display: flex;
-            gap: 6px;
+          .cp-snap-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
           }
-          .cp-snap-preview-actions .cp-btn-ghost,
-          .cp-snap-preview-actions .cp-btn-primary {
-            flex: 1;
+          .cp-snap-actions .cp-btn-bento {
+            width: 100%;
             justify-content: center;
+            font-size: 11.5px;
+            padding: 6px 12px;
+          }
+          .cp-snap-progress-track {
+            width: 100%;
+            height: 2px;
+            background: var(--border-glass);
+            border-radius: 1px;
+            overflow: hidden;
+            margin-top: -2px;
+          }
+          .cp-snap-progress-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--accent);
+            transform-origin: left;
+            transform: scaleX(1);
+          }
+          #cp-snap-preview.animating .cp-snap-progress-bar {
+            animation: cp-snap-dismiss 6s linear forwards;
+          }
+          #cp-snap-preview:hover .cp-snap-progress-bar {
+            animation-play-state: paused !important;
+          }
+          @keyframes cp-snap-dismiss {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+          }
+
+          /* Full Lightbox Modal */
+          #cp-snap-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 1000000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            pointer-events: auto;
+          }
+          #cp-snap-lightbox.open {
+            display: flex;
+            animation: cp-lightbox-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          @keyframes cp-lightbox-fade-in {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          .cp-lightbox-dialog {
+            background: var(--bg-dock-panel);
+            border: 1px solid var(--border-glass);
+            border-radius: 14px;
+            max-width: 92vw;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85);
+            overflow: hidden;
+          }
+          .cp-lightbox-header {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-surface-header);
+          }
+          .cp-lightbox-body {
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #08080a;
+          }
+          #cp-lightbox-img {
+            max-width: 100%;
+            max-height: calc(92vh - 84px);
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
           }
           @media (prefers-reduced-motion: reduce) {
-            #cp-snap-preview { transition: none; }
+            #cp-snap-preview, #cp-snap-lightbox { transition: none; animation: none; }
           }
 
           /* --- Region Hint Overlay (screenshot mode hover) --- */
@@ -2148,29 +2481,37 @@ const UI_HTML = `
         <div id="cp-distance-layer"></div>
         <div id="cp-comments-layer" style="position:fixed; inset:0; pointer-events:none; z-index:999996;"></div>
 
-        <!-- Inline Note Popover (redesigned, class-based) -->
+        <!-- Inline Note Popover (Apple Minimalist Redesign) -->
         <div id="cp-note-popover" role="dialog" aria-label="Note">
           <div class="cp-note-header">
-            <div class="cp-note-title">${ICONS.messageSquare}<span id="cp-note-popover-label">New note</span></div>
-            <div style="display:flex;gap:2px;">
-              <button id="cp-note-resolve" class="cp-icon-btn" aria-label="Resolve" title="Mark as resolved">${ICONS.check}</button>
-              <button id="cp-note-popover-close" class="cp-icon-btn" aria-label="Close">${ICONS.x}</button>
+            <div class="cp-note-title">
+              <span class="cp-note-icon">${ICONS.messageSquare}</span>
+              <span id="cp-note-popover-label">New note</span>
+              <span id="cp-note-status-badge" class="cp-note-status-badge" style="display:none;"></span>
+            </div>
+            <div class="cp-note-header-actions">
+              <button id="cp-note-resolve" class="cp-icon-btn cp-resolve-btn" aria-label="Resolve" title="Mark as resolved">${ICONS.check}</button>
+              <button id="cp-note-popover-close" class="cp-icon-btn cp-close-btn" aria-label="Close" title="Close (Esc)">${ICONS.x}</button>
             </div>
           </div>
-          <div class="cp-note-target">
-            <span id="cp-note-popover-target"></span>
+          <div class="cp-note-target-capsule" id="cp-note-target-capsule" style="display:none;">
+            <span class="cp-note-target-tag" id="cp-note-popover-target"></span>
+            <span class="cp-note-target-sep" id="cp-note-target-sep">·</span>
             <span class="cp-file-badge" id="cp-note-popover-file"></span>
           </div>
           <textarea id="cp-note-input" class="cp-note-textarea" placeholder="Add a note for this element..."></textarea>
           <div class="cp-note-error" id="cp-note-error"></div>
           <div class="cp-note-footer">
-            <button class="cp-btn-ghost cp-btn-danger" id="cp-note-delete">${ICONS.trash} Delete</button>
-            <div class="cp-note-actions">
-              <button class="cp-btn-ghost" id="cp-note-cancel">Cancel</button>
-              <button class="cp-btn-primary" id="cp-note-save">Save</button>
-              <button class="cp-btn-primary" id="cp-note-send-agent" title="Save & Send to Agent">${ICONS.send} Send to Agent</button>
+            <div class="cp-note-footer-left">
+              <button class="cp-btn-subtle-danger" id="cp-note-delete" aria-label="Delete note" title="Delete note">${ICONS.trash}<span>Delete</span></button>
+            </div>
+            <div class="cp-note-footer-right">
+              <span class="cp-note-hint"><kbd class="cp-kbd">⌘</kbd><kbd class="cp-kbd">↵</kbd></span>
+              <button class="cp-btn-apple-primary" id="cp-note-save">Save</button>
             </div>
           </div>
+          <button id="cp-note-cancel" style="display:none;" aria-hidden="true"></button>
+          <button id="cp-note-send-agent" style="display:none;" aria-hidden="true"></button>
         </div>
 
         <!-- Screenshot Mode Dropdown -->
@@ -2190,18 +2531,63 @@ const UI_HTML = `
           <div class="cp-snap-message" id="cp-snap-message"></div>
         </div>
 
-        <!-- Screenshot Preview Card -->
+        <!-- Enhanced Screenshot Toast Widget -->
         <div id="cp-snap-preview" role="status" aria-live="polite">
-          <div class="cp-snap-preview-header">
-            <span class="cp-snap-preview-title">Screenshot captured</span>
-            <button id="cp-snap-preview-close" class="cp-icon-btn" aria-label="Close">${ICONS.x}</button>
+          <div class="cp-snap-header">
+            <div class="cp-snap-title">
+              ${ICONS.camera}
+              <span>Screenshot Captured</span>
+            </div>
+            <button id="cp-snap-preview-close" class="cp-snap-close" aria-label="Close" title="Close Toast">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
-          <img id="cp-snap-preview-img" class="cp-snap-preview-img" alt="Screenshot preview" />
-          <div class="cp-snap-preview-meta" id="cp-snap-preview-meta"></div>
-          <div class="cp-snap-preview-status" id="cp-snap-preview-status"></div>
-          <div class="cp-snap-preview-actions">
-            <button class="cp-btn-ghost" id="cp-snap-download">${ICONS.download} Download</button>
-            <button class="cp-btn-primary" id="cp-snap-copy">${ICONS.copy} Copy</button>
+
+          <!-- Clickable Zoom Thumbnail -->
+          <div class="cp-snap-thumb-box" id="cp-snap-thumb-btn" title="Click to inspect full resolution">
+            <img id="cp-snap-preview-img" class="cp-snap-preview-img" alt="Screenshot preview" />
+            <div class="cp-snap-zoom-overlay">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              <span>Click to Inspect</span>
+            </div>
+          </div>
+
+          <div class="cp-snap-meta-row">
+            <span id="cp-snap-preview-meta"></span>
+            <span id="cp-snap-preview-status" class="cp-snap-preview-status"></span>
+          </div>
+
+          <div class="cp-snap-actions">
+            <button class="cp-btn-bento" id="cp-snap-download">${ICONS.download} Download</button>
+            <button class="cp-btn-bento primary" id="cp-snap-copy">${ICONS.copy} Copy Image</button>
+          </div>
+
+          <!-- Auto-dismiss Progress Bar -->
+          <div class="cp-snap-progress-track">
+            <div id="cp-snap-progress" class="cp-snap-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- Full Lightbox Modal -->
+        <div id="cp-snap-lightbox" role="dialog" aria-modal="true" aria-label="Screenshot Lightbox Preview">
+          <div class="cp-lightbox-dialog" id="cp-lightbox-dialog">
+            <div class="cp-lightbox-header">
+              <div style="font-weight:600; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                <span class="cp-badge cp-badge-accent" id="cp-lightbox-mode-badge">VIEWPORT</span>
+                <span id="cp-lightbox-filename" style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">screenshot.png</span>
+                <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);" id="cp-lightbox-res"></span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="cp-btn-bento" id="cp-lightbox-download">${ICONS.download} Download</button>
+                <button class="cp-btn-bento primary" id="cp-lightbox-copy">${ICONS.copy} Copy Image</button>
+                <button class="cp-snap-close" id="cp-lightbox-close" title="Close Lightbox (Esc)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="cp-lightbox-body">
+              <img id="cp-lightbox-img" src="" alt="Full Resolution Screenshot" />
+            </div>
           </div>
         </div>
 
@@ -3055,6 +3441,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       let comments = [];
       let editingComment = null;
       let activeNoteMarker = null;
+      let pendingNoteTarget = null;
       let pendingPinTarget = null;
       let currentPins = [];
 
@@ -3362,10 +3749,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       function openNotePopover(target, comment = null, markerEl = null) {
         editingComment = comment;
         activeNoteMarker = markerEl;
+        pendingNoteTarget = target;
         const popover = shadow.getElementById('cp-note-popover');
         const labelEl = shadow.getElementById('cp-note-popover-label');
         const targetNameEl = shadow.getElementById('cp-note-popover-target');
         const fileBadge = shadow.getElementById('cp-note-popover-file');
+        const sepEl = shadow.getElementById('cp-note-target-sep');
+        const targetCapsule = shadow.getElementById('cp-note-target-capsule');
+        const statusBadge = shadow.getElementById('cp-note-status-badge');
         const inputEl = shadow.getElementById('cp-note-input');
         const errorEl = shadow.getElementById('cp-note-error');
         const delBtn = shadow.getElementById('cp-note-delete');
@@ -3375,32 +3766,75 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         // Close any other floating layers (screenshot dropdown)
         closeSnapDropdown();
 
-        const compName = comment?.component || target?.name || selectedTarget?.name || 'Element';
-        const fileStr = comment?.file || lastResolved?.file || '';
+        const compName = comment?.component || target?.name || selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
+        const fileStr = comment?.file || lastResolved?.file || lastCopiedContext?.source?.file || '';
 
-        // Header label
+        // Header label & status pill
         if (comment) {
-          const noteIdx = comments.indexOf(comment);
-          labelEl.textContent = 'Editing note #' + (noteIdx + 1);
+          const noteIdx = comments.findIndex(c => c.id === comment.id);
+          labelEl.textContent = noteIdx >= 0 ? ('Note #' + (noteIdx + 1)) : 'Note';
+          if (statusBadge) {
+            statusBadge.style.display = comment.resolved ? 'inline-flex' : 'none';
+            statusBadge.textContent = 'Resolved';
+          }
         } else {
           labelEl.textContent = 'New note';
+          if (statusBadge) statusBadge.style.display = 'none';
         }
 
-        // Target info
-        targetNameEl.textContent = compName ? '<' + compName + ' />' : '';
-        fileBadge.textContent = fileStr ? fileStr.split('/').pop() : '';
-        fileBadge.style.display = fileStr ? '' : 'none';
+        // Format component tag & file badge cleanly
+        function formatComponentName(name) {
+          if (!name) return '';
+          name = name.trim();
+          if (name.startsWith('<') && name.endsWith('/>')) return name;
+          if (name.startsWith('<') && name.endsWith('>')) return name;
+          return '<' + name + ' />';
+        }
+
+        const formattedTarget = compName ? formatComponentName(compName) : '';
+        const shortFile = fileStr ? fileStr.split('/').pop() : '';
+
+        if (targetNameEl) targetNameEl.textContent = formattedTarget;
+        if (fileBadge) {
+          fileBadge.textContent = shortFile;
+          fileBadge.style.display = shortFile ? '' : 'none';
+        }
+        if (sepEl) {
+          sepEl.style.display = (formattedTarget && shortFile) ? 'inline' : 'none';
+        }
+        if (targetCapsule) {
+          targetCapsule.style.display = (formattedTarget || shortFile) ? 'inline-flex' : 'none';
+        }
 
         inputEl.value = comment?.text || '';
-        errorEl.textContent = '';
+        if (errorEl) errorEl.textContent = '';
+
+        // Auto-resize input to content
+        const updateInputHeight = () => {
+          inputEl.style.height = 'auto';
+          const newHeight = Math.max(72, Math.min(inputEl.scrollHeight, 200));
+          inputEl.style.height = newHeight + 'px';
+        };
+
+        // Platform-specific shortcut hint (⌘↵ on Mac, Ctrl↵ on others)
+        const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+        const hintEl = popover.querySelector('.cp-note-hint');
+        if (hintEl) {
+          hintEl.innerHTML = '<kbd class="cp-kbd">' + (isMac ? '⌘' : 'Ctrl') + '</kbd><kbd class="cp-kbd">↵</kbd>';
+        }
 
         // Show/hide delete and resolve for existing notes only
         if (comment) {
           delBtn.style.display = 'inline-flex';
           resolveBtn.style.display = 'inline-flex';
-          resolveBtn.title = comment.resolved ? 'Reopen' : 'Mark as resolved';
-          resolveBtn.setAttribute('aria-label', comment.resolved ? 'Reopen' : 'Resolve');
+          resolveBtn.title = comment.resolved ? 'Reopen note' : 'Mark as resolved';
+          resolveBtn.setAttribute('aria-label', comment.resolved ? 'Reopen note' : 'Resolve note');
           resolveBtn.innerHTML = comment.resolved ? ICONS.undo : ICONS.check;
+          if (comment.resolved) {
+            resolveBtn.classList.add('resolved');
+          } else {
+            resolveBtn.classList.remove('resolved');
+          }
 
           delBtn.onclick = async () => {
             await fetch(BRIDGE + '/api/comments', {
@@ -3409,7 +3843,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               body: JSON.stringify({ action: 'delete', id: comment.id })
             });
             closeNotePopover();
-            loadComments();
+            await loadComments();
+            if (typeof renderFlyoutForStackIndex === 'function' && typeof currentStackIndex === 'number' && shadow.getElementById('cp-flyout')?.classList.contains('open')) {
+              renderFlyoutForStackIndex(currentStackIndex);
+            }
             showCallout('Note deleted', 'NOTE');
           };
 
@@ -3420,48 +3857,67 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               body: JSON.stringify({ action: 'toggle-resolve', id: comment.id })
             });
             closeNotePopover();
-            loadComments();
+            await loadComments();
+            if (typeof renderFlyoutForStackIndex === 'function' && typeof currentStackIndex === 'number' && shadow.getElementById('cp-flyout')?.classList.contains('open')) {
+              renderFlyoutForStackIndex(currentStackIndex);
+            }
             showCallout(comment.resolved ? 'Note reopened' : 'Note resolved', 'SAVED');
           };
         } else {
           delBtn.style.display = 'none';
           resolveBtn.style.display = 'none';
+          resolveBtn.classList.remove('resolved');
         }
 
         // Position: anchor beside the marker or selected element
-        const MARGIN = 8;
+        const MARGIN = 12;
+        const CARD_WIDTH = 320;
         let anchorX, anchorY;
+
+        let anchorRect = null;
         if (markerEl) {
-          const mr = markerEl.getBoundingClientRect();
-          anchorX = mr.right + 16;
-          anchorY = mr.top - 24;
+          anchorRect = markerEl.getBoundingClientRect();
+        } else if (target?.element && typeof target.element.getBoundingClientRect === 'function') {
+          anchorRect = target.element.getBoundingClientRect();
         } else if (selectedRect) {
-          anchorX = selectedRect.right + 16;
-          anchorY = selectedRect.top;
+          anchorRect = selectedRect;
+        }
+
+        if (markerEl && anchorRect) {
+          anchorX = anchorRect.right + 14;
+          anchorY = anchorRect.top - 16;
+          // Flip left if off-screen on the right
+          if (anchorX + CARD_WIDTH + MARGIN > window.innerWidth) {
+            anchorX = anchorRect.left - CARD_WIDTH - 14;
+          }
+        } else if (anchorRect) {
+          // If anchored to an element, place to the right if fits, or below/left
+          if (anchorRect.right + 14 + CARD_WIDTH + MARGIN <= window.innerWidth) {
+            anchorX = anchorRect.right + 14;
+            anchorY = anchorRect.top;
+          } else if (anchorRect.left - CARD_WIDTH - 14 >= MARGIN) {
+            anchorX = anchorRect.left - CARD_WIDTH - 14;
+            anchorY = anchorRect.top;
+          } else {
+            anchorX = Math.max(MARGIN, Math.min(window.innerWidth - CARD_WIDTH - MARGIN, anchorRect.left));
+            anchorY = anchorRect.bottom + 12;
+          }
         } else {
-          anchorX = window.innerWidth / 2 - 170;
+          anchorX = window.innerWidth / 2 - (CARD_WIDTH / 2);
           anchorY = window.innerHeight * 0.25;
         }
 
-        // Flip left if no room on right
-        if (anchorX + 340 + MARGIN > window.innerWidth) {
-          if (markerEl) {
-            const mr = markerEl.getBoundingClientRect();
-            anchorX = mr.left - 340 - 16;
-          } else {
-            anchorX = window.innerWidth - 340 - MARGIN;
-          }
-        }
         // Clamp inside viewport
-        anchorX = Math.max(MARGIN, Math.min(window.innerWidth - 340 - MARGIN, anchorX));
-        anchorY = Math.max(MARGIN, Math.min(window.innerHeight - 300 - MARGIN, anchorY));
+        anchorX = Math.max(MARGIN, Math.min(window.innerWidth - CARD_WIDTH - MARGIN, anchorX));
+        anchorY = Math.max(MARGIN, Math.min(window.innerHeight - 250 - MARGIN, anchorY));
 
-        popover.style.top = anchorY + 'px';
-        popover.style.left = anchorX + 'px';
+        popover.style.top = Math.round(anchorY) + 'px';
+        popover.style.left = Math.round(anchorX) + 'px';
 
         // Animate open using requestAnimationFrame for display+class toggle
         requestAnimationFrame(() => {
           popover.classList.add('open');
+          updateInputHeight();
         });
 
         // Set active state on marker
@@ -3470,22 +3926,28 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         // Re-render markers to hide previews
         renderCommentMarkers();
 
-        setTimeout(() => inputEl.focus(), 50);
+        setTimeout(() => {
+          inputEl.focus();
+          updateInputHeight();
+        }, 50);
 
-        // Clear error on input
-        inputEl.oninput = () => { errorEl.textContent = ''; };
+        // Clear error and resize on input
+        inputEl.oninput = () => {
+          if (errorEl) errorEl.textContent = '';
+          updateInputHeight();
+        };
       }
 
       function closeNotePopover() {
         const popover = shadow.getElementById('cp-note-popover');
         if (popover) popover.classList.remove('open');
-        // Remove active state from markers and return focus
         if (activeNoteMarker) {
           activeNoteMarker.classList.remove('active');
           try { activeNoteMarker.focus(); } catch (_) {}
         }
         activeNoteMarker = null;
         editingComment = null;
+        pendingNoteTarget = null;
         renderCommentMarkers();
       }
 
@@ -3507,10 +3969,11 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           });
           showCallout('Note updated', 'SAVED');
         } else {
-          const compName = selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
+          const compName = pendingNoteTarget?.name || selectedTarget?.name || (lastCopiedContext ? lastCopiedContext.component.name : '');
           const file = lastResolved?.file || lastCopiedContext?.source?.file || '';
           const line = lastResolved?.line || lastCopiedContext?.source?.startLine || undefined;
-          const selector = (selectedTarget?.element || selectedElement) ? buildCSSSelector(selectedTarget?.element || selectedElement) : '';
+          const targetEl = pendingNoteTarget?.element || selectedTarget?.element || selectedElement;
+          const selector = targetEl ? buildCSSSelector(targetEl) : '';
 
           await fetch(BRIDGE + '/api/comments', {
             method: 'POST',
@@ -3524,11 +3987,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
 
         closeNotePopover();
-        loadComments();
+        await loadComments();
+        if (typeof renderFlyoutForStackIndex === 'function' && typeof currentStackIndex === 'number' && shadow.getElementById('cp-flyout')?.classList.contains('open')) {
+          renderFlyoutForStackIndex(currentStackIndex);
+        }
       }
 
-      // Note popover keyboard: Cmd/Ctrl+Enter saves, Escape closes
-      shadow.getElementById('cp-note-input')?.addEventListener('keydown', (e) => {
+      // Note popover keyboard: Cmd/Ctrl+Enter saves, Escape closes anywhere in popover
+      shadow.getElementById('cp-note-popover')?.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
           e.preventDefault();
           saveNote();
@@ -3539,9 +4005,12 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         }
       });
 
-      shadow.getElementById('cp-note-save').onclick = saveNote;
-      shadow.getElementById('cp-note-cancel').onclick = () => closeNotePopover();
-      shadow.getElementById('cp-note-popover-close').onclick = () => closeNotePopover();
+      const noteSaveBtn = shadow.getElementById('cp-note-save');
+      if (noteSaveBtn) noteSaveBtn.onclick = saveNote;
+      const noteCancelBtn = shadow.getElementById('cp-note-cancel');
+      if (noteCancelBtn) noteCancelBtn.onclick = () => closeNotePopover();
+      const noteCloseBtn = shadow.getElementById('cp-note-popover-close');
+      if (noteCloseBtn) noteCloseBtn.onclick = () => closeNotePopover();
 
       // Click outside closes popover
       shadow.addEventListener('click', (e) => {
@@ -4165,13 +4634,14 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             const filename = mode + '-' + Date.now() + '.png';
             lastCapturedDataUrl = dataUrl;
             lastCapturedFilename = filename;
-            showSnapPreview(dataUrl, modeLabel + ', ' + img.naturalWidth + ' x ' + img.naturalHeight, filename);
+            const resStr = img.naturalWidth + ' × ' + img.naturalHeight;
+            showSnapPreview(dataUrl, modeLabel + ' • ' + resStr, filename, mode);
           };
           img.onerror = () => {
             const filename = mode + '-' + Date.now() + '.png';
             lastCapturedDataUrl = dataUrl;
             lastCapturedFilename = filename;
-            showSnapPreview(dataUrl, modeLabel, filename);
+            showSnapPreview(dataUrl, modeLabel, filename, mode);
           };
           img.src = dataUrl;
 
@@ -4193,10 +4663,10 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             if (statusEl) {
               if (savedForAgent) {
                 statusEl.className = 'cp-snap-preview-status success';
-                statusEl.innerHTML = ICONS.check + ' Saved for the agent';
+                statusEl.innerHTML = ICONS.check + ' Saved for agent';
               } else {
                 statusEl.className = 'cp-snap-preview-status error';
-                statusEl.innerHTML = 'Could not save for the agent';
+                statusEl.innerHTML = 'Local preview only';
               }
             }
           }, 100);
@@ -4207,12 +4677,21 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         snapBusy = false;
       }
 
-      function showSnapPreview(dataUrl, meta, filename) {
+      let lastCapturedMode = 'viewport';
+      let lastCapturedMeta = '';
+      let snapAutoDismissTimer = null;
+
+      function showSnapPreview(dataUrl, meta, filename, mode) {
         const card = shadow.getElementById('cp-snap-preview');
         const img = shadow.getElementById('cp-snap-preview-img');
         const metaEl = shadow.getElementById('cp-snap-preview-meta');
         const statusEl = shadow.getElementById('cp-snap-preview-status');
         if (!card) return;
+
+        lastCapturedDataUrl = dataUrl;
+        lastCapturedFilename = filename || 'screenshot.png';
+        lastCapturedMode = mode || 'viewport';
+        lastCapturedMeta = meta || '';
 
         // Revoke previous blob URL
         if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
@@ -4221,40 +4700,169 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const blob = dataUrlToBlob(dataUrl);
         if (blob) {
           snapPreviewBlobUrl = URL.createObjectURL(blob);
-          img.src = snapPreviewBlobUrl;
-        } else {
+          if (img) img.src = snapPreviewBlobUrl;
+        } else if (img) {
           img.src = dataUrl;
         }
 
-        metaEl.textContent = meta || '';
-        statusEl.textContent = '';
-        statusEl.className = 'cp-snap-preview-status';
+        if (metaEl) metaEl.textContent = meta || '';
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.className = 'cp-snap-preview-status';
+        }
 
         // Reset button labels
         const dlBtn = shadow.getElementById('cp-snap-download');
         const cpBtn = shadow.getElementById('cp-snap-copy');
         if (dlBtn) dlBtn.innerHTML = ICONS.download + ' Download';
-        if (cpBtn) cpBtn.innerHTML = ICONS.copy + ' Copy';
+        if (cpBtn) cpBtn.innerHTML = ICONS.copy + ' Copy Image';
 
-        requestAnimationFrame(() => { card.classList.add('open'); });
+        // Trigger smooth opening & restart progress bar animation
+        card.classList.remove('open');
+        card.classList.remove('animating');
+        void card.offsetWidth; // Force reflow to restart CSS animation
+        card.classList.add('open');
+        card.classList.add('animating');
+
+        // Auto-dismiss after 6s (pauses on hover)
+        if (snapAutoDismissTimer) clearTimeout(snapAutoDismissTimer);
+        snapAutoDismissTimer = setTimeout(() => {
+          closeSnapPreview();
+        }, 6000);
+
+        // Hover pause / leave resume
+        card.onmouseenter = () => {
+          if (snapAutoDismissTimer) {
+            clearTimeout(snapAutoDismissTimer);
+            snapAutoDismissTimer = null;
+          }
+        };
+        card.onmouseleave = () => {
+          if (card.classList.contains('open') && !snapAutoDismissTimer) {
+            snapAutoDismissTimer = setTimeout(() => {
+              closeSnapPreview();
+            }, 3000);
+          }
+        };
       }
 
       function closeSnapPreview() {
         const card = shadow.getElementById('cp-snap-preview');
-        if (card) card.classList.remove('open');
+        if (card) {
+          card.classList.remove('open');
+          card.classList.remove('animating');
+        }
+        if (snapAutoDismissTimer) {
+          clearTimeout(snapAutoDismissTimer);
+          snapAutoDismissTimer = null;
+        }
         if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
-        lastCapturedDataUrl = null;
-        lastCapturedFilename = null;
       }
 
       // Preview card close button
       shadow.getElementById('cp-snap-preview-close')?.addEventListener('click', closeSnapPreview);
 
-      // Escape closes preview
+      // Clickable Zoom Thumbnail opens Full Lightbox Modal
+      const snapThumbBtn = shadow.getElementById('cp-snap-thumb-btn');
+      if (snapThumbBtn) {
+        snapThumbBtn.onclick = () => {
+          if (lastCapturedDataUrl) {
+            openLightbox(lastCapturedDataUrl, lastCapturedMode, lastCapturedFilename, lastCapturedMeta);
+          }
+        };
+      }
+
+      // Full Lightbox Modal Logic
+      function openLightbox(dataUrl, mode, filename, meta) {
+        const lb = shadow.getElementById('cp-snap-lightbox');
+        const lbImg = shadow.getElementById('cp-lightbox-img');
+        const lbBadge = shadow.getElementById('cp-lightbox-mode-badge');
+        const lbFilename = shadow.getElementById('cp-lightbox-filename');
+        const lbRes = shadow.getElementById('cp-lightbox-res');
+        if (!lb || !lbImg) return;
+
+        lbImg.src = dataUrl;
+        if (lbBadge) lbBadge.textContent = (mode || 'COMPONENT').toUpperCase();
+        if (lbFilename) lbFilename.textContent = filename || 'screenshot.png';
+        if (lbRes) lbRes.textContent = meta || '';
+
+        lb.classList.add('open');
+      }
+
+      function closeLightbox() {
+        const lb = shadow.getElementById('cp-snap-lightbox');
+        if (lb) lb.classList.remove('open');
+      }
+
+      shadow.getElementById('cp-lightbox-close')?.addEventListener('click', closeLightbox);
+      shadow.getElementById('cp-snap-lightbox')?.addEventListener('click', (e) => {
+        if (e.target === shadow.getElementById('cp-snap-lightbox')) {
+          closeLightbox();
+        }
+      });
+
+      // Lightbox download button
+      shadow.getElementById('cp-lightbox-download')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!lastCapturedDataUrl) return;
+        const blob = dataUrlToBlob(lastCapturedDataUrl);
+        if (!blob) return;
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = lastCapturedFilename || 'screenshot.png';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            try { document.body.removeChild(a); } catch(_) {}
+            URL.revokeObjectURL(url);
+          }, 3000);
+          const btn = shadow.getElementById('cp-lightbox-download');
+          if (btn) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = ICONS.check + ' Downloaded';
+            setTimeout(() => { btn.innerHTML = orig; }, 1500);
+          }
+          showCallout('Screenshot downloaded', 'SAVED', 2000);
+        } catch (_) {}
+      });
+
+      // Lightbox copy image button
+      shadow.getElementById('cp-lightbox-copy')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!lastCapturedDataUrl) return;
+        const blob = dataUrlToBlob(lastCapturedDataUrl);
+        const btn = shadow.getElementById('cp-lightbox-copy');
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            if (btn) {
+              const orig = btn.innerHTML;
+              btn.innerHTML = ICONS.check + ' Copied';
+              setTimeout(() => { btn.innerHTML = orig; }, 1500);
+            }
+            showCallout('Screenshot copied to clipboard', 'COPIED', 2000);
+          } catch (_) {
+            showCallout('Browser blocked clipboard access. Use Download.', 'WARNING', 3000);
+          }
+        }
+      });
+
+      // Escape key closes Lightbox or Toast
       shadow.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+          const lb = shadow.getElementById('cp-snap-lightbox');
+          if (lb?.classList.contains('open')) {
+            closeLightbox();
+            e.stopPropagation();
+            return;
+          }
           const preview = shadow.getElementById('cp-snap-preview');
-          if (preview?.classList.contains('open')) closeSnapPreview();
+          if (preview?.classList.contains('open')) {
+            closeSnapPreview();
+          }
         }
       });
 
@@ -4296,13 +4904,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
             if (btn) {
               btn.innerHTML = ICONS.check + ' Copied';
-              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy'; }, 1500);
+              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy Image'; }, 1500);
             }
             showCallout('Screenshot copied to clipboard', 'COPIED', 2000);
           } catch (_) {
             if (btn) {
               btn.innerHTML = 'Copy failed';
-              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy'; }, 2000);
+              setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy Image'; }, 2000);
             }
             showCallout('Browser blocked clipboard access. Use Download.', 'WARNING', 3000);
           }
@@ -5371,6 +5979,42 @@ function generateOverlayBootstrap(port: number, editor: string): string {
             scale,
             backgroundColor: solidBg,
             filter: captureFilter,
+            onCloneNode: (clonedRoot) => {
+              if (!clonedRoot) return;
+              const fixNode = (node) => {
+                if (!node || node.nodeType !== 1) return;
+                const text = node.textContent ? node.textContent.trim() : '';
+                if (text.length > 0 && text.length <= 60 && !text.includes(String.fromCharCode(10))) {
+                  const hasBlockChild = Array.from(node.children || []).some((c) => {
+                    const tag = c.tagName ? c.tagName.toLowerCase() : '';
+                    return tag === 'div' || tag === 'p' || tag === 'section' || tag === 'article' || tag === 'header';
+                  });
+                  if (!hasBlockChild) {
+                    node.style.whiteSpace = 'nowrap';
+                  }
+                }
+                if (node.children) {
+                  for (let i = 0; i < node.children.length; i++) {
+                    fixNode(node.children[i]);
+                  }
+                }
+              };
+              fixNode(clonedRoot);
+            },
+            onCloneEachNode: (clonedNode) => {
+              if (clonedNode && clonedNode.nodeType === 1) {
+                const text = clonedNode.textContent ? clonedNode.textContent.trim() : '';
+                if (text.length > 0 && text.length <= 60 && !text.includes(String.fromCharCode(10))) {
+                  const hasBlockChild = Array.from(clonedNode.children || []).some((c) => {
+                    const tag = c.tagName ? c.tagName.toLowerCase() : '';
+                    return tag === 'div' || tag === 'p' || tag === 'section' || tag === 'article';
+                  });
+                  if (!hasBlockChild) {
+                    clonedNode.style.whiteSpace = 'nowrap';
+                  }
+                }
+              }
+            }
           };
 
           // Viewport mode: capture at viewport dimensions with scroll offset
@@ -5522,6 +6166,15 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         } catch (_) {}
 
         if (diskSaved || browserDownloaded) {
+          const testImg = new Image();
+          testImg.onload = () => {
+            showSnapPreview(dataUrl, (name || 'Component') + ' • ' + testImg.naturalWidth + ' × ' + testImg.naturalHeight, filename, 'component');
+          };
+          testImg.onerror = () => {
+            showSnapPreview(dataUrl, (name || 'Component'), filename, 'component');
+          };
+          testImg.src = dataUrl;
+
           if (clipboardCopied && diskSaved) {
             showCallout('Screenshot saved and copied to clipboard', 'SAVED', 3500);
           } else if (clipboardCopied) {
@@ -5685,11 +6338,38 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           const el = item.element;
           let html = '';
 
+          // Contextual In-Inspector Note Card
+          const selector = (typeof buildCSSSelector === 'function' && el) ? buildCSSSelector(el) : (el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''));
+          const attachedNote = (typeof comments !== 'undefined' && comments && comments.length > 0)
+            ? comments.find(c => {
+                if (c.selector) {
+                  try {
+                    if (el.matches && el.matches(c.selector)) return true;
+                    if (el.closest && el.closest(c.selector)) return true;
+                  } catch (_) {}
+                  if (c.selector === selector) return true;
+                }
+                if (c.component && item.name && (c.component === item.name || item.name.includes(c.component))) return true;
+                return false;
+              })
+            : null;
+
+          if (attachedNote) {
+            html += '<div class="cp-section" id="cp-inspector-attached-note" style="background:var(--bg-surface-raised); border:1px solid var(--border-glass); border-left:3px solid var(--accent); border-radius:8px; padding:10px 12px; margin-bottom:14px; cursor:pointer;" title="Click to view or edit attached note">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
+            html += '<span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--accent);">' + ICONS.comment + ' Attached Note</span>';
+            html += '<span class="cp-badge cp-badge-' + (attachedNote.status === 'resolved' ? 'emerald' : 'accent') + '" style="font-size:9.5px; text-transform:uppercase;">' + escapeHtml(attachedNote.status || 'open') + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:12px; color:var(--text-primary); line-height:1.45; word-break:break-word; max-height:80px; overflow-y:auto;">' + escapeHtml(attachedNote.text) + '</div>';
+            html += '<div style="margin-top:6px; font-size:10.5px; color:var(--text-secondary); font-weight:500;">Click to edit note ›</div>';
+            html += '</div>';
+          }
+
           html += '<div class="cp-section" style="margin-bottom:14px;">';
           html += '<span class="cp-badge cp-badge-accent">' + el.tagName.toLowerCase() + '</span> ';
           if (el.id) html += '<span class="cp-badge cp-badge-emerald">#' + el.id + '</span> ';
           if (el.className && typeof el.className === 'string') {
-            const cls = el.className.trim().split(/\s+/).slice(0, 6);
+            const cls = el.className.trim().split(/\\s+/).slice(0, 6);
             if (cls.length && cls[0]) {
               cls.forEach(function(c) {
                 html += '<span class="cp-badge cp-badge-muted">.' + c + '</span> ';
@@ -5773,6 +6453,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
 
           flyoutContent.innerHTML = html;
+
+          const noteCard = shadow.getElementById('cp-inspector-attached-note');
+          if (noteCard && attachedNote) {
+            noteCard.onclick = () => {
+              openNotePopover({ element: el, name: item.name }, attachedNote);
+            };
+          }
 
           const parentCard = shadow.getElementById('cp-parent-comp-card');
           if (parentCard) {
@@ -5869,6 +6556,22 @@ function generateOverlayBootstrap(port: number, editor: string): string {
 
           let html = '';
 
+          // Contextual In-Inspector Note Card
+          const attachedNote = (typeof comments !== 'undefined' && comments && comments.length > 0)
+            ? comments.find(c => (c.component && ctx.component && c.component === ctx.component.name) || (c.file && ctx.source && c.file === ctx.source.file))
+            : null;
+
+          if (attachedNote) {
+            html += '<div class="cp-section" id="cp-inspector-attached-note" style="background:var(--bg-surface-raised); border:1px solid var(--border-glass); border-left:3px solid var(--accent); border-radius:8px; padding:10px 12px; margin-bottom:14px; cursor:pointer;" title="Click to view or edit attached note">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
+            html += '<span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--accent);">' + ICONS.comment + ' Attached Note</span>';
+            html += '<span class="cp-badge cp-badge-' + (attachedNote.status === 'resolved' ? 'emerald' : 'accent') + '" style="font-size:9.5px; text-transform:uppercase;">' + escapeHtml(attachedNote.status || 'open') + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:12px; color:var(--text-primary); line-height:1.45; word-break:break-word; max-height:80px; overflow-y:auto;">' + escapeHtml(attachedNote.text) + '</div>';
+            html += '<div style="margin-top:6px; font-size:10.5px; color:var(--text-secondary); font-weight:500;">Click to edit note ›</div>';
+            html += '</div>';
+          }
+
           html += '<div class="cp-section" style="margin-bottom:14px;">';
           html += '<span class="cp-badge cp-badge-accent">' + ctx.component.type + '</span> ';
           html += '<span class="cp-badge cp-badge-emerald">' + ctx.component.exportType + ' export</span> ';
@@ -5957,6 +6660,13 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
 
           flyoutContent.innerHTML = html;
+
+          const noteCard = shadow.getElementById('cp-inspector-attached-note');
+          if (noteCard && attachedNote) {
+            noteCard.onclick = () => {
+              openNotePopover({ element: selectedTarget?.element, name: ctx.component?.name || infoName }, attachedNote);
+            };
+          }
 
           // Wire up in-flyout Component Source Editor
           const toggleEditorBtn = shadow.getElementById('cp-toggle-source-editor');
@@ -6181,7 +6891,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         const nl = String.fromCharCode(10);
         const el = target?.element || selectedElement;
         const tag = el ? el.tagName.toLowerCase() : 'element';
-        const classes = el && el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '';
+        const classes = el && el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 3).join('.') : '';
         const selector = (typeof buildCSSSelector === 'function' && el) ? buildCSSSelector(el) : tag + classes;
 
         let text = '### UI Element Task: <' + tag + classes + ' />' + nl;
