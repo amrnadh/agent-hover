@@ -297,7 +297,8 @@ export class BridgeServer {
           line,
           level as ContextLevel
         );
-        res.json(context);
+        const markdown = formatContextMarkdown(context, level as ContextLevel);
+        res.json({ ...context, markdown });
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to fetch context';
