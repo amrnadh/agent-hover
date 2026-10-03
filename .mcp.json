@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agent-hover": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agent-hover/mcp"
+      ]
+    }
+  }
+}

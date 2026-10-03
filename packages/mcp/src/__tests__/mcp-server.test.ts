@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isConnectionError, handleBridgeError, server } from '../index.js';
+import { isConnectionError, handleBridgeError, parseBridgeResponse, server } from '../index.js';
 
 describe('Agent Hover MCP Server', () => {
   it('correctly identifies bridge connection errors', () => {
@@ -28,5 +28,42 @@ describe('Agent Hover MCP Server', () => {
 
   it('initializes the MCP server with proper name and capabilities', () => {
     expect(server).toBeDefined();
+  });
+
+  describe('parseBridgeResponse', () => {
+    it('returns markdown when present in JSON response', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({ component: { name: 'Hero' }, markdown: '## Hero\n\n**Source**: `Hero.tsx`' }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+      const result = await parseBridgeResponse(mockResponse);
+      expect(result).toBe('## Hero\n\n**Source**: `Hero.tsx`');
+    });
+
+    it('returns context when present in JSON response', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({ context: 'Context string' }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+      const result = await parseBridgeResponse(mockResponse);
+      expect(result).toBe('Context string');
+    });
+
+    it('returns text response directly', async () => {
+      const mockResponse = new Response(
+        '# Plain Markdown Context',
+        { status: 200, headers: { 'content-type': 'text/markdown' } }
+      );
+      const result = await parseBridgeResponse(mockResponse);
+      expect(result).toBe('# Plain Markdown Context');
+    });
+
+    it('throws formatted error with server message on non-ok HTTP response', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({ error: 'Component file not found' }),
+        { status: 404, statusText: 'Not Found', headers: { 'content-type': 'application/json' } }
+      );
+      await expect(parseBridgeResponse(mockResponse)).rejects.toThrow('HTTP 404 Not Found: Component file not found');
+    });
   });
 });

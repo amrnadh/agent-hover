@@ -23,8 +23,8 @@
     }
   },
   "scripts": {
-    "build": "npx tsc",
-    "prepack": "npx tsc",
+    "build": "npx tsc && chmod +x dist/index.js",
+    "prepack": "npx tsc && chmod +x dist/index.js",
     "dev": "npx tsc --watch"
   },
   "dependencies": {

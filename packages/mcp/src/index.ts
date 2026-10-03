@@ -531,7 +531,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-export { isConnectionError, handleBridgeError, getBridgePort, server };
+export { isConnectionError, handleBridgeError, getBridgePort, parseBridgeResponse, server };
 
 /**
  * Connect the server to stdio transport and begin listening for JSON-RPC messages.
@@ -556,7 +556,8 @@ async function main(): Promise<void> {
     }
   };
   sendHeartbeat();
-  setInterval(sendHeartbeat, 15000);
+  const heartbeatTimer = setInterval(sendHeartbeat, 15000);
+  heartbeatTimer.unref();
 }
 
 // Start the server, logging any unhandled startup errors to stderr
