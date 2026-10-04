@@ -4,16 +4,23 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
+import { TaskStore } from './task-store.js';
 import path from 'path';
 import fs from 'fs/promises';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, unlinkSync } from 'fs';
 import {
   ContextBuilder,
   RelationshipResolver,
   formatContextMarkdown,
   formatPinSetMarkdown,
   formatTaskContext,
+  formatTaskMarkdown,
   SourceEditor,
+  generateSessionToken,
+  writeSessionFile,
+  removeSessionFile,
+  getSessionFilePath,
+  BRAND,
 } from '@agent-hover/core';
 import type {
   PinEntry,
@@ -24,8 +31,30 @@ import type {
   ComputedStyleInfo,
   ScreenshotSnapshot,
   ScreenshotDiff,
-  ElementComment
+  ElementComment,
+  AgentTask,
+  TaskStatus,
+  BridgeSession,
 } from '@agent-hover/core';
+
+export function isSafeHost(hostHeader: string): boolean {
+  if (!hostHeader) return false;
+  const [hostname] = hostHeader.split(':');
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+export function isSafeOrigin(originHeader?: string): boolean {
+  if (!originHeader) return true;
+  try {
+    const parsed = new URL(originHeader);
+    return (
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+      (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]')
+    );
+  } catch {
+    return false;
+  }
+}
 
 export class BridgeServer {
   private app: express.Express;
@@ -33,9 +62,14 @@ export class BridgeServer {
   private wss: WebSocketServer | null = null;
   private projectRoot: string;
   private port: number;
+  private initialPort: number;
+  private token: string;
+  private startedAt: string = '';
+  private taskStore: TaskStore;
+  private agentPresence: Map<string, { client: string; version?: string; lastSeen: number }> = new Map();
+  private cleanupExitHandler?: () => void;
   private lastMcpHello = 0;
   private latestAgentTask: any = null;
-  private initialPort: number;
 
   private contextBuilder: ContextBuilder;
   private relationshipResolver: RelationshipResolver;
@@ -51,18 +85,50 @@ export class BridgeServer {
   private updateInfo: { current: string; latest: string } | null = null;
   private clients: Set<WebSocket> = new Set();
 
-  constructor(projectRoot: string, port: number) {
+  constructor(projectRoot: string, port: number = 9850, options?: { token?: string }) {
     this.projectRoot = projectRoot;
     this.port = port;
     this.initialPort = port;
+    this.token = options?.token || generateSessionToken();
+    this.taskStore = new TaskStore(projectRoot);
     this.app = express();
 
     this.contextBuilder = new ContextBuilder(projectRoot);
     this.relationshipResolver = new RelationshipResolver(projectRoot);
     this.sourceEditor = new SourceEditor(projectRoot);
 
+    this.setupTaskStoreListeners();
     this.loadComments();
     this.setupRoutes();
+  }
+
+  public getToken(): string {
+    return this.token;
+  }
+
+  public getSession(): BridgeSession {
+    return {
+      version: 1,
+      port: this.port,
+      token: this.token,
+      pid: process.pid,
+      projectRoot: this.projectRoot,
+      startedAt: this.startedAt,
+    };
+  }
+
+  public getTaskStore(): TaskStore {
+    return this.taskStore;
+  }
+
+  private setupTaskStoreListeners() {
+    this.taskStore.on('task:created', (task: AgentTask) => {
+      this.broadcast({ type: 'task.created', data: task });
+      this.broadcast({ type: 'agent-task-dispatched', data: task });
+    });
+    this.taskStore.on('task:updated', (task: AgentTask) => {
+      this.broadcast({ type: 'task.updated', data: task });
+    });
   }
 
   private get commentsFilePath(): string {
@@ -124,25 +190,6 @@ export class BridgeServer {
   }
 
   private setupRoutes() {
-    const isSafeHost = (hostHeader: string): boolean => {
-      if (!hostHeader) return false;
-      const [hostname] = hostHeader.split(':');
-      return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
-    };
-
-    const isSafeOrigin = (originHeader?: string): boolean => {
-      if (!originHeader) return true;
-      try {
-        const parsed = new URL(originHeader);
-        return (
-          (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-          (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]')
-        );
-      } catch {
-        return false;
-      }
-    };
-
     this.app.use(
       cors({
         origin: (origin, callback) => {
@@ -152,12 +199,14 @@ export class BridgeServer {
             callback(null, false);
           }
         },
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-AH-Token'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
       })
     );
-    this.app.use(express.json({ limit: '50mb' }));
+    this.app.use(express.json({ limit: '10mb' }));
 
-    // Security: strict localhost validation on Host and Origin
+    // Security: strict localhost validation on Host, Origin, and Token (P1-02)
     this.app.use((req, res, next) => {
       const host = req.headers.host || '';
       const origin = req.headers.origin;
@@ -167,20 +216,42 @@ export class BridgeServer {
         return;
       }
 
+      if (req.method === 'OPTIONS') {
+        next();
+        return;
+      }
+
       if (origin && !isSafeOrigin(origin)) {
         res.status(403).json({ error: 'Forbidden: untrusted origin' });
+        return;
+      }
+
+      if (req.path === '/api/health' && req.method === 'GET') {
+        next();
+        return;
+      }
+
+      const authHeader = req.headers.authorization || req.headers['x-ah-token'];
+      let token: string | undefined;
+      if (typeof authHeader === 'string') {
+        token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
+      }
+
+      if (!token || token !== this.token) {
+        res.status(401).json({ error: 'Unauthorized: invalid or missing session token' });
         return;
       }
 
       next();
     });
 
-    // Health check
+    // Health check (public)
     this.app.get('/api/health', (_req, res) => {
       res.json({
+        ok: true,
         status: 'ok',
         version: this.CURRENT_VERSION,
-        updateAvailable: this.updateInfo,
+        port: this.port,
       });
     });
 
@@ -845,78 +916,138 @@ export class BridgeServer {
       }
     });
 
-    // MCP heartbeat
-    this.app.post('/api/mcp/hello', (req, res) => {
+    // Presence endpoints (P1-06)
+    this.app.post('/api/agent/presence', (req, res) => {
+      const { client = 'agent', version } = req.body || {};
+      this.agentPresence.set(client, { client, version, lastSeen: Date.now() });
       this.lastMcpHello = Date.now();
+      this.broadcastPresence();
+      res.json({ ok: true, registered: true });
+    });
+
+    this.app.get('/api/agent/presence', (_req, res) => {
+      this.prunePresence();
+      const agents = Array.from(this.agentPresence.values()).map((a) => ({
+        client: a.client,
+        version: a.version,
+        lastSeen: new Date(a.lastSeen).toISOString(),
+      }));
+      res.json({ agents, connected: agents.length > 0 });
+    });
+
+    // Legacy MCP heartbeat
+    this.app.post('/api/mcp/hello', (_req, res) => {
+      this.lastMcpHello = Date.now();
+      this.agentPresence.set('mcp-client', { client: 'mcp-client', lastSeen: Date.now() });
+      this.broadcastPresence();
       res.json({ ok: true });
     });
 
     this.app.get('/api/mcp-status', (_req, res) => {
-      const connected = (Date.now() - this.lastMcpHello) < 30000;
+      this.prunePresence();
+      const connected = (Date.now() - this.lastMcpHello) < 30000 || this.agentPresence.size > 0;
       res.json({ connected, lastSeen: this.lastMcpHello > 0 ? new Date(this.lastMcpHello).toISOString() : null });
     });
 
-    this.app.get('/api/components', (req, res) => {
-      const filter = (req.query.filter as string) || '';
-      const limit = parseInt(req.query.limit as string) || 50;
-      const includeLibrary = req.query.includeLibrary === 'true';
-      
-      if (this.clients.size === 0) {
-        res.status(503).json({ error: 'No browser overlay connected. Open your app in the browser with Agent Hover active.' });
-        return;
+    // --- Task Queue Endpoints (P1-04) ---
+
+    // Create task (POST /api/agent/tasks)
+    this.app.post('/api/agent/tasks', async (req, res) => {
+      try {
+        const task = await this.taskStore.createTask(req.body);
+        this.latestAgentTask = task;
+        res.status(201).json({ task });
+      } catch (err: any) {
+        res.status(400).json({ error: err.message });
       }
-      
-      const requestId = `components-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      
-      const componentPromise = new Promise<any>((resolve) => {
-        const timer = setTimeout(() => {
-          this.pendingCaptures.delete(requestId);
-          resolve({ error: 'Component listing timed out after 3s. The browser overlay may not be active.' });
-        }, 3000);
-        this.pendingCaptures.set(requestId, { resolve, timer });
-      });
-      
-      const wsMessage = JSON.stringify({
-        type: 'list-components',
-        data: { requestId, filter, limit, includeLibrary },
-      });
-      this.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(wsMessage);
-        }
-      });
-      
-      componentPromise.then((result) => {
-        if (result.error) {
-          res.status(408).json(result);
-        } else {
-          res.json(result);
-        }
-      });
     });
 
-    // Send task/context to AI Agent
-    this.app.post('/api/agent/send', (req, res) => {
-      const task = req.body || {};
-      this.latestAgentTask = {
-        ...task,
-        receivedAt: new Date().toISOString()
-      };
-      const message = JSON.stringify({
-        type: 'agent-task-dispatched',
-        data: this.latestAgentTask
+    // List tasks (GET /api/agent/tasks)
+    this.app.get('/api/agent/tasks', (req, res) => {
+      const statusParam = req.query.status as string;
+      const limitParam = parseInt(req.query.limit as string, 10) || 50;
+      const statusFilter = statusParam
+        ? (statusParam.split(',').map((s) => s.trim()) as TaskStatus[])
+        : undefined;
+      const tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      res.json({ tasks });
+    });
+
+    // Get task + rendered prompt (GET /api/agent/tasks/:id)
+    this.app.get('/api/agent/tasks/:id', (req, res) => {
+      const task = this.taskStore.getTask(req.params.id);
+      if (!task) {
+        res.status(404).json({ error: `Task '${req.params.id}' not found` });
+        return;
+      }
+      const format = (req.query.format as 'compact' | 'standard' | 'deep') || 'standard';
+      const prompt = formatTaskMarkdown(task, format);
+      res.json({ task, prompt });
+    });
+
+    // Claim task (POST /api/agent/tasks/:id/claim)
+    this.app.post('/api/agent/tasks/:id/claim', async (req, res) => {
+      try {
+        const client = req.body?.client || 'agent';
+        const task = await this.taskStore.claimTask(req.params.id, { client });
+        res.json({ task });
+      } catch (err: any) {
+        res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Complete task (POST /api/agent/tasks/:id/complete)
+    this.app.post('/api/agent/tasks/:id/complete', async (req, res) => {
+      try {
+        const { status = 'done', summary, filesChanged, error } = req.body || {};
+        const task = await this.taskStore.completeTask(req.params.id, {
+          status,
+          summary,
+          filesChanged,
+          error,
+        });
+        res.json({ task });
+      } catch (err: any) {
+        res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Cancel task (POST /api/agent/tasks/:id/cancel)
+    this.app.post('/api/agent/tasks/:id/cancel', async (req, res) => {
+      try {
+        const task = await this.taskStore.cancelTask(req.params.id);
+        res.json({ task });
+      } catch (err: any) {
+        res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Send task/context to AI Agent (Legacy shim)
+    this.app.post('/api/agent/send', async (req, res) => {
+      const taskBody = req.body || {};
+      const task = await this.taskStore.createTask({
+        type: taskBody.type || 'component-context',
+        instruction: taskBody.goal || taskBody.instruction || taskBody.title || taskBody.component,
+        target: {
+          component: taskBody.component,
+          file: taskBody.file,
+          lineStart: taskBody.line,
+        },
+        payload: {
+          prompt: taskBody.prompt,
+          goal: taskBody.goal,
+          pins: taskBody.pins,
+        },
       });
-      this.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        }
-      });
-      console.log(`[agent-hover] 🤖 Task sent to agent: "${task.component || task.title || 'Component context'}"`);
+      this.latestAgentTask = task;
+      console.log(`[agent-hover] 🤖 Task sent to agent: "${taskBody.component || taskBody.title || 'Component context'}"`);
       res.json({ ok: true, task: this.latestAgentTask });
     });
 
+    // Legacy latest task shim
     this.app.get('/api/agent/latest', (_req, res) => {
-      res.json({ task: this.latestAgentTask });
+      const task = this.latestAgentTask || this.taskStore.listTasks({ limit: 1 })[0] || null;
+      res.json({ task });
     });
 
     // Open in editor
@@ -1024,6 +1155,42 @@ export class BridgeServer {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to open editor';
         res.status(500).json({ error: message });
+      }
+    });
+
+    // Get component source slice (POST /api/source) (P1-05 / §7.6)
+    this.app.post('/api/source', async (req, res) => {
+      try {
+        const { file, lineStart, lineEnd } = req.body || {};
+        if (!file) {
+          res.status(400).json({ error: 'Missing required parameter: file' });
+          return;
+        }
+        let safePath: string;
+        try {
+          safePath = validateSafePath(file, this.projectRoot, { maxSizeBytes: 5 * 1024 * 1024 });
+        } catch (err: any) {
+          res.status(403).json({ error: err.message });
+          return;
+        }
+
+        const fullPath = path.join(this.projectRoot, safePath);
+        const content = await fs.readFile(fullPath, 'utf-8');
+        const lines = content.split('\n');
+        let slice = lines;
+        const start = typeof lineStart === 'number' && lineStart > 0 ? Math.max(0, lineStart - 1) : 0;
+        const end = typeof lineEnd === 'number' && lineEnd >= (lineStart || 1) ? Math.min(lines.length, lineEnd) : lines.length;
+        slice = lines.slice(start, end);
+
+        res.json({
+          file: safePath,
+          lineStart: start + 1,
+          lineEnd: end,
+          totalLines: lines.length,
+          source: slice.join('\n'),
+        });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
       }
     });
 
@@ -1237,16 +1404,62 @@ export class BridgeServer {
         }
       };
 
-      const listenHandler = () => {
+      const listenHandler = async () => {
         server.removeListener('error', errorHandler);
         const addr = server.address();
         if (addr && typeof addr === 'object') {
           this.port = addr.port;
         }
+        this.startedAt = new Date().toISOString();
+
+        // Write session file (0600 mode) (P1-01)
+        try {
+          await writeSessionFile({
+            version: 1,
+            port: this.port,
+            token: this.token,
+            pid: process.pid,
+            projectRoot: this.projectRoot,
+            startedAt: this.startedAt,
+          });
+        } catch (err) {
+          console.error('[agent-hover] Failed to write session file:', err);
+        }
+
+        this.cleanupExitHandler = () => {
+          try {
+            const p = getSessionFilePath(this.projectRoot);
+            if (existsSync(p)) {
+              unlinkSync(p);
+            }
+          } catch {}
+        };
+        process.once('exit', this.cleanupExitHandler);
+
         const wss = new WebSocketServer({ server });
         this.wss = wss;
 
-        wss.on('connection', (ws) => {
+        wss.on('connection', (ws, req) => {
+          // 1. Check Origin if present
+          if (req.headers.origin && !isSafeOrigin(req.headers.origin)) {
+            ws.close(4403, 'Forbidden');
+            return;
+          }
+
+          // 2. Check token (query parameter or headers) (P1-02)
+          const reqUrl = new URL(req.url || '/', `http://${req.headers.host || '127.0.0.1'}`);
+          const tokenParam = reqUrl.searchParams.get('token');
+          const authHeader = req.headers['authorization'] || req.headers['x-ah-token'] || req.headers['sec-websocket-protocol'];
+          let wsToken = tokenParam;
+          if (!wsToken && typeof authHeader === 'string') {
+            wsToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
+          }
+
+          if (!wsToken || wsToken !== this.token) {
+            ws.close(4401, 'Unauthorized');
+            return;
+          }
+
           this.clients.add(ws);
 
           ws.on('close', () => {
@@ -1269,7 +1482,14 @@ export class BridgeServer {
             }
           });
 
-          // Send current state to new connections
+          // Send snapshot of tasks and current state to new connections
+          ws.send(
+            JSON.stringify({
+              type: 'tasks.snapshot',
+              data: this.taskStore.getSnapshot(),
+            })
+          );
+
           ws.send(
             JSON.stringify({
               type: 'state-update',
@@ -1278,7 +1498,7 @@ export class BridgeServer {
                 frozenEntries: this.frozenEntries,
                 comments: this.comments,
                 screenshotCount: this.screenshotStore.size,
-                updateAvailable: this.updateInfo,
+                updateAvailable: null,
               },
             })
           );
@@ -1291,9 +1511,6 @@ export class BridgeServer {
           `[agent-hover] Project root: ${this.projectRoot}`
         );
 
-        // Check for package updates in background without blocking startup
-        this.checkForUpdates();
-
         resolve(this.port);
       };
 
@@ -1303,61 +1520,15 @@ export class BridgeServer {
     });
   }
 
-  private isNewerVersion(remote: string, local: string): boolean {
-    const r = remote.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-    const l = local.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-    for (let i = 0; i < Math.max(r.length, l.length); i++) {
-      const rv = r[i] || 0;
-      const lv = l[i] || 0;
-      if (rv > lv) return true;
-      if (rv < lv) return false;
-    }
-    return false;
-  }
-
-  private checkForUpdates() {
-    if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
-      return;
-    }
-    import('https').then((https) => {
-      const req = https.get(
-        'https://registry.npmjs.org/@agent-hover/vite/latest',
-        {
-          timeout: 2500,
-          headers: { 'User-Agent': 'agent-hover/' + this.CURRENT_VERSION },
-        },
-        (res) => {
-          if (res.statusCode !== 200) return;
-          let data = '';
-          res.on('data', (chunk) => { data += chunk; });
-          res.on('end', () => {
-            try {
-              const pkg = JSON.parse(data);
-              const latest = pkg.version;
-              if (latest && this.isNewerVersion(latest, this.CURRENT_VERSION)) {
-                this.updateInfo = { current: this.CURRENT_VERSION, latest };
-                console.log(
-                  `\n  \x1b[36m[agent-hover]\x1b[0m 💡 \x1b[1mUpdate available:\x1b[0m ${this.CURRENT_VERSION} → \x1b[32m${latest}\x1b[0m`
-                );
-                console.log(
-                  `  \x1b[36m[agent-hover]\x1b[0m Run: \x1b[33mnpm i -D @agent-hover/vite@latest\x1b[0m to update\n`
-                );
-                this.broadcast({
-                  type: 'update-available',
-                  data: this.updateInfo,
-                });
-              }
-            } catch {}
-          });
-        }
-      );
-      req.on('error', () => {});
-      req.on('timeout', () => { req.destroy(); });
-    }).catch(() => {});
-  }
-
   public async stop(): Promise<void> {
     console.log('[agent-hover] Stopping bridge server...');
+
+    // Clean up session file
+    await removeSessionFile(this.projectRoot);
+    if (this.cleanupExitHandler) {
+      process.removeListener('exit', this.cleanupExitHandler);
+    }
+
     this.clients.forEach((client) => {
       try {
         client.terminate();
@@ -1381,6 +1552,28 @@ export class BridgeServer {
       }
       this.httpServer = null;
     }
+  }
+
+  private prunePresence() {
+    const cutoff = Date.now() - 25000;
+    for (const [key, val] of this.agentPresence.entries()) {
+      if (val.lastSeen < cutoff) {
+        this.agentPresence.delete(key);
+      }
+    }
+  }
+
+  private broadcastPresence() {
+    this.prunePresence();
+    const agents = Array.from(this.agentPresence.values()).map((a) => ({
+      client: a.client,
+      version: a.version,
+      lastSeen: new Date(a.lastSeen).toISOString(),
+    }));
+    this.broadcast({
+      type: 'presence.updated',
+      data: { agents, connected: agents.length > 0 },
+    });
   }
 
   private broadcast(msg: { type: string; data?: any }) {

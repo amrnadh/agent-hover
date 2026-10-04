@@ -43,6 +43,7 @@ describe('BridgeServer Integration Tests', () => {
     const testPort = 23000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
+    const token = server.getToken();
 
     const mockPin: PinEntry = {
       id: 'pin-123',
@@ -60,13 +61,15 @@ describe('BridgeServer Integration Tests', () => {
     // Add pin
     const postRes = await fetch(`http://localhost:${activePort}/api/pins`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(mockPin),
     });
     expect(postRes.status).toBe(200);
 
     // Get pins
-    const getRes = await fetch(`http://localhost:${activePort}/api/pins`);
+    const getRes = await fetch(`http://localhost:${activePort}/api/pins`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     expect(getRes.status).toBe(200);
     const pinSet = await getRes.json();
     expect(pinSet.pins.length).toBe(1);
@@ -75,12 +78,14 @@ describe('BridgeServer Integration Tests', () => {
     // Remove pin
     const delRes = await fetch(`http://localhost:${activePort}/api/pins`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id: 'pin-123' }),
     });
     expect(delRes.status).toBe(200);
 
-    const afterDelRes = await fetch(`http://localhost:${activePort}/api/pins`);
+    const afterDelRes = await fetch(`http://localhost:${activePort}/api/pins`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const afterDelData = await afterDelRes.json();
     expect(afterDelData.pins.length).toBe(0);
   });
@@ -89,6 +94,7 @@ describe('BridgeServer Integration Tests', () => {
     const testPort = 25000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
+    const token = server.getToken();
 
     const mockFreeze: FreezeEntry = {
       file: 'src/Header.tsx',
@@ -100,13 +106,15 @@ describe('BridgeServer Integration Tests', () => {
     // Add freeze
     const postRes = await fetch(`http://localhost:${activePort}/api/freeze`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(mockFreeze),
     });
     expect(postRes.status).toBe(200);
 
     // Get freeze entries
-    const getRes = await fetch(`http://localhost:${activePort}/api/freeze`);
+    const getRes = await fetch(`http://localhost:${activePort}/api/freeze`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = await getRes.json();
     expect(data.frozenEntries.length).toBe(1);
     expect(data.frozenEntries[0].component).toBe('Header');
@@ -114,12 +122,14 @@ describe('BridgeServer Integration Tests', () => {
     // Delete freeze
     const delRes = await fetch(`http://localhost:${activePort}/api/freeze`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ file: 'src/Header.tsx', component: 'Header' }),
     });
     expect(delRes.status).toBe(200);
 
-    const afterDelRes = await fetch(`http://localhost:${activePort}/api/freeze`);
+    const afterDelRes = await fetch(`http://localhost:${activePort}/api/freeze`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const afterDelData = await afterDelRes.json();
     expect(afterDelData.frozenEntries.length).toBe(0);
   });
@@ -128,6 +138,7 @@ describe('BridgeServer Integration Tests', () => {
     const testPort = 27000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
+    const token = server.getToken();
 
     const mockComment: ElementComment = {
       id: 'comment-1',
@@ -139,12 +150,14 @@ describe('BridgeServer Integration Tests', () => {
 
     const postRes = await fetch(`http://localhost:${activePort}/api/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(mockComment),
     });
     expect(postRes.status).toBe(200);
 
-    const getRes = await fetch(`http://localhost:${activePort}/api/comments`);
+    const getRes = await fetch(`http://localhost:${activePort}/api/comments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = await getRes.json();
     expect(data.comments.length).toBe(1);
     expect(data.comments[0].text).toContain('2px solid');
@@ -184,13 +197,14 @@ describe('BridgeServer Integration Tests', () => {
     const testPort = 31000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
+    const token = server.getToken();
 
     // 1x1 transparent PNG in base64
     const sampleDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=';
 
     const saveRes = await fetch(`http://localhost:${activePort}/api/screenshot/save`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ dataUrl: sampleDataUrl, filename: 'test_card' }),
     });
     expect(saveRes.status).toBe(200);
@@ -200,13 +214,15 @@ describe('BridgeServer Integration Tests', () => {
     expect(saveData.filename).toBeDefined();
 
     // Verify file actually exists on disk
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const stat = await fs.stat(path.join(tempDir, saveData.path));
+    const fsMod = await import('fs/promises');
+    const pathMod = await import('path');
+    const stat = await fsMod.stat(pathMod.join(tempDir, saveData.path));
     expect(stat.size).toBeGreaterThan(0);
 
     // Verify download endpoint
-    const dlRes = await fetch(`http://localhost:${activePort}/api/screenshot/download/${saveData.filename}`);
+    const dlRes = await fetch(`http://localhost:${activePort}/api/screenshot/download/${saveData.filename}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     expect(dlRes.status).toBe(200);
     const dlBuffer = await dlRes.arrayBuffer();
     expect(dlBuffer.byteLength).toBe(stat.size);
@@ -254,11 +270,12 @@ describe('BridgeServer Integration Tests', () => {
     const testPort = 35000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
+    const token = server.getToken();
 
     // 1. Path traversal in /api/context
     const contextRes = await fetch(`http://127.0.0.1:${activePort}/api/context`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ file: '../../etc/passwd', line: 1 }),
     });
     expect(contextRes.status).toBe(403);
@@ -266,7 +283,7 @@ describe('BridgeServer Integration Tests', () => {
     // 2. Traversal in /api/open-editor
     const editorRes = await fetch(`http://127.0.0.1:${activePort}/api/open-editor`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ file: '/etc/passwd', line: 1 }),
     });
     expect(editorRes.status).toBe(403);
@@ -274,7 +291,7 @@ describe('BridgeServer Integration Tests', () => {
     // 3. Restricted directory in /api/edit-source
     const editRes = await fetch(`http://127.0.0.1:${activePort}/api/edit-source`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ file: 'node_modules/pkg/index.js', originalText: 'a', newText: 'b' }),
     });
     expect(editRes.status).toBe(403);
@@ -282,10 +299,125 @@ describe('BridgeServer Integration Tests', () => {
     // 4. Hidden file in /api/save-source
     const saveRes = await fetch(`http://127.0.0.1:${activePort}/api/save-source`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ file: '.env', newSource: 'SECRET=none' }),
     });
     expect(saveRes.status).toBe(403);
+  });
+
+  it('rejects unauthenticated requests on protected endpoints (P1-02)', async () => {
+    const testPort = 37000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+
+    // Missing token
+    const noTokenRes = await fetch(`http://localhost:${activePort}/api/pins`);
+    expect(noTokenRes.status).toBe(401);
+
+    // Invalid token
+    const badTokenRes = await fetch(`http://localhost:${activePort}/api/pins`, {
+      headers: { Authorization: 'Bearer totally-invalid-token' },
+    });
+    expect(badTokenRes.status).toBe(401);
+  });
+
+  it('creates session file on start and cleans it up on stop (P1-01)', async () => {
+    const testPort = 39000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+
+    const sessionFilePath = path.join(tempDir, '.agent-hover', 'session.json');
+    const sessionRaw = await fs.readFile(sessionFilePath, 'utf-8');
+    const session = JSON.parse(sessionRaw);
+    expect(session.version).toBe(1);
+    expect(session.port).toBe(activePort);
+    expect(session.token).toBe(server.getToken());
+    expect(session.pid).toBe(process.pid);
+
+    await server.stop();
+    const sessionExists = await fs.access(sessionFilePath).then(() => true).catch(() => false);
+    expect(sessionExists).toBe(false);
+  });
+
+  it('delivers tasks through the task queue endpoints (P1-04)', async () => {
+    const testPort = 41000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+
+    // 1. Initial tasks list is empty
+    const initialRes = await fetch(`http://localhost:${activePort}/api/agent/tasks`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(initialRes.status).toBe(200);
+    const initialData = await initialRes.json();
+    expect(initialData.tasks).toEqual([]);
+
+    // 2. Dispatch a task
+    const postTaskRes = await fetch(`http://localhost:${activePort}/api/agent/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        type: 'component-context',
+        instruction: 'Fix the padding on Button',
+        target: { component: 'Button', file: 'src/Button.tsx', lineStart: 10 },
+      }),
+    });
+    expect(postTaskRes.status).toBe(201);
+    const postData = await postTaskRes.json();
+    const createdTask = postData.task;
+    expect(createdTask.id).toBeDefined();
+    expect(createdTask.status).toBe('queued');
+    expect(createdTask.instruction).toBe('Fix the padding on Button');
+
+    // 3. Claim the task
+    const claimRes = await fetch(`http://localhost:${activePort}/api/agent/tasks/${createdTask.id}/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ client: 'claude-code' }),
+    });
+    expect(claimRes.status).toBe(200);
+    const claimData = await claimRes.json();
+    const claimedTask = claimData.task;
+    expect(claimedTask.status).toBe('in_progress');
+    expect(claimedTask.claimedBy).toBe('claude-code');
+
+    // 4. Complete the task
+    const completeRes = await fetch(`http://localhost:${activePort}/api/agent/tasks/${createdTask.id}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ summary: 'Added p-4 to Button container' }),
+    });
+    expect(completeRes.status).toBe(200);
+    const completeData = await completeRes.json();
+    const completedTask = completeData.task;
+    expect(completedTask.status).toBe('done');
+    expect(completedTask.result?.summary).toBe('Added p-4 to Button container');
+  });
+
+  it('records agent presence and reports connected agents (P1-06)', async () => {
+    const testPort = 43000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+
+    const presenceRes = await fetch(`http://localhost:${activePort}/api/agent/presence`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ client: 'claude-code', version: '1.0.0' }),
+    });
+    expect(presenceRes.status).toBe(200);
+    const presenceData = await presenceRes.json();
+    expect(presenceData.registered).toBe(true);
+
+    const getPresenceRes = await fetch(`http://localhost:${activePort}/api/agent/presence`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(getPresenceRes.status).toBe(200);
+    const presenceList = await getPresenceRes.json();
+    expect(presenceList.connected).toBe(true);
+    expect(presenceList.agents.length).toBe(1);
+    expect(presenceList.agents[0].client).toBe('claude-code');
   });
 });
 
