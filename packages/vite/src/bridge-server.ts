@@ -3,6 +3,7 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import { launchEditorSafely } from './editor-launcher.js';
+import { validateSafePath } from './path-validator.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
@@ -327,8 +328,16 @@ export class BridgeServer {
           return;
         }
 
+        let safeFile: string;
+        try {
+          safeFile = validateSafePath(file, this.projectRoot);
+        } catch (err: any) {
+          res.status(403).json({ error: err.message });
+          return;
+        }
+
         const context = await this.contextBuilder.getContext(
-          file,
+          safeFile,
           line,
           level as ContextLevel
         );
@@ -365,13 +374,20 @@ export class BridgeServer {
             this.pins.push(entry);
           }
         } else if (action === 'add' && file && line !== undefined) {
+          let safeFile: string;
+          try {
+            safeFile = validateSafePath(file, this.projectRoot);
+          } catch (err: any) {
+            res.status(403).json({ error: err.message });
+            return;
+          }
           const pinId = id || `pin_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
           const existing = id ? this.pins.find((p) => p.id === id) : null;
           if (existing) {
             if (task !== undefined) existing.task = task;
           } else {
             const context = await this.contextBuilder.getContext(
-              file,
+              safeFile,
               line,
               'standard'
             );
@@ -782,9 +798,10 @@ export class BridgeServer {
     this.app.get('/api/screenshot/download/:filename', async (req, res) => {
       try {
         const path = await import('path');
-        const safeName = path.basename(req.params.filename);
-        const filePath = path.join(this.projectRoot, '.agent-hover', 'screenshots', safeName);
-        res.download(filePath, safeName);
+        const filename = path.basename(req.params.filename);
+        const screenshotsDir = path.join(this.projectRoot, '.agent-hover', 'screenshots');
+        const safePath = validateSafePath(path.join(screenshotsDir, filename), this.projectRoot);
+        res.download(safePath, filename);
       } catch (e) {
         res.status(404).send('Not found');
       }
@@ -911,7 +928,12 @@ export class BridgeServer {
 
         let targetFile: string | null = null;
         if (file) {
-          targetFile = path.isAbsolute(file) ? file : path.resolve(this.projectRoot, file);
+          try {
+            targetFile = validateSafePath(file, this.projectRoot);
+          } catch (err: any) {
+            res.status(403).json({ error: err.message });
+            return;
+          }
         }
 
         // If file doesn't exist or wasn't provided, try searching by component or text
@@ -1015,6 +1037,14 @@ export class BridgeServer {
         }
 
         let targetFile = file;
+        if (targetFile) {
+          try {
+            targetFile = validateSafePath(targetFile, this.projectRoot, { maxSizeBytes: 5 * 1024 * 1024 });
+          } catch (err: any) {
+            res.status(403).json({ error: err.message });
+            return;
+          }
+        }
 
         // If file wasn't provided or was unresolved by client, scan project for originalText
         if (!targetFile && originalText) {
@@ -1133,9 +1163,17 @@ export class BridgeServer {
           return;
         }
 
+        let targetFile: string;
+        try {
+          targetFile = validateSafePath(file, this.projectRoot, { maxSizeBytes: 5 * 1024 * 1024 });
+        } catch (err: any) {
+          res.status(403).json({ error: err.message });
+          return;
+        }
+
         const result = await this.sourceEditor.saveComponentSource({
           projectRoot: this.projectRoot,
-          file,
+          file: targetFile,
           component,
           newSource,
           startLine: typeof startLine === 'number' ? startLine : undefined,

@@ -249,4 +249,43 @@ describe('BridgeServer Integration Tests', () => {
     });
     expect(rawStatusCode).toBe(403);
   });
+
+  it('rejects path traversal and restricted path attempts on endpoints (F-08)', async () => {
+    const testPort = 35000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+
+    // 1. Path traversal in /api/context
+    const contextRes = await fetch(`http://127.0.0.1:${activePort}/api/context`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: '../../etc/passwd', line: 1 }),
+    });
+    expect(contextRes.status).toBe(403);
+
+    // 2. Traversal in /api/open-editor
+    const editorRes = await fetch(`http://127.0.0.1:${activePort}/api/open-editor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: '/etc/passwd', line: 1 }),
+    });
+    expect(editorRes.status).toBe(403);
+
+    // 3. Restricted directory in /api/edit-source
+    const editRes = await fetch(`http://127.0.0.1:${activePort}/api/edit-source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: 'node_modules/pkg/index.js', originalText: 'a', newText: 'b' }),
+    });
+    expect(editRes.status).toBe(403);
+
+    // 4. Hidden file in /api/save-source
+    const saveRes = await fetch(`http://127.0.0.1:${activePort}/api/save-source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: '.env', newSource: 'SECRET=none' }),
+    });
+    expect(saveRes.status).toBe(403);
+  });
 });
+
