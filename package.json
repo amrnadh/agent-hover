@@ -16,6 +16,7 @@
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
   },
@@ -31,6 +32,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "vitest": "^2.1.8"
   }
 }

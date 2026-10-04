@@ -7335,5 +7335,6 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
   };
 }
 
+export { BridgeServer } from './bridge-server.js';
 export { componentPointer as agentHover, componentPointer };
 

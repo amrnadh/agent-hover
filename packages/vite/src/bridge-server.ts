@@ -1176,6 +1176,10 @@ export class BridgeServer {
 
       const listenHandler = () => {
         server.removeListener('error', errorHandler);
+        const addr = server.address();
+        if (addr && typeof addr === 'object') {
+          this.port = addr.port;
+        }
         const wss = new WebSocketServer({ server });
         this.wss = wss;
 
@@ -1249,6 +1253,9 @@ export class BridgeServer {
   }
 
   private checkForUpdates() {
+    if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+      return;
+    }
     import('https').then((https) => {
       const req = https.get(
         'https://registry.npmjs.org/@agent-hover/vite/latest',
