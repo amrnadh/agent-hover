@@ -1,10 +1,42 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+function readDemoSession() {
+  try {
+    const sessionFile = path.resolve('demo/.agent-hover/session.json');
+    if (fs.existsSync(sessionFile)) {
+      return JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
+    }
+  } catch {}
+  return null;
+}
 
 test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
+  let bridgeToken = '';
+  let bridgePort = 9850;
+
+  test.beforeEach(async () => {
+    const session = readDemoSession();
+    if (session) {
+      bridgeToken = session.token;
+      bridgePort = session.port;
+    }
+  });
+
   test('inspects component, clicks Send to Agent, asserts bridge task & pin stack', async ({ page, request }) => {
     // 1. Open demo app
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
+
+    // If session was written during startup, ensure we have the latest token
+    if (!bridgeToken) {
+      const session = readDemoSession();
+      if (session) {
+        bridgeToken = session.token;
+        bridgePort = session.port;
+      }
+    }
 
     // Verify overlay root exists
     const overlayRoot = page.locator('#agent-hover-root');
@@ -40,11 +72,13 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
 
     // 6. Assert bridge received the task via bridge API
     await expect.poll(async () => {
-      const res = await request.get('http://localhost:9850/api/agent/latest');
+      const res = await request.get(`http://localhost:${bridgePort}/api/agent/latest`, {
+        headers: bridgeToken ? { Authorization: `Bearer ${bridgeToken}` } : {},
+      });
       if (!res.ok()) return null;
       const json = await res.json();
       return json.task?.prompt || json.task?.type;
-    }, { timeout: 10000 }).toBeDefined();
+    }, { timeout: 10000 }).toBeTruthy();
 
     // 7. Click dock pins tile to assert pin stack opens
     const dockPins = page.locator('#cp-dock-pins');
@@ -60,8 +94,18 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
+    // Ensure session token is loaded
+    if (!bridgeToken) {
+      const session = readDemoSession();
+      if (session) {
+        bridgeToken = session.token;
+        bridgePort = session.port;
+      }
+    }
+
     // 2. Add a pin via bridge API
-    await request.post('http://localhost:9850/api/pins', {
+    const pinRes = await request.post(`http://localhost:${bridgePort}/api/pins`, {
+      headers: bridgeToken ? { Authorization: `Bearer ${bridgeToken}` } : {},
       data: {
         action: 'add',
         file: 'src/App.tsx',
@@ -69,6 +113,7 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
         task: 'Refactor hero section',
       },
     });
+    expect(pinRes.ok()).toBe(true);
 
     // 3. Open pin stack via dock
     const dockPins = page.locator('#cp-dock-pins');
@@ -93,11 +138,13 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
 
     // 7. Verify bridge received a pinned-stack task
     await expect.poll(async () => {
-      const res = await request.get('http://localhost:9850/api/agent/latest');
+      const res = await request.get(`http://localhost:${bridgePort}/api/agent/latest`, {
+        headers: bridgeToken ? { Authorization: `Bearer ${bridgeToken}` } : {},
+      });
       if (!res.ok()) return null;
       const json = await res.json();
       return json.task?.type === 'pinned-stack' ? json.task : null;
-    }, { timeout: 10000 }).toBeDefined();
+    }, { timeout: 10000 }).toBeTruthy();
   });
 });
 

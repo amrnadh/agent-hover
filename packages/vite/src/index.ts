@@ -2638,10 +2638,26 @@ const UI_HTML = `
 `;
 
 
-function generateOverlayBootstrap(port: number, editor: string): string {
+function generateOverlayBootstrap(port: number, editor: string, token: string = ''): string {
   return `
     (() => {
       const BRIDGE = 'http://localhost:${port}';
+      const BRIDGE_TOKEN = '${token}';
+
+      // Transparently inject Bearer token into all requests targeting the bridge
+      const _origFetch = window.fetch;
+      const fetch = (input, init = {}) => {
+        const urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
+        if (BRIDGE_TOKEN && (urlStr.startsWith(BRIDGE) || urlStr.startsWith('http://localhost:${port}') || urlStr.startsWith('http://127.0.0.1:${port}'))) {
+          const headers = new Headers(init.headers || (input instanceof Request ? input.headers : {}));
+          if (!headers.has('Authorization')) {
+            headers.set('Authorization', 'Bearer ' + BRIDGE_TOKEN);
+          }
+          return _origFetch(input, { ...init, headers });
+        }
+        return _origFetch(input, init);
+      };
+
       let ws;
       let isBridgeConnected = false;
 
@@ -2672,7 +2688,7 @@ function generateOverlayBootstrap(port: number, editor: string): string {
       }
 
       try {
-        ws = new WebSocket('ws://localhost:${port}');
+        ws = new WebSocket('ws://localhost:${port}?token=${token}');
         ws.onopen = () => {
           console.log('[agent-hover] Connected to bridge');
           setBridgeConnected(true);
@@ -4286,30 +4302,62 @@ function generateOverlayBootstrap(port: number, editor: string): string {
         };
       }
 
-      // --- Dispatch to AI Agent (WebSocket & Bridge /api/agent/send) ---
+      // --- Dispatch to AI Agent (Queue & Clipboard per D-06) ---
+      let connectedAgents = [];
+      let copyOnSend = 'auto'; // 'auto' | 'always' | 'never'
+
       async function dispatchToAgent(promptText, extra = {}) {
         if (!promptText) return;
-        try {
-          await navigator.clipboard.writeText(promptText);
-        } catch (_) {}
+
+        const hasAgent = Array.isArray(connectedAgents) && connectedAgents.length > 0;
+        const agentName = hasAgent ? connectedAgents[0].client : null;
+
+        // Clipboard rule D-06:
+        // 'auto': write to clipboard ONLY if no agent connected or bridge unreachable
+        // 'always': always write
+        // 'never': never write
+        const shouldCopy = copyOnSend === 'always' || (copyOnSend === 'auto' && !hasAgent);
+
+        if (shouldCopy) {
+          try {
+            await navigator.clipboard.writeText(promptText);
+          } catch (_) {}
+        }
 
         try {
-          const res = await fetch(BRIDGE + '/api/agent/send', {
+          const res = await fetch(BRIDGE + '/api/agent/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: promptText,
-              ...extra,
-              timestamp: Date.now()
-            })
+              type: extra.type || 'component-context',
+              instruction: extra.instruction || extra.goal || (typeof promptText === 'string' ? promptText.split(String.fromCharCode(10))[0] : 'UI Instruction'),
+              target: {
+                component: extra.component,
+                file: extra.file,
+                lineStart: extra.line,
+              },
+              payload: {
+                prompt: promptText,
+                ...extra,
+              },
+            }),
           });
           const data = await res.json();
-          if (data && data.ok) {
-            showCallout('Sent to Agent', 'SUCCESS', 2500);
+          if (data && data.task) {
+            if (hasAgent) {
+              showCallout('Sent to ' + agentName, 'SUCCESS', 2500);
+            } else {
+              showCallout('Queued · no agent connected', 'SENT', 2500);
+            }
           } else {
             showCallout('Copied to clipboard', 'COPIED', 2000);
           }
         } catch (err) {
+          if (copyOnSend !== 'never') {
+            try {
+              await navigator.clipboard.writeText(promptText);
+            } catch (_) {}
+          }
           showCallout('Copied to clipboard', 'COPIED', 2000);
         }
       }
@@ -7074,6 +7122,22 @@ function generateOverlayBootstrap(port: number, editor: string): string {
               handleUpdateAvailable(payload.data);
             } else if (payload.type === 'pins-update') {
               refreshState();
+            } else if (payload.type === 'presence.updated') {
+              connectedAgents = payload.data?.agents || [];
+            } else if (payload.type === 'task.updated') {
+              const task = payload.data;
+              if (task) {
+                if (task.status === 'delivered') {
+                  showCallout('Seen by ' + (task.claimedBy || 'agent'), 'INFO', 2000);
+                } else if (task.status === 'in_progress') {
+                  showCallout('Working…', 'WORKING', 2500);
+                } else if (task.status === 'done') {
+                  const files = task.result?.filesChanged?.length ? task.result.filesChanged.length + ' files' : 'complete';
+                  showCallout('Done · ' + files, 'SUCCESS', 3000);
+                } else if (task.status === 'failed') {
+                  showCallout('Failed: ' + (task.result?.error || 'error'), 'ERROR', 3000);
+                }
+              }
             } else if (payload.type === 'source-updated') {
               showCallout('Source updated: ' + (payload.data.file ? payload.data.file.split('/').pop() : 'file'), 'HMR');
             } else if (payload.type === 'source-reverted') {
@@ -7338,10 +7402,11 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
         });
       }
       const actualPort = bridgeServer ? bridgeServer.getPort() : port;
+      const actualToken = bridgeServer ? bridgeServer.getToken() : '';
       tags.push({
         tag: 'script',
         attrs: { type: 'module' },
-        children: generateOverlayBootstrap(actualPort, editor),
+        children: generateOverlayBootstrap(actualPort, editor, actualToken),
         injectTo: 'body' as const,
       });
       return tags;
