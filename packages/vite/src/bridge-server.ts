@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
-import { exec } from 'child_process';
+import { launchEditorSafely } from './editor-launcher.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
@@ -951,29 +951,19 @@ export class BridgeServer {
           console.log('[agent-hover] Auto-detected editor:', actualEditor);
         }
 
-        let cmd = '';
-        if (actualEditor === 'cursor') {
-          cmd = `cursor -g "${targetFile}:${targetLine}" 2>/dev/null || open "cursor://file${targetFile}:${targetLine}"`;
-        } else if (actualEditor === 'windsurf') {
-          cmd = `windsurf -g "${targetFile}:${targetLine}" 2>/dev/null || open "windsurf://file${targetFile}:${targetLine}"`;
-        } else if (actualEditor === 'antigravity') {
-          cmd = `agy "${this.projectRoot}" "${targetFile}" 2>/dev/null || open "antigravity-ide://file${targetFile}:${targetLine}"`;
-        } else if (actualEditor === 'webstorm') {
-          cmd = `webstorm --line ${targetLine} "${targetFile}"`;
-        } else if (actualEditor === 'zed') {
-          cmd = `zed "${targetFile}:${targetLine}"`;
-        } else {
-          cmd = `code -g "${targetFile}:${targetLine}" 2>/dev/null || open "vscode://file${targetFile}:${targetLine}"`;
+        try {
+          await launchEditorSafely({
+            editor: actualEditor,
+            targetFile,
+            targetLine,
+            projectRoot: this.projectRoot,
+          });
+          res.json({ success: true, file: targetFile, line: targetLine });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Failed to open editor';
+          console.error('[agent-hover] Failed to open editor:', error);
+          res.status(500).json({ error: message });
         }
-
-        exec(cmd, (error) => {
-          if (error) {
-            console.error('[agent-hover] Failed to open editor:', error);
-            res.status(500).json({ error: error.message });
-          } else {
-            res.json({ success: true, file: targetFile, line: targetLine });
-          }
-        });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to open editor';
         res.status(500).json({ error: message });
