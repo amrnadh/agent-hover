@@ -4372,11 +4372,25 @@ function generateOverlayBootstrap(port: number, editor: string): string {
           }
           const taskInputEl = shadow.getElementById('cp-task-input');
           const overallGoal = taskInputEl ? taskInputEl.value.trim() : '';
-          const prompt = generatePinsMarkdown(overallGoal);
+          const level = shadow.getElementById('cp-context-level')?.value || 'standard';
           const origHtml = pinSendAgentBtn.innerHTML;
-          pinSendAgentBtn.innerHTML = ICONS.check + ' Sent to Agent!';
-          setTimeout(() => { pinSendAgentBtn.innerHTML = origHtml; }, 1600);
-          await dispatchToAgent(prompt, { type: 'pinned-stack', count: currentPins.length, goal: overallGoal });
+          pinSendAgentBtn.innerHTML = '<svg class="cp-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Sending...';
+          try {
+            const res = await fetch(BRIDGE + '/api/task', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ instruction: overallGoal, level })
+            });
+            const data = await res.json();
+            const prompt = data.context || JSON.stringify(data, null, 2);
+            await dispatchToAgent(prompt, { type: 'pinned-stack', count: currentPins.length, goal: overallGoal });
+            pinSendAgentBtn.innerHTML = ICONS.check + ' Sent to Agent!';
+            showCallout('Pinned tasks sent to agent', 'SENT');
+            setTimeout(() => { pinSendAgentBtn.innerHTML = origHtml; }, 1600);
+          } catch (e) {
+            pinSendAgentBtn.innerHTML = origHtml;
+            showCallout('Failed to send pinned tasks to agent', 'ERROR');
+          }
         };
       }
 

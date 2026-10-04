@@ -54,4 +54,50 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
     const pinBar = page.locator('#cp-pin-bar');
     await expect(pinBar).toBeVisible();
   });
+
+  test('dispatches pinned tasks stack to agent without ReferenceError (P0-08 / F-05)', async ({ page, request }) => {
+    // 1. Open demo app
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+
+    // 2. Add a pin via bridge API
+    await request.post('http://localhost:9850/api/pins', {
+      data: {
+        action: 'add',
+        file: 'src/App.tsx',
+        line: 10,
+        task: 'Refactor hero section',
+      },
+    });
+
+    // 3. Open pin stack via dock
+    const dockPins = page.locator('#cp-dock-pins');
+    await expect(dockPins).toBeVisible();
+    await dockPins.click();
+
+    const pinBar = page.locator('#cp-pin-bar');
+    await expect(pinBar).toBeVisible();
+
+    // 4. Fill overall goal
+    const taskInput = page.locator('#cp-task-input');
+    await expect(taskInput).toBeVisible();
+    await taskInput.fill('Modernize theme styling');
+
+    // 5. Click "Send Pinned Tasks to Agent"
+    const pinSendAgentBtn = page.locator('#cp-pin-send-agent');
+    await expect(pinSendAgentBtn).toBeVisible();
+    await pinSendAgentBtn.click();
+
+    // 6. Verify button shows sent confirmation
+    await expect(pinSendAgentBtn).toContainText('Sent', { timeout: 5000 });
+
+    // 7. Verify bridge received a pinned-stack task
+    await expect.poll(async () => {
+      const res = await request.get('http://localhost:9850/api/agent/latest');
+      if (!res.ok()) return null;
+      const json = await res.json();
+      return json.task?.type === 'pinned-stack' ? json.task : null;
+    }, { timeout: 10000 }).toBeDefined();
+  });
 });
+
