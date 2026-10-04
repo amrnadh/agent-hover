@@ -210,3 +210,65 @@ export interface ScreenshotDiff {
   changedPixelPercent: number;  // 0-100
   createdAt: string;            // ISO timestamp
 }
+
+export type TaskType = 'component-context' | 'dom-element' | 'pinned-stack' | 'note';
+export type TaskStatus =
+  | 'queued' | 'delivered' | 'in_progress'
+  | 'done' | 'failed' | 'cancelled' | 'expired' | 'superseded';
+export type Intent = 'fix' | 'restyle' | 'feature' | 'refactor' | 'explain' | 'test' | 'general';
+export type Scope = 'instance' | 'component' | 'unspecified';
+
+export interface AgentTaskTarget {
+  component?: string;
+  file?: string;
+  lineStart?: number;
+  lineEnd?: number;
+  selector?: string;
+  hierarchy?: string[];
+  instanceCount?: number;
+}
+
+export interface AgentTaskPayload {
+  props?: unknown;
+  hooks?: unknown;
+  styles?: unknown;
+  notes?: string[];
+  source?: string;
+  runtime?: unknown;
+  pins?: Array<{ component: string; file: string; role: 'TARGET' | 'REFERENCE' | 'FROZEN' }>;
+  goal?: string;
+  screenshotId?: string;
+  prompt?: string;
+}
+
+export interface AgentTaskResult {
+  summary?: string;
+  filesChanged?: string[];
+  error?: string;
+}
+
+export interface AgentTask {
+  id: string;
+  type: TaskType;
+  status: TaskStatus;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  supersedesKey?: string;
+  intent?: Intent;
+  scope?: Scope;
+  instruction?: string;
+  target: AgentTaskTarget;
+  payload: AgentTaskPayload;
+  tokenEstimate?: number;
+  claimedBy?: string;
+  checkpointId?: string;
+  result?: AgentTaskResult;
+}
+
+export interface AgentPresence {
+  client: string;
+  version?: string;
+  lastSeen: string;
+}
+
