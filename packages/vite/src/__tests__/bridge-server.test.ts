@@ -211,4 +211,42 @@ describe('BridgeServer Integration Tests', () => {
     const dlBuffer = await dlRes.arrayBuffer();
     expect(dlBuffer.byteLength).toBe(stat.size);
   });
+
+  it('strictly validates Origin and Host headers (F-02 security test)', async () => {
+    const testPort = 33000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+
+    // 1. Legitimate request from localhost dev server
+    const validRes = await fetch(`http://127.0.0.1:${activePort}/api/health`, {
+      headers: { Origin: 'http://localhost:5173' },
+    });
+    expect(validRes.status).toBe(200);
+
+    // 2. Hostile Origin attempting suffix match (e.g. attacker-localhost.com)
+    const hostileOriginRes = await fetch(`http://127.0.0.1:${activePort}/api/health`, {
+      headers: { Origin: 'http://attacker-localhost.com' },
+    });
+    expect(hostileOriginRes.status).toBe(403);
+
+    // 3. Hostile subdomain (e.g. localhost.attacker.com)
+    const hostileSubdomainRes = await fetch(`http://127.0.0.1:${activePort}/api/health`, {
+      headers: { Origin: 'http://localhost.attacker.com' },
+    });
+    expect(hostileSubdomainRes.status).toBe(403);
+
+    // 4. Host header spoofing / DNS rebinding attempt via raw http.request
+    const rawStatusCode = await new Promise<number>((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: activePort,
+        path: '/api/health',
+        method: 'GET',
+        headers: { host: 'evil-rebound.com:9850' },
+      }, (res) => resolve(res.statusCode || 0));
+      req.on('error', reject);
+      req.end();
+    });
+    expect(rawStatusCode).toBe(403);
+  });
 });

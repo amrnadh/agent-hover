@@ -123,19 +123,54 @@ export class BridgeServer {
   }
 
   private setupRoutes() {
-    this.app.use(cors());
+    const isSafeHost = (hostHeader: string): boolean => {
+      if (!hostHeader) return false;
+      const [hostname] = hostHeader.split(':');
+      return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    };
+
+    const isSafeOrigin = (originHeader?: string): boolean => {
+      if (!originHeader) return true;
+      try {
+        const parsed = new URL(originHeader);
+        return (
+          (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+          (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]')
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    this.app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (!origin || isSafeOrigin(origin)) {
+            callback(null, true);
+          } else {
+            callback(null, false);
+          }
+        },
+        credentials: true,
+      })
+    );
     this.app.use(express.json({ limit: '50mb' }));
 
-    // Security: only allow requests from localhost
+    // Security: strict localhost validation on Host and Origin
     this.app.use((req, res, next) => {
       const host = req.headers.host || '';
-      const origin = req.headers.origin || '';
-      const isLocalHost = host.startsWith('localhost:') || host.startsWith('127.0.0.1:');
-      const isLocalOrigin = !origin || origin.includes('localhost') || origin.includes('127.0.0.1');
-      if (!isLocalHost && !isLocalOrigin) {
-        res.status(403).json({ error: 'Forbidden: non-local request' });
+      const origin = req.headers.origin;
+
+      if (!isSafeHost(host)) {
+        res.status(403).json({ error: 'Forbidden: invalid host header' });
         return;
       }
+
+      if (origin && !isSafeOrigin(origin)) {
+        res.status(403).json({ error: 'Forbidden: untrusted origin' });
+        return;
+      }
+
       next();
     });
 
