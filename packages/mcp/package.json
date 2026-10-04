@@ -28,6 +28,7 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
+    "@agent-hover/core": "^0.1.1",
     "@modelcontextprotocol/sdk": "^1.12.0"
   },
   "devDependencies": {
