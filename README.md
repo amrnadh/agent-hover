@@ -74,12 +74,48 @@ Add to `.cursor/mcp.json`:
 }
 ```
 
+## Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Browser (Your App)                   │
+│                                                        │
+│  [Element Hover / Inspector]      [Pinned Tasks Stack] │
+│          │                                 │           │
+│          ▼                                 ▼           │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │     Agent Hover Overlay (Shadow DOM Client)      │  │
+│  └──────────────────────┬───────────────────────────┘  │
+└─────────────────────────┼──────────────────────────────┘
+                          │ REST + WebSocket (Bearer token)
+                          ▼
+┌────────────────────────────────────────────────────────┐
+│               Localhost Bridge Server v2               │
+│               (Vite Dev Plugin Process)                │
+│                                                        │
+│  • Strict Origin / Host Validation                     │
+│  • Session Authentication (.agent-hover/session.json)  │
+│  • Task Store & State Machine (.agent-hover/tasks.json)│
+│  • Agent Presence Tracking & Status Broadcasts         │
+│  • AST Analysis & Source Inspector                     │
+└─────────────────────────┬──────────────────────────────┘
+                          │ MCP Protocol / Stdio
+                          ▼
+┌────────────────────────────────────────────────────────┐
+│              AI Coding Agents & Editors                │
+│  (Claude Code / Cursor / Windsurf / Antigravity)       │
+└────────────────────────────────────────────────────────┘
+```
+
 ## How It Works
 
-1. The Vite plugin injects a lightweight overlay into your dev app
-2. `element-source` maps DOM elements to React components and source files at runtime
-3. The core engine parses your source files (AST) to extract props, imports, hooks, and relationships
-4. Context is formatted with token estimates and sent via clipboard, editor link, or MCP
+1. The Vite plugin injects a lightweight, isolated Shadow DOM overlay into your dev app.
+2. React Fiber traversal and source mapping detect component boundaries, files, line numbers, and runtime props.
+3. The core engine parses source AST to extract props, imports, hooks, and relationships.
+4. Tasks are dispatched to an authenticated local queue (`tasks.json`).
+5. Your AI agent queries, claims, and completes tasks via the MCP server (`@agent-hover/mcp`) or clipboard fallback.
+
+See [Bridge API Documentation](docs/bridge-api.md) for endpoint details and security specifications.
 
 ## License
 
