@@ -1,0 +1,20 @@
+{
+  "name": "@agent-hover/overlay",
+  "version": "0.1.1",
+  "description": "Agent Hover client overlay UI bundle",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --project tsconfig.build.json",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  },
+  "license": "MIT"
+}

@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@agent-hover/core": "^0.1.1",
+    "@agent-hover/overlay": "^0.1.1",
     "cors": "^2.8.5",
     "dom-to-image-more": "^3.10.2",
     "express": "^4.21.0",
