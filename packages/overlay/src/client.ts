@@ -3,6 +3,7 @@ import { ICONS } from './icons.js';
 import { getOverlayHtml } from './ui/template.js';
 import { IsolationManager, setupPopover, showPopoverSafe, hidePopoverSafe } from './lib/isolation.js';
 import { CaptureLayer } from './ui/capture-layer.js';
+import { DockController } from './ui/dock.js';
 
 export interface OverlayConfig {
   port: number;
@@ -32,6 +33,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
       let ws;
       let isBridgeConnected = false;
+      let connectedAgents = [];
+      let dockController = null;
 
       function setBridgeConnected(connected) {
         isBridgeConnected = connected;
@@ -44,6 +47,13 @@ export function bootstrapOverlay(config: OverlayConfig) {
             badge.className = 'cp-badge cp-badge-rose';
             badge.textContent = 'Server Offline';
           }
+        }
+        if (dockController) {
+          dockController.updatePresence({
+            bridgeOnline: connected,
+            port,
+            agents: connectedAgents,
+          });
         }
       }
 
@@ -85,6 +95,20 @@ export function bootstrapOverlay(config: OverlayConfig) {
           if (d.updateAvailable) handleUpdateAvailable(d.updateAvailable);
         })
         .catch(() => setBridgeConnected(false));
+
+      fetch(BRIDGE + '/api/presence')
+        .then(r => r.json())
+        .then(d => {
+          connectedAgents = d.agents || [];
+          if (dockController) {
+            dockController.updatePresence({
+              bridgeOnline: isBridgeConnected,
+              port,
+              agents: connectedAgents,
+            });
+          }
+        })
+        .catch(() => {});
 
       // Check on page restore from browser bfcache (e.g. Cmd+Shift+T)
       window.addEventListener('pageshow', (event) => {
@@ -134,7 +158,6 @@ export function bootstrapOverlay(config: OverlayConfig) {
       setupPopover(shadow.getElementById('cp-snap-preview'));
       setupPopover(shadow.getElementById('cp-snap-lightbox'));
       setupPopover(shadow.getElementById('cp-mcp-modal'));
-      setupPopover(shadow.getElementById('cp-dock-wrapper'));
 
       // Capture layer for isolated inspect mode (P2-03)
       const captureLayerEl = shadow.getElementById('ah-capture-layer');
@@ -431,60 +454,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         };
       }
 
-      // Persist & Drag Dock
-      try {
-        const savedPos = localStorage.getItem('agent_hover_dock_pos');
-        if (savedPos) {
-          const parsed = JSON.parse(savedPos);
-          if (parsed.top && parsed.left) {
-            dockWrapper.style.top = parsed.top;
-            dockWrapper.style.left = parsed.left;
-            dockWrapper.style.transform = 'none';
-          }
-        }
-      } catch(e) {}
-      updateDockOrientation();
-      window.addEventListener('resize', updateDockOrientation);
+      // Dock dragging and edge-snapping managed by DockController
 
-      let isDragging = false;
-      let dragStartY = 0;
-      let dragStartX = 0;
-      let initialTop = 0;
-      let initialLeft = 0;
 
-      dockHandle.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        const rect = dockWrapper.getBoundingClientRect();
-        initialTop = rect.top;
-        initialLeft = rect.left;
-        dockWrapper.style.transform = 'none';
-        e.preventDefault();
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dockH = dockWrapper.offsetHeight || 90;
-        const dockW = dockWrapper.offsetWidth || 50;
-        const newTop = Math.max(10, Math.min(window.innerHeight - dockH - 10, initialTop + (e.clientY - dragStartY)));
-        const newLeft = Math.max(10, Math.min(window.innerWidth - dockW - 10, initialLeft + (e.clientX - dragStartX)));
-        dockWrapper.style.top = newTop + 'px';
-        dockWrapper.style.left = newLeft + 'px';
-        updateDockOrientation();
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (!isDragging) return;
-        isDragging = false;
-        updateDockOrientation();
-        try {
-          localStorage.setItem('agent_hover_dock_pos', JSON.stringify({
-            top: dockWrapper.style.top,
-            left: dockWrapper.style.left
-          }));
-        } catch(e) {}
-      });
 
       let calloutTimer = null;
       function showCallout(text, meta, duration = 2000) {
@@ -524,6 +496,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
       function togglePointerMode() {
         isPointerMode = !isPointerMode;
+        if (dockController) dockController.setInspectActive(isPointerMode);
         if (isPointerMode) {
           dockToggle.classList.add('active');
           showCallout('Inspector Active', 'Alt', 2200);
@@ -547,6 +520,30 @@ export function bootstrapOverlay(config: OverlayConfig) {
           currentStackIndex = -1;
           console.log('[agent-hover] Pointer mode OFF');
         }
+      }
+
+      if (dockWrapper) {
+        dockController = new DockController(dockWrapper, {
+          shadowRoot: shadow,
+          onToggleInspect: () => togglePointerMode(),
+          onOpenPins: () => {
+            flyout.classList.toggle('open');
+            if (flyout.classList.contains('open') && flyout.classList.contains('is-sidebar')) {
+              dockWrapper.classList.add('sidebar-open');
+            } else {
+              dockWrapper.classList.remove('sidebar-open');
+            }
+            const pinBar = shadow.getElementById('cp-pin-bar');
+            if (pinBar) pinBar.scrollIntoView({ behavior: 'smooth' });
+          },
+          onOpenSettings: () => toggleSettingsView(),
+          onCallout: (text, meta, duration) => showCallout(text, meta, duration),
+        });
+        dockController.updatePresence({
+          bridgeOnline: isBridgeConnected,
+          port,
+          agents: connectedAgents,
+        });
       }
 
       dockToggle.onclick = togglePointerMode;
@@ -1706,7 +1703,6 @@ export function bootstrapOverlay(config: OverlayConfig) {
       }
 
       // --- Dispatch to AI Agent (Queue & Clipboard per D-06) ---
-      let connectedAgents = [];
       let copyOnSend = 'auto'; // 'auto' | 'always' | 'never'
 
       async function dispatchToAgent(promptText, extra = {}) {
@@ -4422,6 +4418,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
           } else {
             dockPinBadge.style.display = 'none';
           }
+          if (dockController) dockController.setPinCount(count);
 
           const list = shadow.getElementById('cp-pin-list');
           list.innerHTML = '';
@@ -4525,6 +4522,13 @@ export function bootstrapOverlay(config: OverlayConfig) {
               refreshState();
             } else if (payload.type === 'presence.updated') {
               connectedAgents = payload.data?.agents || [];
+              if (dockController) {
+                dockController.updatePresence({
+                  bridgeOnline: isBridgeConnected,
+                  port,
+                  agents: connectedAgents,
+                });
+              }
             } else if (payload.type === 'task.updated') {
               const task = payload.data;
               if (task) {
@@ -4669,26 +4673,24 @@ export function bootstrapOverlay(config: OverlayConfig) {
         fetch(BRIDGE + '/api/mcp-status')
           .then(r => r.json())
           .then(d => {
-            const dot = shadow.getElementById('cp-mcp-dot');
             const label = shadow.getElementById('cp-mcp-status-label');
-            if (dot) {
-              if (d.connected) {
-                dot.classList.add('connected');
-                dot.title = 'MCP: Connected';
-              } else {
-                dot.classList.remove('connected');
-                dot.title = 'MCP: Not connected';
-              }
-            }
             if (label) {
               label.textContent = d.connected ? 'Connected' : 'Not connected';
               label.style.color = d.connected ? 'var(--accent-emerald, #10b981)' : 'var(--text-muted)';
             }
+            if (d.connected && connectedAgents.length === 0) {
+              connectedAgents = [{ client: 'mcp' }];
+              if (dockController) {
+                dockController.updatePresence({
+                  bridgeOnline: isBridgeConnected,
+                  port,
+                  agents: connectedAgents,
+                });
+              }
+            }
           })
           .catch(() => {
-            const dot = shadow.getElementById('cp-mcp-dot');
             const label = shadow.getElementById('cp-mcp-status-label');
-            if (dot) { dot.classList.remove('connected'); dot.title = 'MCP: Not connected'; }
             if (label) { label.textContent = 'Not connected'; label.style.color = 'var(--text-muted)'; }
           });
       }

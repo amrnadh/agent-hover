@@ -167,40 +167,8 @@
             --callout-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
           }
 
-          /* --- Vertical Dock Container --- */
-          #cp-dock-wrapper {
-            position: fixed;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 999999;
-            user-select: none;
-            display: flex;
-            align-items: center;
-          }
-
           @keyframes cp-spin { to { transform: rotate(360deg); } }
           .cp-spin { animation: cp-spin 0.8s linear infinite; }
-
-          #cp-dock {
-            width: 52px;
-            background: var(--bg-dock);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--border-dock);
-            border-radius: 20px;
-            padding: 6px 5px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            box-shadow: var(--shadow-dock);
-            transition: border-color 0.25s ease, box-shadow 0.25s ease;
-          }
-
-          #cp-dock:hover {
-            border-color: var(--border-dock-hover);
-          }
 
           /* --- Dock Squircle Tiles --- */
           .cp-dock-tile {
@@ -304,7 +272,7 @@
 
           #cp-dock-callout.show {
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: none;
             transform: translateX(0);
           }
 

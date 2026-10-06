@@ -1,0 +1,206 @@
+/**
+ * Agent Hover Dock Styling (§7.10, D-07, P2-05)
+ *
+ * Horizontal pill dock, bottom-center, 40px high, --ah-radius-full.
+ */
+
+#cp-dock-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--ah-z-floating);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  transition: opacity var(--ah-duration-fast) var(--ah-ease-standard),
+              transform var(--ah-duration-fast) var(--ah-ease-standard);
+}
+
+#cp-dock-wrapper.is-hidden {
+  opacity: 0;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(20px);
+}
+
+#cp-dock {
+  height: 40px;
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 10px;
+  background: var(--ah-surface-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--ah-border-subtle);
+  border-radius: var(--ah-radius-full);
+  box-shadow: var(--ah-shadow-dock);
+  box-sizing: border-box;
+}
+
+.ah-dock-segment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.ah-dock-brand-icon {
+  color: var(--ah-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ah-dock-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ah-text-muted);
+  transition: background var(--ah-duration-fast) var(--ah-ease-standard),
+              box-shadow var(--ah-duration-fast) var(--ah-ease-standard);
+  display: inline-block;
+}
+
+.ah-dock-status-dot.status-active {
+  background: var(--ah-emerald);
+  box-shadow: 0 0 8px var(--ah-emerald);
+}
+
+.ah-dock-status-dot.status-bridge-only {
+  background: var(--ah-amber);
+  box-shadow: 0 0 8px var(--ah-amber);
+}
+
+.ah-dock-status-dot.status-disconnected {
+  background: var(--ah-text-muted);
+  box-shadow: none;
+}
+
+.ah-dock-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--ah-border-subtle);
+  margin: 0 4px;
+}
+
+.ah-dock-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--ah-text-secondary);
+  border-radius: var(--ah-radius-full);
+  font-family: var(--ah-font-sans);
+  font-size: var(--ah-text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--ah-duration-fast) var(--ah-ease-standard);
+  position: relative;
+}
+
+.ah-dock-btn:hover {
+  background: var(--ah-accent-subtle);
+  color: var(--ah-text-primary);
+}
+
+.ah-dock-btn:focus-visible {
+  outline: 2px solid var(--ah-border-focus);
+  outline-offset: 1px;
+}
+
+.ah-dock-btn.active,
+.ah-dock-btn[aria-pressed="true"] {
+  background: var(--ah-accent-primary);
+  color: var(--ah-text-on-accent);
+}
+
+.ah-dock-btn.active svg,
+.ah-dock-btn[aria-pressed="true"] svg {
+  stroke: var(--ah-text-on-accent);
+}
+
+.ah-dock-btn-label {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ah-dock-close-btn {
+  padding: 0 6px;
+  color: var(--ah-text-muted);
+}
+.ah-dock-close-btn:hover {
+  color: var(--ah-rose);
+  background: var(--ah-rose-subtle);
+}
+
+.ah-dock-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  cursor: grab;
+  color: var(--ah-text-muted);
+  opacity: 0.6;
+  transition: opacity var(--ah-duration-fast);
+}
+
+.ah-dock-handle:hover {
+  opacity: 1;
+}
+
+.ah-dock-handle:active {
+  cursor: grabbing;
+}
+
+/* Animated Pin Badge with spring scale */
+#cp-dock-pin-badge {
+  background: var(--ah-accent-primary);
+  color: var(--ah-text-on-accent);
+  border-radius: var(--ah-radius-full);
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: transform var(--ah-duration-fast) var(--ah-ease-spring);
+}
+
+#cp-dock-pin-badge.has-update {
+  transform: scale(1.25);
+}
+
+/* Speech Bubble / Callout */
+#cp-dock-callout,
+#cp-dock-callout * {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ah-surface-elevated);
+  color: var(--ah-text-primary);
+  border: 1px solid var(--ah-border-standard);
+  border-radius: var(--ah-radius-md);
+  box-shadow: var(--ah-shadow-popover);
+  padding: 6px 12px;
+  font-size: var(--ah-text-xs);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  pointer-events: none !important;
+  z-index: 10;
+}
+
+#cp-dock-callout.show {
+  display: flex !important;
+  pointer-events: none !important;
+}

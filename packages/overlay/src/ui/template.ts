@@ -1,5 +1,6 @@
 import { ICONS } from '../icons.js';
 import tokensCss from '../styles/tokens.css?inline';
+import dockCss from '../styles/dock.css?inline';
 import overlayCss from '../styles/overlay.css?inline';
 
 export function getOverlayHtml(): string {
@@ -7,30 +8,81 @@ export function getOverlayHtml(): string {
         <style>
 ${tokensCss}
 ${overlayCss}
+${dockCss}
         </style>
 
         <div id="ah-capture-layer" class="ah-capture-layer" aria-hidden="true"></div>
 
-        <div id="cp-dock-wrapper">
-          <div id="cp-dock">
-            <div id="cp-dock-tiles">
-              <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
+        <div id="cp-dock-wrapper" class="ah-dock-wrapper">
+          <div id="cp-dock" class="ah-dock" role="toolbar" aria-label="Agent Hover Toolbar">
+            <!-- Brand Mark + Presence Status Dot -->
+            <div class="ah-dock-segment ah-dock-brand-segment" id="ah-dock-brand" title="Agent Hover · Disconnected">
+              <div class="ah-dock-brand-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="22" y1="12" x2="18" y2="12"/>
+                  <line x1="6" y1="12" x2="2" y2="12"/>
+                  <line x1="12" y1="6" x2="12" y2="2"/>
+                  <line x1="12" y1="22" x2="12" y2="18"/>
+                </svg>
               </div>
-
-              <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack" style="position:relative;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
-                <span class="cp-mcp-dot" id="cp-mcp-dot" title="MCP: Not connected"></span>
-              </div>
+              <span class="ah-dock-status-dot" id="cp-mcp-dot" title="Bridge: Disconnected"></span>
             </div>
 
-            <!-- Bottom Drag Handle -->
-            <div class="cp-dock-handle" id="cp-dock-handle" title="Drag dock"></div>
+            <div class="ah-dock-divider"></div>
+
+            <!-- Inspect Mode Toggle -->
+            <button class="ah-dock-btn" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)" aria-label="Toggle Inspector Mode" aria-pressed="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>
+              </svg>
+              <span class="ah-dock-btn-label">Inspect</span>
+            </button>
+
+            <!-- Pins Segment -->
+            <button class="ah-dock-btn" id="cp-dock-pins" title="Pinned Components Stack" aria-label="Pinned Components Stack">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+              <span class="ah-dock-btn-label">Pins</span>
+              <span class="cp-badge-pill ah-tabular-nums" id="cp-dock-pin-badge" style="display:none;">0</span>
+            </button>
+
+            <!-- Settings / Menu -->
+            <button class="ah-dock-btn" id="ah-dock-settings-btn" title="Settings & Menu" aria-label="Settings and Menu">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+
+            <!-- Dismiss 'x' button -->
+            <button class="ah-dock-btn ah-dock-close-btn" id="ah-dock-dismiss" title="Hide Dock (Cmd/Ctrl+Shift+X)" aria-label="Hide Dock">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+
+            <div class="ah-dock-divider"></div>
+
+            <!-- Drag Handle -->
+            <div class="ah-dock-handle" id="cp-dock-handle" title="Drag dock to reposition" aria-label="Drag Handle">
+              <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                <circle cx="3" cy="3" r="1.5"/>
+                <circle cx="7" cy="3" r="1.5"/>
+                <circle cx="3" cy="8" r="1.5"/>
+                <circle cx="7" cy="8" r="1.5"/>
+                <circle cx="3" cy="13" r="1.5"/>
+                <circle cx="7" cy="13" r="1.5"/>
+              </svg>
+            </div>
           </div>
 
           <!-- Reference Callout / Speech Bubble -->
-          <div id="cp-dock-callout">
+          <div id="cp-dock-callout" class="ah-dock-callout">
             <div class="cp-callout-tail"></div>
             <span class="cp-callout-message" id="cp-callout-text">Ready to point</span>
             <span class="cp-callout-time" id="cp-callout-meta">Alt</span>
