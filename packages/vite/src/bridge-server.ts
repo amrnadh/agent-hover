@@ -865,6 +865,22 @@ export class BridgeServer {
       }
     });
 
+    // Open screenshots folder in system file manager (no shell, confined to project)
+    this.app.post('/api/screenshot/open-folder', async (_req, res) => {
+      try {
+        const path = await import('path');
+        const fs = await import('fs/promises');
+        const screenshotsDir = path.join(this.projectRoot, '.agent-hover', 'screenshots');
+        await fs.mkdir(screenshotsDir, { recursive: true });
+        const { launchFolderSafely } = await import('./editor-launcher.js');
+        await launchFolderSafely(screenshotsDir, this.projectRoot);
+        res.json({ success: true, path: '.agent-hover/screenshots' });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to open screenshots folder';
+        res.status(500).json({ error: message });
+      }
+    });
+
     // Download/serve screenshot file
     this.app.get('/api/screenshot/download/:filename', async (req, res) => {
       try {

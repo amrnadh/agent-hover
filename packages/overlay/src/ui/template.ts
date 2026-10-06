@@ -338,6 +338,7 @@ ${overlayCss}
 
           <div class="cp-snap-actions">
             <button class="cp-btn-bento" id="cp-snap-download">${ICONS.download} Download</button>
+            <button class="cp-btn-bento" id="cp-snap-open-folder" title="Open screenshots folder in system file manager">${ICONS.camera} Folder</button>
             <button class="cp-btn-bento primary" id="cp-snap-copy">${ICONS.copy} Copy Image</button>
           </div>
 

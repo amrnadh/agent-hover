@@ -1,6 +1,28 @@
-          * { box-sizing: border-box; }
           :host {
+            all: initial;
+            display: block;
+            position: fixed;
+            inset: 0;
             pointer-events: none;
+            z-index: 2147483600;
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box;
+            letter-spacing: normal;
+            text-transform: none;
+            text-decoration: none;
+          }
+          [popover] {
+            margin: 0;
+            inset: auto;
+            border: none;
+            padding: 0;
+            overflow: visible;
+            background: transparent;
+            color: inherit;
           }
           #cp-dock-wrapper, #cp-flyout, #cp-text-editor, #cp-snap-dropdown, #cp-snap-dropdown *, #cp-snap-preview, #cp-snap-preview *, #cp-snap-lightbox, #cp-snap-lightbox *, #cp-note-popover, #cp-note-popover *, #cp-mcp-modal, #cp-mcp-modal *, #cp-selection-chip, #cp-selection-chip * {
             pointer-events: auto;

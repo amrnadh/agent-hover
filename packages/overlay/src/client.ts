@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { ICONS } from './icons.js';
 import { getOverlayHtml } from './ui/template.js';
+import { IsolationManager, setupPopover, showPopoverSafe, hidePopoverSafe } from './lib/isolation.js';
 
 export interface OverlayConfig {
   port: number;
@@ -113,7 +114,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
       container.style.position = 'fixed';
       container.style.inset = '0';
       container.style.pointerEvents = 'none';
-      container.style.zIndex = '999990';
+      container.style.zIndex = '2147483600';
       const shadow = container.attachShadow({ mode: 'open' });
       shadow.innerHTML = getOverlayHtml();
       if (document.body) {
@@ -121,6 +122,18 @@ export function bootstrapOverlay(config: OverlayConfig) {
       } else {
         window.addEventListener('DOMContentLoaded', () => document.body.appendChild(container));
       }
+
+      // Initialize host dialog isolation manager (reparents into active modal dialogs if needed)
+      const isolationManager = new IsolationManager(container);
+
+      // Setup Popover API for floating UI surfaces
+      setupPopover(shadow.getElementById('cp-flyout'));
+      setupPopover(shadow.getElementById('cp-selection-chip'));
+      setupPopover(shadow.getElementById('cp-note-popover'));
+      setupPopover(shadow.getElementById('cp-snap-preview'));
+      setupPopover(shadow.getElementById('cp-snap-lightbox'));
+      setupPopover(shadow.getElementById('cp-mcp-modal'));
+      setupPopover(shadow.getElementById('cp-dock-wrapper'));
 
       // Elements
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
@@ -500,18 +513,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
       }
 
       function updateInspectorCursor(active) {
-        let cursorStyle = document.getElementById('cp-inspector-cursor');
-        if (!cursorStyle) {
-          cursorStyle = document.createElement('style');
-          cursorStyle.id = 'cp-inspector-cursor';
-          cursorStyle.textContent = 'html.cp-inspector-active, html.cp-inspector-active * { cursor: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'%231e1e1e\' stroke=\'%23ffffff\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\'/%3E%3C/svg%3E") 4 5, crosshair !important; } #agent-hover-root, #agent-hover-root * { cursor: auto; }';
-          document.head.appendChild(cursorStyle);
-        }
-        if (active) {
-          document.documentElement.classList.add('cp-inspector-active');
-        } else {
-          document.documentElement.classList.remove('cp-inspector-active');
-        }
+        // Clean isolation: never inject into document.head or modify document.documentElement (F-07).
+        // Cursor will be applied cleanly to the shadow root capture layer in P2-03.
       }
 
       function togglePointerMode() {
@@ -2323,6 +2326,26 @@ export function bootstrapOverlay(config: OverlayConfig) {
           }
           showCallout('Screenshot downloaded', 'SAVED', 2000);
         } catch (_) {}
+      });
+
+      // Open Folder button
+      shadow.getElementById('cp-snap-open-folder')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const btn = shadow.getElementById('cp-snap-open-folder');
+        try {
+          const res = await fetch(BRIDGE + '/api/screenshot/open-folder', { method: 'POST' });
+          if (res.ok) {
+            if (btn) {
+              btn.innerHTML = ICONS.check + ' Opened';
+              setTimeout(() => { btn.innerHTML = ICONS.camera + ' Folder'; }, 1500);
+            }
+            showCallout('Screenshots folder opened', 'OPENED', 2000);
+          } else {
+            showCallout('Failed to open folder', 'ERROR', 2000);
+          }
+        } catch (_) {
+          showCallout('Failed to connect to bridge', 'ERROR', 2000);
+        }
       });
 
       // Copy button

@@ -20,8 +20,8 @@ function generateOverlayBootstrap(port: number, editor: string, token: string = 
   const bundle = getOverlayBundle();
   return `
     ${bundle}
-    if (typeof window !== 'undefined' && typeof (window as any).__AGENT_HOVER_BOOTSTRAP__ === 'function') {
-      (window as any).__AGENT_HOVER_BOOTSTRAP__(${port}, ${JSON.stringify(editor)}, ${JSON.stringify(token)});
+    if (typeof window !== 'undefined' && typeof window.__AGENT_HOVER_BOOTSTRAP__ === 'function') {
+      window.__AGENT_HOVER_BOOTSTRAP__(${port}, ${JSON.stringify(editor)}, ${JSON.stringify(token)});
     }
   `;
 }

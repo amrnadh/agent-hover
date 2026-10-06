@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildEditorLaunchPlan, SUPPORTED_EDITORS } from '../editor-launcher.js';
+import { buildEditorLaunchPlan, buildFolderLaunchPlan, SUPPORTED_EDITORS } from '../editor-launcher.js';
 
 describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
   it('supports all whitelisted editors', () => {
@@ -54,5 +54,11 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
     });
 
     expect(plan.args).toEqual(['-g', '/project/src/Card.tsx:1:1']);
+  });
+
+  it('builds safe folder launch plan with argument array (no shell)', () => {
+    const folderPlan = buildFolderLaunchPlan('/project/.agent-hover/screenshots');
+    expect(folderPlan.bin).toBeDefined();
+    expect(folderPlan.args).toEqual(['/project/.agent-hover/screenshots']);
   });
 });
