@@ -1,9 +1,11 @@
 import { ICONS } from '../icons.js';
+import tokensCss from '../styles/tokens.css?inline';
 import overlayCss from '../styles/overlay.css?inline';
 
 export function getOverlayHtml(): string {
   return `
         <style>
+${tokensCss}
 ${overlayCss}
         </style>
 

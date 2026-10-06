@@ -602,10 +602,25 @@ export function bootstrapOverlay(config: OverlayConfig) {
       const themeToggle = shadow.getElementById('cp-flyout-theme');
       const themeIconDark = shadow.getElementById('cp-theme-icon-dark');
       const themeIconLight = shadow.getElementById('cp-theme-icon-light');
-      let isLightMode = false;
-      try { isLightMode = localStorage.getItem('agent-hover-theme') === 'light'; } catch(e) {}
-      
+      // Theme Management (P2-04: prefers-color-scheme with manual override)
+      let storedTheme = 'system';
+      try {
+        storedTheme = localStorage.getItem('agent-hover-theme') || 'system';
+      } catch(e) {}
+
+      const systemDarkMedia = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+      function resolveIsLight() {
+        if (storedTheme === 'light') return true;
+        if (storedTheme === 'dark') return false;
+        // system mode
+        return !!(systemDarkMedia && systemDarkMedia.matches);
+      }
+
+      let isLightMode = resolveIsLight();
+
       function applyTheme() {
+        isLightMode = resolveIsLight();
         if (isLightMode) {
           shadow.host.classList.add('light-mode');
           if (themeIconDark) themeIconDark.style.display = 'none';
@@ -622,27 +637,35 @@ export function bootstrapOverlay(config: OverlayConfig) {
       }
       applyTheme();
 
+      if (systemDarkMedia && typeof systemDarkMedia.addEventListener === 'function') {
+        systemDarkMedia.addEventListener('change', () => {
+          if (storedTheme === 'system') {
+            applyTheme();
+          }
+        });
+      }
+
       if (themeToggle) {
         themeToggle.onclick = () => {
-          isLightMode = !isLightMode;
+          storedTheme = isLightMode ? 'dark' : 'light';
+          try { localStorage.setItem('agent-hover-theme', storedTheme); } catch(e) {}
           applyTheme();
-          try { localStorage.setItem('agent-hover-theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
           showCallout(isLightMode ? 'Light mode' : 'Dark mode', 'THEME');
         };
       }
       if (themeSetDark) {
         themeSetDark.onclick = () => {
-          isLightMode = false;
-          applyTheme();
+          storedTheme = 'dark';
           try { localStorage.setItem('agent-hover-theme', 'dark'); } catch(e) {}
+          applyTheme();
           showCallout('Dark mode', 'THEME');
         };
       }
       if (themeSetLight) {
         themeSetLight.onclick = () => {
-          isLightMode = true;
-          applyTheme();
+          storedTheme = 'light';
           try { localStorage.setItem('agent-hover-theme', 'light'); } catch(e) {}
+          applyTheme();
           showCallout('Light mode', 'THEME');
         };
       }
