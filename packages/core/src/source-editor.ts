@@ -11,6 +11,7 @@ export interface EditSourceTextOptions {
   originalText: string;
   newText: string;
   line?: number;
+  occurrenceIndex?: number;
 }
 
 export interface EditSourceResult {
@@ -53,7 +54,7 @@ export class SourceEditor {
   }
 
   public async editSourceText(options: EditSourceTextOptions): Promise<EditSourceResult> {
-    const { file, component, originalText, newText, line } = options;
+    const { file, component, originalText, newText, line, occurrenceIndex } = options;
     const absolutePath = path.isAbsolute(file) ? file : path.join(this.projectRoot, file);
     const relativeFile = path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file;
 
@@ -141,7 +142,7 @@ export class SourceEditor {
             start: p.node.start,
             end: p.node.end,
             line: p.node.loc.start.line,
-            replaceWith: val.replace(trimmedVal, newText),
+            replaceWith: val.replace(trimmedVal, () => newText),
             dist: line ? Math.abs(p.node.loc.start.line - line) : 0,
           });
         } else if (val.includes(originalText)) {
@@ -149,7 +150,7 @@ export class SourceEditor {
             start: p.node.start,
             end: p.node.end,
             line: p.node.loc.start.line,
-            replaceWith: val.replace(originalText, newText),
+            replaceWith: val.replace(originalText, () => newText),
             dist: line ? Math.abs(p.node.loc.start.line - line) : 0,
           });
         }
@@ -193,51 +194,53 @@ export class SourceEditor {
     let matchedLine: number | undefined = undefined;
 
     if (matches.length > 0) {
-      // Sort matches by proximity to the target line
-      matches.sort((a, b) => a.dist - b.dist);
-      const best = matches[0];
-      matchedLine = best.line;
-      updatedCode = code.slice(0, best.start) + best.replaceWith + code.slice(best.end);
+      let chosenMatch: MatchCandidate | null = null;
+      if (matches.length === 1) {
+        chosenMatch = matches[0];
+      } else if (occurrenceIndex !== undefined) {
+        if (occurrenceIndex >= 0 && occurrenceIndex < matches.length) {
+          chosenMatch = matches[occurrenceIndex];
+        } else {
+          return {
+            success: false,
+            file: relativeFile,
+            oldText: originalText,
+            newText,
+            error: `Invalid occurrenceIndex: ${occurrenceIndex}. Found ${matches.length} matches.`
+          };
+        }
+      } else if (line !== undefined) {
+        const exactLineMatches = matches.filter(m => m.line === line);
+        if (exactLineMatches.length === 1) {
+          chosenMatch = exactLineMatches[0];
+        } else {
+          return {
+            success: false,
+            file: relativeFile,
+            oldText: originalText,
+            newText,
+            error: `Ambiguous: found ${matches.length} matches for "${originalText}" in ${relativeFile}`
+          };
+        }
+      } else {
+        return {
+          success: false,
+          file: relativeFile,
+          oldText: originalText,
+          newText,
+          error: `Ambiguous: found ${matches.length} matches for "${originalText}" in ${relativeFile}`
+        };
+      }
+
+      matchedLine = chosenMatch.line;
+      updatedCode = code.slice(0, chosenMatch.start) + chosenMatch.replaceWith + code.slice(chosenMatch.end);
     } else {
-      // Fallback: line-targeted replacement within the component lines
-      const lines = code.split('\n');
-      const searchStart = compStartLine ? compStartLine - 1 : 0;
-      const searchEnd = compEndLine ? compEndLine : lines.length;
-      let replaced = false;
+      // Fallback: whole-file search (handles multi-line text)
+      const searchTarget = code.includes(originalText)
+        ? originalText
+        : (code.includes(trimmedOriginal) ? trimmedOriginal : null);
 
-      // Prefer line around 'line' if given
-      const targetIndices: number[] = [];
-      if (line && line - 1 >= searchStart && line - 1 < searchEnd) {
-        targetIndices.push(line - 1);
-      }
-      for (let i = searchStart; i < searchEnd; i++) {
-        if (!targetIndices.includes(i)) targetIndices.push(i);
-      }
-
-      for (const idx of targetIndices) {
-        if (lines[idx].includes(originalText) || lines[idx].includes(trimmedOriginal)) {
-          matchedLine = idx + 1;
-          const targetStr = lines[idx].includes(originalText) ? originalText : trimmedOriginal;
-          lines[idx] = lines[idx].replace(targetStr, newText);
-          replaced = true;
-          break;
-        }
-      }
-
-      // If not replaced within component bounds, broaden search to the whole file
-      if (!replaced && (searchStart > 0 || searchEnd < lines.length)) {
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i].includes(originalText) || lines[i].includes(trimmedOriginal)) {
-            matchedLine = i + 1;
-            const targetStr = lines[i].includes(originalText) ? originalText : trimmedOriginal;
-            lines[i] = lines[i].replace(targetStr, newText);
-            replaced = true;
-            break;
-          }
-        }
-      }
-
-      if (!replaced) {
+      if (!searchTarget) {
         return {
           success: false,
           file: relativeFile,
@@ -246,7 +249,56 @@ export class SourceEditor {
           error: `Could not locate static text "${originalText}" in ${component || 'component'} (${relativeFile})`
         };
       }
-      updatedCode = lines.join('\n');
+
+      const positions: number[] = [];
+      let pos = 0;
+      while ((pos = code.indexOf(searchTarget, pos)) !== -1) {
+        positions.push(pos);
+        pos += searchTarget.length;
+      }
+
+      let chosenPos: number | null = null;
+      if (positions.length === 1) {
+        chosenPos = positions[0];
+      } else if (occurrenceIndex !== undefined) {
+        if (occurrenceIndex >= 0 && occurrenceIndex < positions.length) {
+          chosenPos = positions[occurrenceIndex];
+        } else {
+          return {
+            success: false,
+            file: relativeFile,
+            oldText: originalText,
+            newText,
+            error: `Invalid occurrenceIndex: ${occurrenceIndex}. Found ${positions.length} matches.`
+          };
+        }
+      } else if (line !== undefined) {
+        const lineNums = positions.map(p => code.slice(0, p).split('\n').length);
+        const exactLineMatches = lineNums.filter(l => l === line);
+        if (exactLineMatches.length === 1) {
+          const idx = lineNums.indexOf(line);
+          chosenPos = positions[idx];
+        } else {
+          return {
+            success: false,
+            file: relativeFile,
+            oldText: originalText,
+            newText,
+            error: `Ambiguous: found ${positions.length} matches for "${originalText}" in ${relativeFile}`
+          };
+        }
+      } else {
+        return {
+          success: false,
+          file: relativeFile,
+          oldText: originalText,
+          newText,
+          error: `Ambiguous: found ${positions.length} matches for "${originalText}" in ${relativeFile}`
+        };
+      }
+
+      matchedLine = code.slice(0, chosenPos).split('\n').length;
+      updatedCode = code.slice(0, chosenPos) + newText + code.slice(chosenPos + searchTarget.length);
     }
 
     // Validate that the updated code parses cleanly

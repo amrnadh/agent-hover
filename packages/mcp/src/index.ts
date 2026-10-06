@@ -14,26 +14,44 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { discoverSession, BRAND } from "@agent-hover/core";
 
 /** Default port for the Agent Hover bridge server */
 const DEFAULT_BRIDGE_PORT = 9850;
 
 /**
- * Resolves the bridge server port from environment variable or falls back to default.
+ * Resolves the bridge server connection:
+ * 1. Discover session file (.agent-hover/session.json)
+ * 2. Fall back to COMPONENT_POINTER_PORT / AGENT_HOVER_PORT environment variables
+ * 3. Fall back to DEFAULT_BRIDGE_PORT (9850)
  */
-function getBridgePort(): number {
-  const envPort = process.env.COMPONENT_POINTER_PORT;
+function resolveBridgeConnection(): { port: number; token?: string } {
+  try {
+    const session = discoverSession();
+    if (session) {
+      return { port: session.port, token: session.token };
+    }
+  } catch {}
+
+  const envPort = process.env.COMPONENT_POINTER_PORT || process.env[`${BRAND.envPrefix}_PORT`];
   if (envPort) {
     const parsed = parseInt(envPort, 10);
     if (!isNaN(parsed) && parsed > 0 && parsed <= 65535) {
-      return parsed;
+      return { port: parsed, token: process.env[`${BRAND.envPrefix}_TOKEN`] };
     }
   }
-  return DEFAULT_BRIDGE_PORT;
+
+  return { port: DEFAULT_BRIDGE_PORT };
 }
 
-const bridgePort = getBridgePort();
-const bridgeBaseUrl = `http://localhost:${bridgePort}`;
+function getBridgePort(): number {
+  return resolveBridgeConnection().port;
+}
+
+function getBridgeBaseUrl(): string {
+  const { port } = resolveBridgeConnection();
+  return `http://127.0.0.1:${port}`;
+}
 
 /**
  * Helper to determine if an error indicates a connection failure to the bridge server.
@@ -67,16 +85,17 @@ function isConnectionError(error: unknown): boolean {
  * @returns MCP tool result payload with helpful error details
  */
 function handleBridgeError(error: unknown) {
+  const { port } = resolveBridgeConnection();
   if (isConnectionError(error)) {
     return {
       content: [
         {
           type: "text" as const,
           text:
-            `Error: Could not connect to the Agent Hover bridge server at ${bridgeBaseUrl}.\n\n` +
+            `Error: Could not connect to the Agent Hover bridge server at http://127.0.0.1:${port}.\n\n` +
             `Please make sure your Vite dev server is running with the Agent Hover plugin enabled:\n` +
             `  npm run dev\n\n` +
-            `If your dev server is running on a different port, set the COMPONENT_POINTER_PORT environment variable (current: ${bridgePort}).`,
+            `If your dev server is running on a different port, ensure .agent-hover/session.json is present or set COMPONENT_POINTER_PORT (current: ${port}).`,
         },
       ],
       isError: true,
@@ -146,12 +165,18 @@ async function parseBridgeResponse(response: Response): Promise<string> {
  * @returns Parsed response string
  */
 async function postToBridge(endpoint: string, payload: unknown): Promise<string> {
-  const response = await fetch(`${bridgeBaseUrl}${endpoint}`, {
+  const conn = resolveBridgeConnection();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "text/markdown, text/plain, application/json, */*",
+  };
+  if (conn.token) {
+    headers["Authorization"] = `Bearer ${conn.token}`;
+  }
+
+  const response = await fetch(`http://127.0.0.1:${conn.port}${endpoint}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/markdown, text/plain, application/json, */*",
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -165,11 +190,17 @@ async function postToBridge(endpoint: string, payload: unknown): Promise<string>
  * @returns Parsed response string
  */
 async function getFromBridge(endpoint: string): Promise<string> {
-  const response = await fetch(`${bridgeBaseUrl}${endpoint}`, {
+  const conn = resolveBridgeConnection();
+  const headers: Record<string, string> = {
+    Accept: "text/markdown, text/plain, application/json, */*",
+  };
+  if (conn.token) {
+    headers["Authorization"] = `Bearer ${conn.token}`;
+  }
+
+  const response = await fetch(`http://127.0.0.1:${conn.port}${endpoint}`, {
     method: "GET",
-    headers: {
-      Accept: "text/markdown, text/plain, application/json, */*",
-    },
+    headers,
   });
 
   return parseBridgeResponse(response);
@@ -334,8 +365,103 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "list_agent_tasks",
+        description:
+          "List tasks sent by the developer from the browser. Call this when the user says they sent a task from the browser, or to inspect pending UI instructions. Returned queued tasks are marked as delivered.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            status: {
+              type: "array",
+              items: { type: "string" },
+              description: "Filter by status (queued, delivered, in_progress, done, failed). Default: ['queued', 'delivered']",
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of tasks to return (default: 50)",
+            },
+          },
+        },
+      },
+      {
+        name: "claim_agent_task",
+        description:
+          "Claim a task from the delivery queue to start working on it. Returns the task details and rendered prompt context. Transitions task to in_progress.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique ID of the task to claim",
+            },
+            format: {
+              type: "string",
+              enum: ["compact", "standard", "deep"],
+              description: "Prompt formatting detail level. Default: standard",
+            },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "complete_agent_task",
+        description:
+          "Mark a claimed task as done or failed with a summary of changes and list of modified files.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique ID of the task to complete",
+            },
+            status: {
+              type: "string",
+              enum: ["done", "failed"],
+              description: "Outcome status of the task. Default: done",
+            },
+            summary: {
+              type: "string",
+              description: "Summary of the changes made or reason for failure",
+            },
+            filesChanged: {
+              type: "array",
+              items: { type: "string" },
+              description: "List of files that were modified",
+            },
+            error: {
+              type: "string",
+              description: "Error details if the task failed",
+            },
+          },
+          required: ["id", "summary"],
+        },
+      },
+      {
+        name: "get_component_source",
+        description:
+          "Get a path-validated source slice of a component file.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            file: {
+              type: "string",
+              description: "Relative path to the component file (e.g. src/Button.tsx)",
+            },
+            lineStart: {
+              type: "number",
+              description: "Starting line number (1-based, inclusive)",
+            },
+            lineEnd: {
+              type: "number",
+              description: "Ending line number (1-based, inclusive)",
+            },
+          },
+          required: ["file"],
+        },
+      },
+      {
         name: "get_latest_agent_task",
-        description: "Get the latest component context, instruction, or note sent by the developer from the Agent Hover browser UI using the 'Send to Agent' button.",
+        description: "Get the latest component context, instruction, or note sent from the browser UI. Deprecated: prefer list_agent_tasks and claim_agent_task for reliable queue delivery.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -508,6 +634,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "list_agent_tasks": {
+        const status = args?.status as string[] | undefined;
+        const limit = args?.limit as number | undefined;
+        const params = new URLSearchParams();
+        if (status && Array.isArray(status) && status.length > 0) {
+          params.set("status", status.join(","));
+        } else {
+          params.set("status", "queued,delivered");
+        }
+        if (typeof limit === "number") {
+          params.set("limit", String(limit));
+        }
+        const result = await getFromBridge(`/api/agent/tasks?${params.toString()}`);
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
+      case "claim_agent_task": {
+        const id = args?.id as string | undefined;
+        const format = (args?.format as string | undefined) || "standard";
+        if (!id || typeof id !== "string") {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'id' parameter is required." }],
+            isError: true,
+          };
+        }
+        await postToBridge(`/api/agent/tasks/${encodeURIComponent(id)}/claim`, { client: "mcp-agent" });
+        const taskWithPrompt = await getFromBridge(
+          `/api/agent/tasks/${encodeURIComponent(id)}?format=${encodeURIComponent(format)}`
+        );
+        return {
+          content: [{ type: "text" as const, text: taskWithPrompt }],
+        };
+      }
+
+      case "complete_agent_task": {
+        const id = args?.id as string | undefined;
+        const status = (args?.status as string | undefined) || "done";
+        const summary = args?.summary as string | undefined;
+        const filesChanged = args?.filesChanged as string[] | undefined;
+        const error = args?.error as string | undefined;
+        if (!id || !summary) {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'id' and 'summary' parameters are required." }],
+            isError: true,
+          };
+        }
+        const result = await postToBridge(`/api/agent/tasks/${encodeURIComponent(id)}/complete`, {
+          status,
+          summary,
+          filesChanged,
+          error,
+        });
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
+      case "get_component_source": {
+        const file = args?.file as string | undefined;
+        const lineStart = args?.lineStart as number | undefined;
+        const lineEnd = args?.lineEnd as number | undefined;
+        if (!file || typeof file !== "string") {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'file' parameter is required." }],
+            isError: true,
+          };
+        }
+        const result = await postToBridge("/api/source", { file, lineStart, lineEnd });
+        return {
+          content: [{ type: "text" as const, text: result }],
+        };
+      }
+
       case "get_latest_agent_task": {
         const result = await getFromBridge("/api/agent/latest");
         return {
@@ -531,7 +732,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-export { isConnectionError, handleBridgeError, getBridgePort, parseBridgeResponse, server };
+export { isConnectionError, handleBridgeError, getBridgePort, parseBridgeResponse, server, resolveBridgeConnection };
 
 /**
  * Connect the server to stdio transport and begin listening for JSON-RPC messages.
@@ -539,24 +740,33 @@ export { isConnectionError, handleBridgeError, getBridgePort, parseBridgeRespons
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  const conn = resolveBridgeConnection();
   console.error(
-    `Agent Hover MCP server running on stdio (bridge port: ${bridgePort})`
+    `Agent Hover MCP server running on stdio (bridge port: ${conn.port})`
   );
   
-  // Send heartbeat to bridge server
+  // Send presence heartbeat to bridge server every 10s (P1-05 / §7.6)
   const sendHeartbeat = async () => {
     try {
-      await fetch(`${bridgeBaseUrl}/api/mcp/hello`, {
+      const active = resolveBridgeConnection();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (active.token) headers['Authorization'] = `Bearer ${active.token}`;
+      await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        body: JSON.stringify({ client: 'mcp-agent', version: '0.1.1' }),
+      });
+      await fetch(`http://127.0.0.1:${active.port}/api/mcp/hello`, {
+        method: 'POST',
+        headers,
         body: JSON.stringify({ pid: process.pid, version: '0.1.1' }),
       });
     } catch (_) {
-      // Bridge may not be running yet
+      // Bridge dev server may not be active yet
     }
   };
   sendHeartbeat();
-  const heartbeatTimer = setInterval(sendHeartbeat, 15000);
+  const heartbeatTimer = setInterval(sendHeartbeat, 10000);
   heartbeatTimer.unref();
 }
 

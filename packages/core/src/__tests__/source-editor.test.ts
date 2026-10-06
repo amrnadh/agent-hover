@@ -98,6 +98,142 @@ export function Button({ label = 'Click Me' }: { label?: string }) {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
+    expect(result.error).toContain('Could not locate');
+  });
+
+  describe('F-03 Replacement token security and edge cases', () => {
+    it('preserves $1 in newText without corrupting to empty backreference', async () => {
+      const result = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'Button.tsx',
+        component: 'Button',
+        originalText: 'Submit Order',
+        newText: 'Get $100 Off',
+      });
+
+      expect(result.success).toBe(true);
+      const updated = await fs.readFile(sampleFilePath, 'utf-8');
+      expect(updated).toContain('<span>Get $100 Off</span>');
+    });
+
+    it('preserves $& in newText without repeating matched text', async () => {
+      const result = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'Button.tsx',
+        component: 'Button',
+        originalText: 'Submit Order',
+        newText: 'Save & Buy ($& discount)',
+      });
+
+      expect(result.success).toBe(true);
+      const updated = await fs.readFile(sampleFilePath, 'utf-8');
+      expect(updated).toContain('<span>Save & Buy ($& discount)</span>');
+      expect(updated).not.toContain('Submit Order discount');
+    });
+
+    it('preserves $$ in newText without collapsing to single $', async () => {
+      const result = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'Button.tsx',
+        component: 'Button',
+        originalText: 'Submit Order',
+        newText: 'Cost: $$50',
+      });
+
+      expect(result.success).toBe(true);
+      const updated = await fs.readFile(sampleFilePath, 'utf-8');
+      expect(updated).toContain('<span>Cost: $$50</span>');
+    });
+
+    it("preserves $' in newText without inserting post-match string", async () => {
+      const result = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'Button.tsx',
+        component: 'Button',
+        originalText: 'Submit Order',
+        newText: "Price: $'",
+      });
+
+      expect(result.success).toBe(true);
+      const updated = await fs.readFile(sampleFilePath, 'utf-8');
+      expect(updated).toContain("<span>Price: $'</span>");
+    });
+
+    it('handles multi-line text replacements', async () => {
+      const multiLineFile = path.join(tempDir, 'Card.tsx');
+      const content = `export function Card() {
+  return (
+    <div>
+      <p>
+        Line One
+        Line Two
+      </p>
+    </div>
+  );
+}`;
+      await fs.writeFile(multiLineFile, content, 'utf-8');
+
+      const result = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'Card.tsx',
+        originalText: 'Line One\n        Line Two',
+        newText: 'Single Updated Line',
+      });
+
+      expect(result.success).toBe(true);
+      const updated = await fs.readFile(multiLineFile, 'utf-8');
+      expect(updated).toContain('Single Updated Line');
+    });
+
+    it('detects ambiguous matches and returns an error when not disambiguated', async () => {
+      const multiMatchFile = path.join(tempDir, 'List.tsx');
+      const content = `export function List() {
+  return (
+    <ul>
+      <li>Item</li>
+      <li>Item</li>
+      <li>Item</li>
+    </ul>
+  );
+}`;
+      await fs.writeFile(multiMatchFile, content, 'utf-8');
+
+      // Attempt ambiguous edit without occurrenceIndex or line
+      const ambiguousResult = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'List.tsx',
+        originalText: 'Item',
+        newText: 'Unique Item',
+      });
+
+      expect(ambiguousResult.success).toBe(false);
+      expect(ambiguousResult.error).toContain('Ambiguous: found 3 matches');
+
+      // Disambiguate using occurrenceIndex
+      const resolvedResult = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'List.tsx',
+        originalText: 'Item',
+        newText: 'Second Item',
+        occurrenceIndex: 1,
+      });
+
+      expect(resolvedResult.success).toBe(true);
+      const updated = await fs.readFile(multiMatchFile, 'utf-8');
+      expect(updated).toContain('<li>Second Item</li>');
+
+      // Disambiguate using line
+      const lineResult = await editor.editSourceText({
+        projectRoot: tempDir,
+        file: 'List.tsx',
+        originalText: 'Item',
+        newText: 'Third Item',
+        line: 6,
+      });
+
+      expect(lineResult.success).toBe(true);
+      const updatedAgain = await fs.readFile(multiMatchFile, 'utf-8');
+      expect(updatedAgain).toContain('<li>Third Item</li>');
+    });
   });
 });

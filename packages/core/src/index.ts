@@ -5,3 +5,5 @@ export * from './token-estimator.js';
 export * from './style-detector.js';
 export * from './formatter.js';
 export * from './source-editor.js';
+export * from './brand.js';
+export * from './session.js';

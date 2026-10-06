@@ -6,3 +6,5 @@ dist/
 .env.local
 .agent-hover/
 brag-output/
+test-results/
+playwright-report/

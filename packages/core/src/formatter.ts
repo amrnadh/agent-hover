@@ -1,4 +1,4 @@
-import type { ComponentContext, ContextLevel, PinSet, TaskContext, FreezeEntry, FrozenFileDirective, ComputedStyleInfo, ScreenshotDiff } from './types.js';
+import type { ComponentContext, ContextLevel, PinSet, TaskContext, FreezeEntry, FrozenFileDirective, ComputedStyleInfo, ScreenshotDiff, AgentTask } from './types.js';
 
 export function formatContextMarkdown(context: ComponentContext, level: ContextLevel): string {
   let md = `## ${context.component.name}\n`;
@@ -218,3 +218,71 @@ export function formatScreenshotDiff(diff: ScreenshotDiff): string {
   md += `**Pixels changed**: ${pct}%\n`;
   return md;
 }
+
+/**
+ * Formats an AgentTask into markdown prompt text at the requested detail level (P1-07).
+ */
+export function formatTaskMarkdown(
+  task: AgentTask,
+  format: 'compact' | 'standard' | 'deep' = 'standard'
+): string {
+  if (task.payload?.prompt && format === 'compact') {
+    return task.payload.prompt.split('\n\n')[0] || task.payload.prompt;
+  }
+  if (task.payload?.prompt && format === 'standard') {
+    return task.payload.prompt;
+  }
+
+  let md = `# Task [${task.id}]\n\n`;
+
+  if (task.instruction) {
+    md += `**Instruction**: ${task.instruction}\n\n`;
+  }
+
+  if (task.intent) {
+    md += `**Intent**: ${task.intent}\n`;
+  }
+  if (task.scope && task.scope !== 'unspecified') {
+    md += `**Scope**: ${task.scope}\n`;
+    if (task.scope === 'instance') {
+      md += `> Change only the instance at ${task.target.selector || 'this location'}. Do not alter behavior or styles other instances rely on. If the component must change, add an optional prop or local override and explain.\n`;
+    } else if (task.scope === 'component') {
+      md += `> This component is used in ${task.target.instanceCount || 'multiple'} places; changes apply to all.\n`;
+    }
+  }
+
+  if (task.target.component || task.target.file) {
+    md += `\n### Target\n`;
+    if (task.target.component) md += `- **Component**: \`<${task.target.component} />\`\n`;
+    if (task.target.file) {
+      const loc = task.target.lineStart ? `:${task.target.lineStart}${task.target.lineEnd ? `-${task.target.lineEnd}` : ''}` : '';
+      md += `- **Location**: \`${task.target.file}${loc}\`\n`;
+    }
+    if (task.target.selector) md += `- **Selector**: \`${task.target.selector}\`\n`;
+  }
+
+  if (task.payload.notes && task.payload.notes.length > 0) {
+    md += `\n### Notes\n`;
+    for (const note of task.payload.notes) {
+      md += `- ${note}\n`;
+    }
+  }
+
+  if (task.payload.goal) {
+    md += `\n### Goal\n${task.payload.goal}\n`;
+  }
+
+  if (task.payload.pins && task.payload.pins.length > 0) {
+    md += `\n### Pinned Components\n`;
+    for (const pin of task.payload.pins) {
+      md += `- **<${pin.component} />** (\`${pin.file}\`) [${pin.role}]\n`;
+    }
+  }
+
+  if (format === 'deep' && task.payload.source) {
+    md += `\n### Source\n\`\`\`tsx\n${task.payload.source}\n\`\`\`\n`;
+  }
+
+  return md.trim();
+}
+
