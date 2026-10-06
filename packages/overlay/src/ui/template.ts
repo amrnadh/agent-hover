@@ -7,6 +7,8 @@ export function getOverlayHtml(): string {
 ${overlayCss}
         </style>
 
+        <div id="ah-capture-layer" class="ah-capture-layer" aria-hidden="true"></div>
+
         <div id="cp-dock-wrapper">
           <div id="cp-dock">
             <div id="cp-dock-tiles">

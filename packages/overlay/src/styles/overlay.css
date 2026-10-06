@@ -27,6 +27,23 @@
           #cp-dock-wrapper, #cp-flyout, #cp-text-editor, #cp-snap-dropdown, #cp-snap-dropdown *, #cp-snap-preview, #cp-snap-preview *, #cp-snap-lightbox, #cp-snap-lightbox *, #cp-note-popover, #cp-note-popover *, #cp-mcp-modal, #cp-mcp-modal *, #cp-selection-chip, #cp-selection-chip * {
             pointer-events: auto;
           }
+          .ah-capture-layer {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: auto;
+            cursor: crosshair;
+            background: transparent;
+            display: none;
+          }
+          .ah-capture-layer.is-active {
+            display: block;
+          }
+          .ah-capture-layer.is-passthrough {
+            pointer-events: none !important;
+          }
           :host, #cp-dock-wrapper, #cp-dock, #cp-flyout, #cp-highlight {
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, monospace;

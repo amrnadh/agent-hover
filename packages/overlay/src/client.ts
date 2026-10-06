@@ -2,6 +2,7 @@
 import { ICONS } from './icons.js';
 import { getOverlayHtml } from './ui/template.js';
 import { IsolationManager, setupPopover, showPopoverSafe, hidePopoverSafe } from './lib/isolation.js';
+import { CaptureLayer } from './ui/capture-layer.js';
 
 export interface OverlayConfig {
   port: number;
@@ -134,6 +135,10 @@ export function bootstrapOverlay(config: OverlayConfig) {
       setupPopover(shadow.getElementById('cp-snap-lightbox'));
       setupPopover(shadow.getElementById('cp-mcp-modal'));
       setupPopover(shadow.getElementById('cp-dock-wrapper'));
+
+      // Capture layer for isolated inspect mode (P2-03)
+      const captureLayerEl = shadow.getElementById('ah-capture-layer');
+      let captureLayer = null;
 
       // Elements
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
@@ -523,11 +528,13 @@ export function bootstrapOverlay(config: OverlayConfig) {
           dockToggle.classList.add('active');
           showCallout('Inspector Active', 'Alt', 2200);
           updateInspectorCursor(true);
+          if (captureLayer) captureLayer.setActive(true);
           console.log('[agent-hover] Pointer mode ON');
         } else {
           dockToggle.classList.remove('active');
           showCallout('Inspector Paused', 'OFF', 1500);
           updateInspectorCursor(false);
+          if (captureLayer) captureLayer.setActive(false);
           highlight.style.display = 'none';
           if (typeof clearSelection === 'function') clearSelection();
           hideBands();
@@ -3111,17 +3118,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         });
       }
 
-      // Double-click handler for text editing
-      window.addEventListener('dblclick', function(e) {
-        if (!isPointerMode) return;
-        if (e.target && e.target.closest && e.target.closest('#agent-hover-root')) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        if (!el) return;
-        if (el.closest && el.closest('#agent-hover-root')) return;
+      // Double-click handler for text editing (delegated via CaptureLayer)
+      function handleDblClickTarget(el, e) {
+        if (!el || (el.closest && el.closest('#agent-hover-root'))) return;
         if (isFormElement(el)) return;
         if (!isLeafTextElement(el)) {
           showCallout('Element has complex children — select a text element', 'TIP');
@@ -3129,7 +3128,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
 
         openTextEditor(el);
-      }, true);
+      }
 
       // Close text editor on Escape (handled in keydown handler below)
       // Close text editor on click outside
@@ -3268,53 +3267,38 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       });
 
-      // --- Hover Highlight (RAF-throttled, Universal Selection) ---
-      let hoverRafPending = false;
-      window.addEventListener('mousemove', (e) => {
-        if (!isPointerMode || hoverRafPending) return;
-        hoverRafPending = true;
-        requestAnimationFrame(() => {
-          hoverRafPending = false;
+      // --- Hover Highlight (Universal Selection, delegated via CaptureLayer) ---
+      function handleHoverTarget(el, e) {
+        if (!el || (el.closest && el.closest('#agent-hover-root'))) {
+          highlight.style.display = 'none';
+          hideBands();
+          clearDistanceGuides();
+          currentElement = null;
+          return;
+        }
+        if (el === currentElement) return;
+        currentElement = el;
 
-          // Check if cursor is over Agent Hover UI
-          const path = e.composedPath ? e.composedPath() : [];
-          const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
-          if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) {
-            highlight.style.display = 'none';
-            hideBands();
-            return;
-          }
+        // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
+        currentStack = buildHierarchyStack(el);
+        currentStackIndex = 0; // Default to exact element under cursor!
 
-          const el = document.elementFromPoint(e.clientX, e.clientY);
-          if (!el || (el.closest && el.closest('#agent-hover-root'))) {
-            highlight.style.display = 'none';
-            hideBands();
-            return;
-          }
-          if (el === currentElement) return;
-          currentElement = el;
+        // If a selection is active, show measurement guides between selected and hovered
+        if (selectedRect) {
+          const hoveredRect = el.getBoundingClientRect();
+          renderDistanceGuides(selectedRect, hoveredRect);
+        } else {
+          clearDistanceGuides();
+        }
 
-          // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
-          currentStack = buildHierarchyStack(el);
-          currentStackIndex = 0; // Default to exact element under cursor!
-
-          // If a selection is active, show measurement guides between selected and hovered
-          if (selectedRect) {
-            const hoveredRect = el.getBoundingClientRect();
-            renderDistanceGuides(selectedRect, hoveredRect);
-          } else {
-            clearDistanceGuides();
-          }
-
-          // If hovering over the selected element, hide the hover preview so borders don't double
-          if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
-            highlight.style.display = 'none';
-            hideBands();
-          } else {
-            highlightComponent(currentStack[0], false);
-          }
-        });
-      });
+        // If hovering over the selected element, hide the hover preview so borders don't double
+        if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
+          highlight.style.display = 'none';
+          hideBands();
+        } else {
+          highlightComponent(currentStack[0], false);
+        }
+      }
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
@@ -3654,17 +3638,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         return null;
       }
 
-      // --- Click to Inspect ---
-      window.addEventListener('click', async (e) => {
-        if (!isPointerMode) return;
-        const path = e.composedPath ? e.composedPath() : [];
-        const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
-        if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) return;
-        
-        e.preventDefault();
-        e.stopPropagation();
-
-        const clickedEl = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+      // --- Click to Inspect (delegated via CaptureLayer) ---
+      async function handleSelectTarget(clickedEl, e) {
         if (clickedEl && clickedEl !== document.body && clickedEl !== container && (!clickedEl.closest || !clickedEl.closest('#agent-hover-root'))) {
           currentStack = buildHierarchyStack(clickedEl);
           currentStackIndex = 0;
@@ -3709,7 +3684,17 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
 
         await renderFlyoutForStackIndex(targetIndex);
-      }, true);
+      }
+
+      // Initialize CaptureLayer inside Shadow Root (P2-03)
+      if (captureLayerEl) {
+        captureLayer = new CaptureLayer(captureLayerEl, {
+          shadowRoot: shadow,
+          onHover: handleHoverTarget,
+          onSelect: handleSelectTarget,
+          onDblClick: handleDblClickTarget,
+        });
+      }
 
       async function renderFlyoutForStackIndex(index) {
         if (!currentStack || currentStack.length === 0) return;
