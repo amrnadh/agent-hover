@@ -190,10 +190,14 @@ export function bootstrapOverlay(config: OverlayConfig) {
       const flyoutSettingsBtn = shadow.getElementById('cp-flyout-settings');
       const settingsBackBtn = shadow.getElementById('cp-settings-back');
       const viewInspector = shadow.getElementById('cp-view-inspector');
+      const viewPins = shadow.getElementById('cp-view-pins');
       const viewSettings = shadow.getElementById('cp-view-settings');
       const flyoutBadge = shadow.getElementById('cp-flyout-badge');
       const themeSetDark = shadow.getElementById('cp-theme-set-dark');
       const themeSetLight = shadow.getElementById('cp-theme-set-light');
+      const themeSetSystem = shadow.getElementById('cp-theme-set-system');
+      const settingsMinimizeBtn = shadow.getElementById('ah-settings-minimize-btn');
+      const settingsResetPosBtn = shadow.getElementById('ah-settings-reset-pos-btn');
       const prefEditorCursor = shadow.getElementById('cp-pref-editor-cursor');
       const prefEditorVscode = shadow.getElementById('cp-pref-editor-vscode');
       const prefEditorWindsurf = shadow.getElementById('cp-pref-editor-windsurf');
@@ -217,36 +221,90 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       }
 
-      // Settings View Switcher (Dedicated page inside sidebar)
+      // Host offset for coordinate calculations inside reparented dialogs (C)
+      function getHostOffset() {
+        if (!container) return { x: 0, y: 0 };
+        const r = container.getBoundingClientRect();
+        return { x: r.left || 0, y: r.top || 0 };
+      }
+
+      // Sidebar Tab & View Switcher (A.1, A.4, A.5)
+      let currentSidebarTab: 'inspector' | 'pins' | 'settings' | null = null;
       let inSettingsView = false;
-      function toggleSettingsView(force) {
-        inSettingsView = (typeof force === 'boolean') ? force : !inSettingsView;
-        if (inSettingsView) {
-          viewInspector.style.display = 'none';
-          viewSettings.style.display = 'flex';
-          flyoutBadge.style.display = 'none';
-          if (settingsBackBtn) settingsBackBtn.style.display = 'inline-flex';
-          flyoutTitle.textContent = 'Settings';
-          flyoutSettingsBtn.classList.add('active');
-          if (!flyout.classList.contains('open')) {
-            flyout.classList.add('open');
-            dockWrapper.classList.add('sidebar-open');
-          }
-        } else {
-          viewInspector.style.display = 'flex';
-          viewSettings.style.display = 'none';
-          flyoutBadge.style.display = 'inline-flex';
+
+      function setSidebarTab(tab: 'inspector' | 'pins' | 'settings' | null) {
+        currentSidebarTab = tab;
+        inSettingsView = (tab === 'settings');
+
+        if (!tab) {
+          flyout.classList.remove('open');
+          dockWrapper.classList.remove('sidebar-open');
+          if (dockController) dockController.setActiveTab(null);
+          return;
+        }
+
+        flyout.classList.add('open');
+        if (flyout.classList.contains('is-sidebar')) {
+          dockWrapper.classList.add('sidebar-open');
+        }
+        if (dockController) dockController.setActiveTab(tab);
+
+        if (tab === 'inspector') {
+          if (viewInspector) viewInspector.style.display = 'flex';
+          if (viewPins) viewPins.style.display = 'none';
+          if (viewSettings) viewSettings.style.display = 'none';
+          if (flyoutBadge) flyoutBadge.style.display = 'inline-flex';
           if (settingsBackBtn) settingsBackBtn.style.display = 'none';
-          flyoutTitle.textContent = lastInfoName || 'Component Inspector';
-          flyoutSettingsBtn.classList.remove('active');
+          if (flyoutTitle) flyoutTitle.textContent = lastInfoName || 'Component Inspector';
+          if (flyoutSettingsBtn) flyoutSettingsBtn.classList.remove('active');
+        } else if (tab === 'pins') {
+          if (viewInspector) viewInspector.style.display = 'none';
+          if (viewPins) viewPins.style.display = 'flex';
+          if (viewSettings) viewSettings.style.display = 'none';
+          if (flyoutBadge) flyoutBadge.style.display = 'none';
+          if (settingsBackBtn) settingsBackBtn.style.display = 'none';
+          if (flyoutTitle) flyoutTitle.textContent = 'Pinned Stack';
+          if (flyoutSettingsBtn) flyoutSettingsBtn.classList.remove('active');
+        } else if (tab === 'settings') {
+          if (viewInspector) viewInspector.style.display = 'none';
+          if (viewPins) viewPins.style.display = 'none';
+          if (viewSettings) viewSettings.style.display = 'flex';
+          if (flyoutBadge) flyoutBadge.style.display = 'none';
+          if (settingsBackBtn) settingsBackBtn.style.display = 'inline-flex';
+          if (flyoutTitle) flyoutTitle.textContent = 'Settings';
+          if (flyoutSettingsBtn) flyoutSettingsBtn.classList.add('active');
+        }
+      }
+
+      function toggleSettingsView(force?: boolean) {
+        if (typeof force === 'boolean') {
+          setSidebarTab(force ? 'settings' : 'inspector');
+        } else {
+          setSidebarTab(currentSidebarTab === 'settings' ? null : 'settings');
         }
       }
 
       if (flyoutSettingsBtn) {
-        flyoutSettingsBtn.onclick = () => toggleSettingsView();
+        flyoutSettingsBtn.onclick = () => {
+          if (currentSidebarTab === 'settings') {
+            setSidebarTab(null);
+          } else {
+            setSidebarTab('settings');
+          }
+        };
       }
       if (settingsBackBtn) {
-        settingsBackBtn.onclick = () => toggleSettingsView(false);
+        settingsBackBtn.onclick = () => setSidebarTab('inspector');
+      }
+      if (settingsMinimizeBtn) {
+        settingsMinimizeBtn.onclick = () => {
+          if (dockController) dockController.setMinimized(true);
+        };
+      }
+      if (settingsResetPosBtn) {
+        settingsResetPosBtn.onclick = () => {
+          if (dockController) dockController.resetPosition();
+        };
       }
 
       // Editor preference
@@ -527,16 +585,19 @@ export function bootstrapOverlay(config: OverlayConfig) {
           shadowRoot: shadow,
           onToggleInspect: () => togglePointerMode(),
           onOpenPins: () => {
-            flyout.classList.toggle('open');
-            if (flyout.classList.contains('open') && flyout.classList.contains('is-sidebar')) {
-              dockWrapper.classList.add('sidebar-open');
+            if (currentSidebarTab === 'pins') {
+              setSidebarTab(null);
             } else {
-              dockWrapper.classList.remove('sidebar-open');
+              setSidebarTab('pins');
             }
-            const pinBar = shadow.getElementById('cp-pin-bar');
-            if (pinBar) pinBar.scrollIntoView({ behavior: 'smooth' });
           },
-          onOpenSettings: () => toggleSettingsView(),
+          onOpenSettings: () => {
+            if (currentSidebarTab === 'settings') {
+              setSidebarTab(null);
+            } else {
+              setSidebarTab('settings');
+            }
+          },
           onCallout: (text, meta, duration) => showCallout(text, meta, duration),
         });
         dockController.updatePresence({
@@ -545,55 +606,6 @@ export function bootstrapOverlay(config: OverlayConfig) {
           agents: connectedAgents,
         });
       }
-
-      dockToggle.onclick = togglePointerMode;
-
-      // Hover labels for dock buttons
-      dockToggle.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          calloutText.textContent = isPointerMode ? 'Inspector Mode' : 'Inspect Element';
-          calloutMeta.textContent = 'Alt';
-          callout.classList.add('show');
-        }
-      });
-      dockToggle.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockPins.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          const pinCount = shadow.getElementById('cp-pin-count')?.textContent || '0';
-          calloutText.textContent = 'Pinned Stack';
-          calloutMeta.textContent = pinCount + ' pinned';
-          callout.classList.add('show');
-        }
-      });
-      dockPins.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockHandle.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          calloutText.textContent = 'Drag Dock';
-          calloutMeta.textContent = 'Move';
-          callout.classList.add('show');
-        }
-      });
-      dockHandle.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockPins.onclick = () => {
-        flyout.classList.toggle('open');
-        if (flyout.classList.contains('open') && flyout.classList.contains('is-sidebar')) {
-          dockWrapper.classList.add('sidebar-open');
-        } else {
-          dockWrapper.classList.remove('sidebar-open');
-        }
-        const pinBar = shadow.getElementById('cp-pin-bar');
-        pinBar.scrollIntoView({ behavior: 'smooth' });
-      };
-
 
       // Theme toggle (dark/light mode)
       const themeToggle = shadow.getElementById('cp-flyout-theme');
@@ -622,14 +634,24 @@ export function bootstrapOverlay(config: OverlayConfig) {
           shadow.host.classList.add('light-mode');
           if (themeIconDark) themeIconDark.style.display = 'none';
           if (themeIconLight) themeIconLight.style.display = 'block';
-          if (themeSetDark) themeSetDark.classList.remove('primary');
-          if (themeSetLight) themeSetLight.classList.add('primary');
         } else {
           shadow.host.classList.remove('light-mode');
           if (themeIconDark) themeIconDark.style.display = 'block';
           if (themeIconLight) themeIconLight.style.display = 'none';
+        }
+
+        if (storedTheme === 'system') {
+          if (themeSetSystem) themeSetSystem.classList.add('primary');
+          if (themeSetDark) themeSetDark.classList.remove('primary');
+          if (themeSetLight) themeSetLight.classList.remove('primary');
+        } else if (storedTheme === 'dark') {
+          if (themeSetSystem) themeSetSystem.classList.remove('primary');
           if (themeSetDark) themeSetDark.classList.add('primary');
           if (themeSetLight) themeSetLight.classList.remove('primary');
+        } else if (storedTheme === 'light') {
+          if (themeSetSystem) themeSetSystem.classList.remove('primary');
+          if (themeSetDark) themeSetDark.classList.remove('primary');
+          if (themeSetLight) themeSetLight.classList.add('primary');
         }
       }
       applyTheme();
@@ -666,11 +688,21 @@ export function bootstrapOverlay(config: OverlayConfig) {
           showCallout('Light mode', 'THEME');
         };
       }
+      if (themeSetSystem) {
+        themeSetSystem.onclick = () => {
+          storedTheme = 'system';
+          try { localStorage.setItem('agent-hover-theme', 'system'); } catch(e) {}
+          applyTheme();
+          showCallout('System mode', 'THEME');
+        };
+      }
 
-      shadow.getElementById('cp-flyout-close').onclick = () => {
-        flyout.classList.remove('open');
-        dockWrapper.classList.remove('sidebar-open');
-      };
+      const flyoutCloseBtn = shadow.getElementById('cp-flyout-close');
+      if (flyoutCloseBtn) {
+        flyoutCloseBtn.onclick = () => {
+          setSidebarTab(null);
+        };
+      }
 
       // Flyout Sidebar Mode Switcher & Draggable Floating Panel
       const flyoutModeToggle = shadow.getElementById('cp-flyout-mode-toggle');
@@ -825,7 +857,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
           if (showSpacingOverlay) {
             toggleSpacingBtn.classList.add('primary');
             toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Spacing ON';
-            if (currentElement) positionBands(currentElement);
+            const target = selectedElement || (selectedTarget && selectedTarget.element) || currentElement;
+            if (target) positionBands(target);
           } else {
             toggleSpacingBtn.classList.remove('primary');
             toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay';
@@ -2599,6 +2632,11 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (!el) return;
         const cs = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
+        const offset = getHostOffset();
+        const top = rect.top - offset.y;
+        const bottom = rect.bottom - offset.y;
+        const left = rect.left - offset.x;
+        const right = rect.right - offset.x;
         const px = (v) => parseFloat(v) || 0;
         const mt = px(cs.marginTop), mr = px(cs.marginRight), mb = px(cs.marginBottom), ml = px(cs.marginLeft);
         const pt = px(cs.paddingTop), pr = px(cs.paddingRight), pb = px(cs.paddingBottom), pl = px(cs.paddingLeft);
@@ -2607,10 +2645,10 @@ export function bootstrapOverlay(config: OverlayConfig) {
         // 1. Draw full-canvas dashed Axis Projection Lines (Figma / Studio inspection style)
         if (axisGuides) {
           const lines = [
-            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.top) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.bottom) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.left) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.right) + 'px;"></div>'
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(top) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(bottom) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(left) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(right) + 'px;"></div>'
           ];
 
           // Flex / Grid direct child dashed frames
@@ -2621,7 +2659,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
               if (!(child instanceof HTMLElement) || child.id === 'agent-hover-root') continue;
               const cr = child.getBoundingClientRect();
               if (cr.width > 0 && cr.height > 0) {
-                lines.push('<div class="cp-layout-child-frame" style="top:' + Math.round(cr.top) + 'px; left:' + Math.round(cr.left) + 'px; width:' + Math.round(cr.width) + 'px; height:' + Math.round(cr.height) + 'px;"></div>');
+                lines.push('<div class="cp-layout-child-frame" style="top:' + Math.round(cr.top - offset.y) + 'px; left:' + Math.round(cr.left - offset.x) + 'px; width:' + Math.round(cr.width) + 'px; height:' + Math.round(cr.height) + 'px;"></div>');
               }
             }
           }
@@ -2633,8 +2671,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (marginBand) {
           if (mt || mr || mb || ml) {
             marginBand.style.display = 'block';
-            marginBand.style.top = (rect.top - mt) + 'px';
-            marginBand.style.left = (rect.left - ml) + 'px';
+            marginBand.style.top = (top - mt) + 'px';
+            marginBand.style.left = (left - ml) + 'px';
             marginBand.style.width = (rect.width + ml + mr) + 'px';
             marginBand.style.height = (rect.height + mt + mb) + 'px';
             marginBand.style.borderTopWidth = mt + 'px';
@@ -2650,8 +2688,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (paddingBand) {
           if (pt || pr || pb || pl) {
             paddingBand.style.display = 'block';
-            paddingBand.style.top = (rect.top + bt) + 'px';
-            paddingBand.style.left = (rect.left + blw) + 'px';
+            paddingBand.style.top = (top + bt) + 'px';
+            paddingBand.style.left = (left + blw) + 'px';
             paddingBand.style.width = Math.max(0, rect.width - blw - brw) + 'px';
             paddingBand.style.height = Math.max(0, rect.height - bt - bb) + 'px';
             paddingBand.style.borderTopWidth = pt + 'px';
@@ -2685,13 +2723,19 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (Math.abs(selRect.top - hovRect.top) < 2 && Math.abs(selRect.left - hovRect.left) < 2 &&
             Math.abs(selRect.width - hovRect.width) < 2 && Math.abs(selRect.height - hovRect.height) < 2) return;
 
-        const selBottom = selRect.top + selRect.height;
-        const selRight = selRect.left + selRect.width;
-        const hovBottom = hovRect.top + hovRect.height;
-        const hovRight = hovRect.left + hovRect.width;
+        const offset = getHostOffset();
+        const sTop = selRect.top - offset.y;
+        const sLeft = selRect.left - offset.x;
+        const sBottom = sTop + selRect.height;
+        const sRight = sLeft + selRect.width;
 
-        const overlapX = selRect.left < hovRight && selRight > hovRect.left;
-        const overlapY = selRect.top < hovBottom && selBottom > hovRect.top;
+        const hTop = hovRect.top - offset.y;
+        const hLeft = hovRect.left - offset.x;
+        const hBottom = hTop + hovRect.height;
+        const hRight = hLeft + hovRect.width;
+
+        const overlapX = sLeft < hRight && sRight > hLeft;
+        const overlapY = sTop < hBottom && sBottom > hTop;
 
         function addLine(cls, top, left, w, h) {
           const el = document.createElement('div');
@@ -2714,12 +2758,12 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
         // Vertical gap (elements don't overlap vertically)
         if (!overlapY) {
-          const isAbove = selRect.top > hovBottom;
-          const gapTop = isAbove ? hovBottom : selBottom;
-          const gapBottom = isAbove ? selRect.top : hovRect.top;
+          const isAbove = sTop > hBottom;
+          const gapTop = isAbove ? hBottom : sBottom;
+          const gapBottom = isAbove ? sTop : hTop;
           const gap = Math.round(gapBottom - gapTop);
           if (gap > 0) {
-            const midX = Math.max(selRect.left + selRect.width / 2, hovRect.left + hovRect.width / 2);
+            const midX = Math.max(sLeft + selRect.width / 2, hLeft + hovRect.width / 2);
             addLine('vertical', gapTop, midX, null, gap);
             addPill(gap + 'px', gapTop + gap / 2, midX);
           }
@@ -2727,12 +2771,12 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
         // Horizontal gap (elements don't overlap horizontally)
         if (!overlapX) {
-          const isLeft = selRect.left > hovRight;
-          const gapLeft = isLeft ? hovRight : selRight;
-          const gapRight = isLeft ? selRect.left : hovRect.left;
+          const isLeft = sLeft > hRight;
+          const gapLeft = isLeft ? hRight : sRight;
+          const gapRight = isLeft ? sLeft : hLeft;
           const gap = Math.round(gapRight - gapLeft);
           if (gap > 0) {
-            const midY = Math.max(selRect.top + selRect.height / 2, hovRect.top + hovRect.height / 2);
+            const midY = Math.max(sTop + selRect.height / 2, hTop + hovRect.height / 2);
             addLine('horizontal', midY, gapLeft, gap, null);
             addPill(gap + 'px', midY, gapLeft + gap / 2);
           }
@@ -2740,35 +2784,35 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
         // Both overlap (nested/containment) — show edge inset distances
         if (overlapX && overlapY) {
-          const topGap = Math.round(Math.abs(hovRect.top - selRect.top));
-          const leftGap = Math.round(Math.abs(hovRect.left - selRect.left));
-          const bottomGap = Math.round(Math.abs(selBottom - hovBottom));
-          const rightGap = Math.round(Math.abs(selRight - hovRight));
+          const topGap = Math.round(Math.abs(hTop - sTop));
+          const leftGap = Math.round(Math.abs(hLeft - sLeft));
+          const bottomGap = Math.round(Math.abs(sBottom - hBottom));
+          const rightGap = Math.round(Math.abs(sRight - hRight));
 
-          const innerLeft = Math.max(selRect.left, hovRect.left);
-          const innerRight = Math.min(selRight, hovRight);
-          const innerTop = Math.max(selRect.top, hovRect.top);
-          const innerBottom = Math.min(selBottom, hovBottom);
+          const innerLeft = Math.max(sLeft, hLeft);
+          const innerRight = Math.min(sRight, hRight);
+          const innerTop = Math.max(sTop, hTop);
+          const innerBottom = Math.min(sBottom, hBottom);
           const midX = (innerLeft + innerRight) / 2;
           const midY = (innerTop + innerBottom) / 2;
 
           if (topGap > 4) {
-            const t = Math.min(selRect.top, hovRect.top);
+            const t = Math.min(sTop, hTop);
             addLine('vertical', t, midX, null, topGap);
             addPill(topGap + 'px', t + topGap / 2, midX);
           }
           if (leftGap > 4) {
-            const l = Math.min(selRect.left, hovRect.left);
+            const l = Math.min(sLeft, hLeft);
             addLine('horizontal', midY, l, leftGap, null);
             addPill(leftGap + 'px', midY, l + leftGap / 2);
           }
           if (bottomGap > 4 && bottomGap !== topGap) {
-            const bTop = Math.min(selBottom, hovBottom);
+            const bTop = Math.min(sBottom, hBottom);
             addLine('vertical', bTop, midX, null, bottomGap);
             addPill(bottomGap + 'px', bTop + bottomGap / 2, midX);
           }
           if (rightGap > 4 && rightGap !== leftGap) {
-            const rLeft = Math.min(selRight, hovRight);
+            const rLeft = Math.min(sRight, hRight);
             addLine('horizontal', midY, rLeft, rightGap, null);
             addPill(rightGap + 'px', midY, rLeft + rightGap / 2);
           }
@@ -3251,8 +3295,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
             activeEl.blur();
             return;
           }
-          flyout.classList.remove('open');
-          dockWrapper.classList.remove('sidebar-open');
+          setSidebarTab(null);
           if (typeof clearSelection === 'function') clearSelection();
           return;
         }
@@ -3290,7 +3333,11 @@ export function bootstrapOverlay(config: OverlayConfig) {
       function handleHoverTarget(el, e) {
         if (!el || (el.closest && el.closest('#agent-hover-root'))) {
           highlight.style.display = 'none';
-          hideBands();
+          if (!showSpacingOverlay || (!selectedElement && !currentElement)) {
+            hideBands();
+          } else {
+            positionBands(selectedElement || currentElement);
+          }
           clearDistanceGuides();
           currentElement = null;
           return;
@@ -3313,15 +3360,25 @@ export function bootstrapOverlay(config: OverlayConfig) {
         // If hovering over the selected element, hide the hover preview so borders don't double
         if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
           highlight.style.display = 'none';
-          hideBands();
+          if (showSpacingOverlay) {
+            positionBands(selectedElement || el);
+          } else {
+            hideBands();
+          }
         } else {
           highlightComponent(currentStack[0], false);
+          if (showSpacingOverlay && selectedElement) {
+            positionBands(selectedElement);
+          }
         }
       }
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
         if (typeof updateSelectionFrame === 'function') updateSelectionFrame();
+        if (showSpacingOverlay && (selectedElement || currentElement)) {
+          positionBands(selectedElement || currentElement);
+        }
         if (!currentComponentInfo || highlight.style.display === 'none') return;
         const target = currentStack[currentStackIndex] || currentComponentInfo;
 
@@ -3755,9 +3812,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
         clearDistanceGuides();
 
-        flyout.classList.add('open');
-        if (flyout.classList.contains('is-sidebar')) {
-          dockWrapper.classList.add('sidebar-open');
+        setSidebarTab('inspector');
+        if (showSpacingOverlay && (item.element || selectedElement)) {
+          positionBands(item.element || selectedElement);
         }
 
         // Render interactive breadcrumbs with proper HTML escaping

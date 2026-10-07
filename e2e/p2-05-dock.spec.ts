@@ -32,7 +32,6 @@ test.describe('P2-05 Floating Horizontal Dock Pill (§7.10, D-07)', () => {
     const toggleBtn = page.locator('#cp-dock-toggle');
     const pinsBtn = page.locator('#cp-dock-pins');
     const settingsBtn = page.locator('#ah-dock-settings-btn');
-    const dismissBtn = page.locator('#ah-dock-dismiss');
     const dragHandle = page.locator('#cp-dock-handle');
 
     await expect(brand).toBeVisible();
@@ -40,17 +39,16 @@ test.describe('P2-05 Floating Horizontal Dock Pill (§7.10, D-07)', () => {
     await expect(toggleBtn).toBeVisible();
     await expect(pinsBtn).toBeVisible();
     await expect(settingsBtn).toBeVisible();
-    await expect(dismissBtn).toBeVisible();
     await expect(dragHandle).toBeVisible();
 
     // 3. Inspect Toggle
     await expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
-    await toggleBtn.click({ force: true });
+    await toggleBtn.click();
     await expect(toggleBtn).toHaveAttribute('aria-pressed', 'true');
     await expect(toggleBtn).toHaveClass(/active/);
 
     // Toggle back off
-    await toggleBtn.click({ force: true });
+    await toggleBtn.click();
     await expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
 
     // Screenshots directory
@@ -94,13 +92,16 @@ test.describe('P2-05 Floating Horizontal Dock Pill (§7.10, D-07)', () => {
     expect(dotClass).toContain('status-active');
     await page.screenshot({ path: path.join(screenshotsDir, '03-dock-presence-active.png') });
 
-    // 6. Dismiss & restore test
-    await dismissBtn.click({ force: true });
-    await expect(dockWrapper).toHaveClass(/is-hidden/);
-
-    // Press Meta+Shift+X (or Ctrl+Shift+X) to restore
+    // 6. Minimize & restore test via Cmd/Ctrl+Shift+X (A.6)
     await page.keyboard.press('Control+Shift+KeyX');
-    await expect(dockWrapper).not.toHaveClass(/is-hidden/);
+    const minimizedBtn = page.locator('#ah-dock-minimized');
+    await expect(minimizedBtn).toBeVisible();
+    await expect(dock).toBeHidden();
+
+    // Clicking minimized button restores dock
+    await minimizedBtn.click();
+    await expect(dock).toBeVisible();
+    await expect(minimizedBtn).toBeHidden();
 
     // 7. Drag and edge snapping persistence
     const handleBox = await dragHandle.boundingBox();

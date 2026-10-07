@@ -56,7 +56,7 @@
   --ah-text-primary: #f2f4f8;
   --ah-text-secondary: #9aa0a6;
   --ah-text-muted: #757d8a;
-  --ah-text-on-accent: #ffffff;
+  --ah-text-on-accent: #090a0b;
   --ah-accent-primary: #0090ff;
   --ah-accent-hover: #0080e5;
   --ah-accent-subtle: rgba(0, 144, 255, 0.12);
@@ -91,6 +91,11 @@
   --bg-surface-elevated: var(--ah-surface-elevated);
   --bg-surface-sunken: var(--ah-surface-sunken);
   --shadow-popover: var(--ah-shadow-popover);
+  --border-accent: rgba(255, 255, 255, 0.22);
+  --accent-subtle: var(--ah-accent-subtle);
+  --measure-color: var(--ah-accent-primary);
+  --frame-color: var(--ah-accent-primary);
+  --frame-raw: var(--ah-accent-hover);
 }
 
 :host(.light-mode) {
@@ -140,6 +145,11 @@
   --bg-surface-elevated: var(--ah-surface-elevated);
   --bg-surface-sunken: var(--ah-surface-sunken);
   --shadow-popover: var(--ah-shadow-popover);
+  --border-accent: rgba(0, 0, 0, 0.28);
+  --accent-subtle: var(--ah-accent-subtle);
+  --measure-color: var(--ah-accent-primary);
+  --frame-color: var(--ah-accent-primary);
+  --frame-raw: var(--ah-accent-hover);
 }
 
 /* Tabular Numbers on Numeric Readouts */
@@ -149,6 +159,7 @@
 .cp-token-badge,
 .cp-reticle-badge,
 .cp-line-num,
+.cp-dist-pill,
 .cp-coord-readout {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;

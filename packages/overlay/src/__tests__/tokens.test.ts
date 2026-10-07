@@ -74,9 +74,10 @@ describe('Design Tokens Architecture (P2-04 / §7.10)', () => {
       const ratioMuted = getContrastRatio(textMuted, surfaceBase);
       expect(ratioMuted).toBeGreaterThanOrEqual(4.5);
 
-      // Accent button UI control (WCAG SC 1.4.11 UI Components >= 3:1)
-      const ratioAccent = getContrastRatio(textOnAccent, accentPrimary);
-      expect(ratioAccent).toBeGreaterThanOrEqual(3.0);
+      // Text on filled accent button / badge (WCAG AA text >= 4.5:1)
+      const textOnAccentDark = '#090a0b';
+      const ratioAccent = getContrastRatio(textOnAccentDark, accentPrimary);
+      expect(ratioAccent).toBeGreaterThanOrEqual(4.5);
     });
 
     it('satisfies WCAG AA contrast for light theme tokens (>= 4.5:1 text, >= 3:1 controls)', () => {
@@ -99,9 +100,9 @@ describe('Design Tokens Architecture (P2-04 / §7.10)', () => {
       const ratioMuted = getContrastRatio(textMuted, surfaceBase);
       expect(ratioMuted).toBeGreaterThanOrEqual(4.5);
 
-      // Accent button UI control (WCAG SC 1.4.11 UI Components >= 3:1)
+      // Text on filled accent button / badge (WCAG AA text >= 4.5:1)
       const ratioAccent = getContrastRatio(textOnAccent, accentPrimary);
-      expect(ratioAccent).toBeGreaterThanOrEqual(3.0);
+      expect(ratioAccent).toBeGreaterThanOrEqual(4.5);
     });
   });
 });

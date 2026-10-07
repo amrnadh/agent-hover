@@ -6,7 +6,7 @@
 
 #cp-dock-wrapper {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--ah-z-floating);
@@ -14,9 +14,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  pointer-events: auto;
+  pointer-events: none;
   transition: opacity var(--ah-duration-fast) var(--ah-ease-standard),
               transform var(--ah-duration-fast) var(--ah-ease-standard);
+}
+
+#cp-dock,
+#ah-first-run-hint,
+#ah-dock-minimized {
+  pointer-events: auto;
 }
 
 #cp-dock-wrapper.is-hidden {
@@ -47,7 +53,10 @@
   align-items: center;
   gap: 6px;
   padding: 0 4px;
-  cursor: pointer;
+}
+
+.ah-dock-brand-segment {
+  cursor: default !important;
 }
 
 .ah-dock-brand-icon {
@@ -112,20 +121,37 @@
   color: var(--ah-text-primary);
 }
 
-.ah-dock-btn:focus-visible {
+.ah-dock-btn:focus-visible,
+.ah-dock-minimized:focus-visible {
   outline: 2px solid var(--ah-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
+/* Inspect Active: soft accent tint + accent icon, NOT solid fill (A.3) */
+#cp-dock-toggle.active,
+#cp-dock-toggle[aria-pressed="true"] {
+  background: var(--ah-accent-subtle) !important;
+  color: var(--ah-accent-primary) !important;
+  border: 1px solid rgba(0, 144, 255, 0.28) !important;
+  box-shadow: none !important;
+}
+
+#cp-dock-toggle.active svg,
+#cp-dock-toggle[aria-pressed="true"] svg {
+  stroke: var(--ah-accent-primary) !important;
+}
+
+/* Panel Buttons (Pins, Settings) Active: highlighted while sidebar tab is visible (A.1, A.4, A.5) */
 .ah-dock-btn.active,
-.ah-dock-btn[aria-pressed="true"] {
-  background: var(--ah-accent-primary);
-  color: var(--ah-text-on-accent);
+.ah-dock-btn[aria-selected="true"] {
+  background: var(--ah-surface-elevated, #232326);
+  color: var(--ah-text-primary, #ffffff);
+  border: 1px solid var(--ah-border-emphasis, rgba(255, 255, 255, 0.22));
 }
 
 .ah-dock-btn.active svg,
-.ah-dock-btn[aria-pressed="true"] svg {
-  stroke: var(--ah-text-on-accent);
+.ah-dock-btn[aria-selected="true"] svg {
+  stroke: var(--ah-text-primary, #ffffff);
 }
 
 .ah-dock-btn-label {
@@ -134,13 +160,38 @@
   font-weight: 500;
 }
 
-.ah-dock-close-btn {
-  padding: 0 6px;
-  color: var(--ah-text-muted);
+/* Minimized Dock Button (A.6) */
+.ah-dock-minimized {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ah-radius-full);
+  background: var(--ah-surface-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--ah-border-subtle);
+  box-shadow: var(--ah-shadow-dock);
+  color: var(--ah-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--ah-duration-fast) var(--ah-ease-spring),
+              background var(--ah-duration-fast) var(--ah-ease-standard);
 }
-.ah-dock-close-btn:hover {
-  color: var(--ah-rose);
-  background: var(--ah-rose-subtle);
+
+.ah-dock-minimized:hover {
+  background: var(--ah-surface-elevated);
+  transform: scale(1.05);
+}
+
+.ah-dock-minimized .ah-dock-status-dot {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 .ah-dock-handle {
@@ -203,4 +254,60 @@
 #cp-dock-callout.show {
   display: flex !important;
   pointer-events: none !important;
+}
+
+.ah-shortcut-chip {
+  background: var(--ah-surface-raised, rgba(255, 255, 255, 0.1));
+  padding: 1px 5px;
+  border-radius: var(--ah-radius-xs, 4px);
+  color: var(--ah-text-muted);
+  font-family: var(--ah-font-mono);
+  font-size: 10px;
+  border: 1px solid var(--ah-border-subtle);
+}
+
+/* First-Run Dismissible Hint (B) */
+.ah-first-run-hint {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ah-surface-elevated);
+  color: var(--ah-text-primary);
+  border: 1px solid var(--ah-border-standard);
+  border-radius: var(--ah-radius-full);
+  box-shadow: var(--ah-shadow-popover);
+  padding: 6px 14px;
+  font-size: var(--ah-text-xs);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  pointer-events: none !important;
+  z-index: 10;
+  animation: ah-hint-fadein 200ms ease-out;
+}
+
+.ah-first-run-hint .ah-hint-text {
+  pointer-events: none !important;
+}
+
+.ah-first-run-hint .ah-hint-close {
+  pointer-events: auto !important;
+  background: none;
+  border: none;
+  color: var(--ah-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.ah-first-run-hint .ah-hint-close:hover {
+  color: var(--ah-text-primary);
+}
+
+@keyframes ah-hint-fadein {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
