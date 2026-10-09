@@ -53,3 +53,24 @@
    - **Reason**: Dock must never become completely invisible with no click target. Replaced by "Minimize Dock" in Settings tab and `Cmd/Ctrl+Shift+X`.
    - **Behavior**: Minimizes dock to a small round brand button with status dot at the same position; clicking the round button restores the dock.
    - **Approval**: Requested and approved by owner in Gate 2.5 item A.6.
+
+---
+
+## 3. Stabilization Pass & Parity Restorations (Gate 2.6)
+
+1. **Legacy Multi-Pill Dock Callout (`#cp-dock-callout`)**:
+   - **Root Cause**: Overlapped Pins button and sat below dock, intercepting pointer hits.
+   - **Resolution**: Removed completely in S1. Replaced with `#ah-dock-tooltip` (350ms delay, `pointer-events: none !important`) and `#ah-toast-callout` (notification toast).
+   - **Verification**: Verified in `e2e/gate-2-6.spec.ts` S1 hit-test (all buttons hit-test to themselves or direct children with 0 overlapping elements).
+2. **Dock Button `transition: all` Radius Lag**:
+   - **Root Cause**: `.ah-dock-btn` had `transition: all` which animated `border-radius` from 9999px down to 8px across 160ms, appearing unrounded during interaction/tests.
+   - **Resolution**: Replaced `transition: all` with explicit property transitions (`color`, `background`, `border-color`, `box-shadow`) in `dock.css`.
+   - **Verification**: Verified in `e2e/gate-2-6.spec.ts` S3 (instant 8px rounded-square active Inspect state).
+3. **Selection Action Chip Visibility Regression (`#cp-selection-chip`)**:
+   - **Root Cause**: Introduced `setupPopover(cp-selection-chip)` in P2-02 added HTML5 `popover="manual"` and CSS `:not(.open) { display: none !important }`, causing the chip to remain permanently hidden since it is a relative child of `#cp-selection-frame`.
+   - **Resolution**: Removed `setupPopover` and `.open` requirement in S4, restoring pure baseline DOM positioning.
+   - **Verification**: Verified in `e2e/gate-2-6.spec.ts` S4 (label formatting with component/tag + first class, 320px max-width, ellipsis).
+4. **Layout Card Color Format**:
+   - **Resolution**: Added canvas 1x1 sRGB conversion in S7 (`formatColorToHex`), displaying swatch plus hex code (e.g., `#879192`), eliminating raw `oklab()` and `color-mix()`.
+   - **Verification**: Verified in `e2e/gate-2-6.spec.ts` S7.
+
