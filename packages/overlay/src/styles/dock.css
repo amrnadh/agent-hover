@@ -60,10 +60,11 @@
 }
 
 .ah-dock-brand-icon {
-  color: var(--ah-text-primary);
+  color: var(--ah-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .ah-dock-status-dot {
@@ -74,6 +75,16 @@
   transition: background var(--ah-duration-fast) var(--ah-ease-standard),
               box-shadow var(--ah-duration-fast) var(--ah-ease-standard);
   display: inline-block;
+}
+
+.ah-dock-brand-icon .ah-dock-status-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--ah-surface-overlay);
+  border-radius: 50%;
 }
 
 .ah-dock-status-dot.status-active {
@@ -112,7 +123,10 @@
   font-size: var(--ah-text-xs);
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--ah-duration-fast) var(--ah-ease-standard);
+  transition: color var(--ah-duration-fast) var(--ah-ease-standard),
+              background var(--ah-duration-fast) var(--ah-ease-standard),
+              border-color var(--ah-duration-fast) var(--ah-ease-standard),
+              box-shadow var(--ah-duration-fast) var(--ah-ease-standard);
   position: relative;
 }
 
@@ -127,12 +141,13 @@
   outline-offset: 2px;
 }
 
-/* Inspect Active: soft accent tint + accent icon, NOT solid fill (A.3) */
+/* Inspect Active: soft accent tint (8px radius) + accent icon, NOT bordered circle (S3) */
 #cp-dock-toggle.active,
 #cp-dock-toggle[aria-pressed="true"] {
   background: var(--ah-accent-subtle) !important;
   color: var(--ah-accent-primary) !important;
   border: 1px solid rgba(0, 144, 255, 0.28) !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
@@ -229,29 +244,53 @@
   transform: scale(1.25);
 }
 
-/* Speech Bubble / Callout */
-#cp-dock-callout,
-#cp-dock-callout * {
+/* Dedicated Dock Tooltip (S2: dark surface, small radius, pointer-events none) */
+.ah-dock-tooltip {
   position: absolute;
-  bottom: calc(100% + 8px);
+  background: var(--ah-surface-elevated, #232326);
+  color: var(--ah-text-primary, #ffffff);
+  border: 1px solid var(--ah-border-standard, rgba(255, 255, 255, 0.12));
+  border-radius: var(--ah-radius-sm, 6px);
+  box-shadow: var(--ah-shadow-popover, 0 8px 24px -4px rgba(0, 0, 0, 0.6));
+  padding: 4px 8px;
+  font-family: var(--ah-font-sans);
+  font-size: var(--ah-text-xs, 11px);
+  font-weight: 500;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  pointer-events: none !important;
+  z-index: 100;
+}
+
+.ah-dock-tooltip.show {
+  display: flex !important;
+  pointer-events: none !important;
+}
+
+/* Toast Callout for notifications only (pointer-events none) */
+.ah-toast-callout {
+  position: absolute;
+  bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ah-surface-elevated);
-  color: var(--ah-text-primary);
-  border: 1px solid var(--ah-border-standard);
-  border-radius: var(--ah-radius-md);
-  box-shadow: var(--ah-shadow-popover);
-  padding: 6px 12px;
-  font-size: var(--ah-text-xs);
+  background: var(--ah-surface-elevated, #232326);
+  color: var(--ah-text-primary, #ffffff);
+  border: 1px solid var(--ah-border-standard, rgba(255, 255, 255, 0.12));
+  border-radius: var(--ah-radius-md, 10px);
+  box-shadow: var(--ah-shadow-popover, 0 8px 24px -4px rgba(0, 0, 0, 0.6));
+  padding: 6px 14px;
+  font-size: var(--ah-text-xs, 11px);
   display: none;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
   pointer-events: none !important;
-  z-index: 10;
+  z-index: 90;
 }
 
-#cp-dock-callout.show {
+.ah-toast-callout.show {
   display: flex !important;
   pointer-events: none !important;
 }

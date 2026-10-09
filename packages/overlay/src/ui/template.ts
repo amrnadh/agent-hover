@@ -45,8 +45,8 @@ ${dockCss}
                   <line x1="12" y1="6" x2="12" y2="2"/>
                   <line x1="12" y1="22" x2="12" y2="18"/>
                 </svg>
+                <span class="ah-dock-status-dot" id="cp-mcp-dot" title="Bridge: Disconnected"></span>
               </div>
-              <span class="ah-dock-status-dot" id="cp-mcp-dot" title="Bridge: Disconnected"></span>
             </div>
 
             <div class="ah-dock-divider"></div>
@@ -91,11 +91,16 @@ ${dockCss}
             </div>
           </div>
 
-          <!-- Reference Callout / Speech Bubble -->
-          <div id="cp-dock-callout" class="ah-dock-callout">
-            <div class="cp-callout-tail"></div>
-            <span class="cp-callout-message" id="cp-callout-text">Ready to point</span>
-            <span class="cp-callout-time" id="cp-callout-meta">Alt</span>
+          <!-- Dedicated Dock Tooltip (S2: pointer-events none, viewport clamped) -->
+          <div id="ah-dock-tooltip" class="ah-dock-tooltip" role="tooltip" aria-hidden="true">
+            <span id="ah-tooltip-text" class="ah-tooltip-text"></span>
+            <span id="ah-tooltip-shortcut" class="ah-shortcut-chip" style="display:none;"></span>
+          </div>
+
+          <!-- Legacy Toast Container for showCallout notifications -->
+          <div id="cp-dock-callout" class="ah-toast-callout" style="display:none; pointer-events:none !important;">
+            <span class="cp-callout-message" id="cp-callout-text"></span>
+            <span class="cp-callout-time" id="cp-callout-meta"></span>
           </div>
         </div>
 
@@ -107,7 +112,10 @@ ${dockCss}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
               <span class="cp-badge cp-badge-accent" id="cp-flyout-badge">LENS</span>
-              <h3 id="cp-flyout-title">Component Inspector</h3>
+              <div class="cp-flyout-title-stack" style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+                <h3 id="cp-flyout-title" style="margin:0; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Component Inspector</h3>
+                <div id="cp-flyout-subtitle" class="cp-flyout-subtitle" style="display:none; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+              </div>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
               <button class="cp-flyout-tool-btn" id="cp-flyout-theme" title="Toggle Light/Dark Mode">
@@ -161,7 +169,7 @@ ${dockCss}
               <button class="cp-btn-bento primary" id="cp-send-agent-btn" style="justify-content: center; font-weight: 600; font-size: 11.5px; padding: 9px 10px;">${ICONS.send} Send to Agent</button>
               <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing Overlay</button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing: Off</button>
             </div>
 
             <!-- Persistent Notes Section in Sidebar -->
@@ -178,8 +186,8 @@ ${dockCss}
             </div>
           </div>
 
-          <!-- Pinned Components View (Dedicated Tab inside Sidebar - A.4) -->
-          <div id="cp-view-pins" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:16px; gap:12px;">
+          <!-- Pinned Components View (Dedicated Tab inside Sidebar - A.4, S8: 20px padding) -->
+          <div id="cp-view-pins" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:20px; gap:12px;">
             <div id="cp-pin-bar" style="border:none; padding:0; background:none;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Pinned Stack (<span id="cp-pin-count">0</span>)</span>
@@ -188,7 +196,7 @@ ${dockCss}
               
               <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
                 <input type="text" id="cp-task-input" placeholder="Overall goal (optional, e.g. 'Align cards to dark theme')" style="width:100%; box-sizing:border-box; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:8px; padding:7px 10px; color:var(--text-primary); font-family:var(--font-sans); font-size:11.5px; outline:none; transition: border-color 0.2s;" />
-                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%; font-size:11.5px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
+                <button class="cp-btn-bento" id="cp-gen-task" style="width:100%; font-size:11.5px; opacity:0.5; pointer-events:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
                 <button class="cp-btn-bento" id="cp-pin-send-agent" style="width:100%; font-size:11.5px; justify-content:center;">${ICONS.send} Send Pinned Tasks to Agent</button>
               </div>
             </div>

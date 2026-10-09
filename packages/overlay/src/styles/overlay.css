@@ -41,8 +41,8 @@
           #cp-note-popover.open *,
           #cp-mcp-modal.open,
           #cp-mcp-modal.open *,
-          #cp-selection-chip.open,
-          #cp-selection-chip.open * {
+          #cp-selection-chip,
+          #cp-selection-chip * {
             pointer-events: auto;
           }
 
@@ -51,8 +51,7 @@
           #cp-snap-lightbox:not(.open),
           #cp-text-editor:not(.open),
           #cp-mcp-modal:not(.open),
-          #cp-note-popover:not(.open),
-          #cp-selection-chip:not(.open) {
+          #cp-note-popover:not(.open) {
             display: none !important;
             pointer-events: none !important;
           }
@@ -259,37 +258,7 @@
             z-index: 10;
           }
 
-          /* --- Reference Callout / Speech Bubble --- */
-          #cp-dock-callout {
-            position: absolute;
-            left: 64px;
-            top: 22px;
-            opacity: 0;
-            pointer-events: none;
-            background: var(--callout-bg);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--callout-border);
-            border-radius: 12px;
-            padding: 8px 14px;
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            font-size: 12.5px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--callout-shadow);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 999998;
-            white-space: nowrap;
-          }
-
-          #cp-dock-callout.show {
-            opacity: 1;
-            pointer-events: none;
-            transform: translateX(0);
-          }
+          /* Legacy cp-dock-callout removed in Gate 2.6 (S1: replaced by ah-dock-tooltip and ah-toast-callout) */
 
           /* Left Triangular Speech Bubble Tail */
           .cp-callout-tail {
@@ -1138,6 +1107,8 @@
             border-radius: 16px;
             color: var(--text-primary);
             font-family: var(--font-sans);
+            font-size: 13px;
+            line-height: 1.4;
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-glass);
             z-index: 999998;
             display: flex;
@@ -1198,18 +1169,7 @@
             transition: right 0.24s cubic-bezier(0.16, 1, 0.3, 1), left 0.24s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
-          /* Dynamic Dock Orientation: Flip to Left Side when on Right */
-          #cp-dock-wrapper.cp-dock-right #cp-dock-callout {
-            left: auto;
-            right: 64px;
-          }
 
-          #cp-dock-wrapper.cp-dock-right .cp-callout-tail {
-            left: auto;
-            right: -7px;
-            border-right: none;
-            border-left: 7px solid var(--callout-bg);
-          }
 
           #cp-flyout-header {
             padding: 16px 20px;
@@ -1585,7 +1545,7 @@
           }
           #cp-selection-chip {
             position: absolute;
-            top: -32px;
+            top: -36px;
             left: -2px;
             pointer-events: auto;
             display: inline-flex;
@@ -1611,6 +1571,12 @@
           #cp-sel-name {
             font-weight: 600;
             color: var(--text-primary);
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
           }
           #cp-sel-file {
             color: var(--text-muted);
@@ -2061,29 +2027,56 @@
           .cp-dist-line {
             position: absolute;
             background: var(--border-accent);
+            pointer-events: none;
           }
           .cp-dist-line.horizontal {
             height: 1px;
             border-top: 1px dashed var(--border-accent);
             background: none;
           }
+          .cp-dist-line.horizontal::before,
+          .cp-dist-line.horizontal::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            width: 1px;
+            height: 7px;
+            background: var(--border-accent);
+          }
+          .cp-dist-line.horizontal::before { left: 0; }
+          .cp-dist-line.horizontal::after { right: 0; }
+
           .cp-dist-line.vertical {
             width: 1px;
             border-left: 1px dashed var(--border-accent);
             background: none;
           }
+          .cp-dist-line.vertical::before,
+          .cp-dist-line.vertical::after {
+            content: '';
+            position: absolute;
+            left: -3px;
+            width: 7px;
+            height: 1px;
+            background: var(--border-accent);
+          }
+          .cp-dist-line.vertical::before { top: 0; }
+          .cp-dist-line.vertical::after { bottom: 0; }
+
           .cp-dist-pill {
             position: absolute;
             background: var(--measure-color);
             color: #fff;
-            font-size: 10px;
+            font-size: 11px;
             font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
             font-weight: 700;
             padding: 1px 6px;
             border-radius: 9999px;
             white-space: nowrap;
             transform: translate(-50%, -50%);
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
           }
           /* --- Settings View (Dedicated Page inside Sidebar) --- */
           #cp-view-settings {
@@ -2145,7 +2138,7 @@
             height: 40px;
             padding: 4px 6px;
             gap: 4px;
-            border-radius: 12px;
+            border-radius: var(--ah-radius-full);
             box-shadow: var(--shadow-dock);
           }
           #cp-dock-wrapper.cp-dock-horizontal #cp-dock-tiles {
@@ -2169,31 +2162,4 @@
             height: 14px;
             font-size: 9px;
             padding: 0 3px;
-          }
-          /* Legacy horizontal .cp-dock-handle removed in Gate 2.5 (A.7) */
-          #cp-dock-wrapper.cp-dock-horizontal #cp-dock-callout {
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            right: auto;
-          }
-          #cp-dock-wrapper.cp-dock-horizontal .cp-callout-tail {
-            left: 50%;
-            top: -6px;
-            bottom: auto;
-            transform: translateX(-50%);
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 6px solid var(--callout-bg);
-            border-top: none;
-          }
-          #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom #cp-dock-callout {
-            top: -42px;
-            bottom: auto;
-          }
-          #cp-dock-wrapper.cp-dock-horizontal.cp-dock-bottom .cp-callout-tail {
-            top: auto;
-            bottom: -6px;
-            border-top: 6px solid var(--callout-bg);
-            border-bottom: none;
           }

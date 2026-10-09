@@ -47,9 +47,9 @@ export class DockController {
   private statusDot: HTMLElement | null;
   private brandSegment: HTMLElement | null;
   private pinBadge: HTMLElement | null;
-  private calloutEl: HTMLElement | null;
-  private calloutTextEl: HTMLElement | null;
-  private calloutMetaEl: HTMLElement | null;
+  private tooltipEl: HTMLElement | null;
+  private tooltipTextEl: HTMLElement | null;
+  private tooltipShortcutEl: HTMLElement | null;
   private options: DockControllerOptions;
 
   private isPointerDown: boolean = false;
@@ -85,9 +85,9 @@ export class DockController {
     this.statusDot = wrapper.querySelector('#cp-mcp-dot') as HTMLElement | null;
     this.brandSegment = wrapper.querySelector('#ah-dock-brand') as HTMLElement | null;
     this.pinBadge = wrapper.querySelector('#cp-dock-pin-badge') as HTMLElement | null;
-    this.calloutEl = wrapper.querySelector('#cp-dock-callout') as HTMLElement | null;
-    this.calloutTextEl = wrapper.querySelector('#cp-callout-text') as HTMLElement | null;
-    this.calloutMetaEl = wrapper.querySelector('#cp-callout-meta') as HTMLElement | null;
+    this.tooltipEl = wrapper.querySelector('#ah-dock-tooltip') as HTMLElement | null;
+    this.tooltipTextEl = wrapper.querySelector('#ah-tooltip-text') as HTMLElement | null;
+    this.tooltipShortcutEl = wrapper.querySelector('#ah-tooltip-shortcut') as HTMLElement | null;
 
     this.bindEvents();
     this.restorePosition();
@@ -135,6 +135,7 @@ export class DockController {
     if (this.brandSegment) {
       this.brandSegment.style.cursor = 'default';
       this.brandSegment.onclick = null;
+      this.bindTooltip(this.brandSegment, 'Agent Hover', '');
     }
 
     // Drag handle & empty dock padding: allow dragging with 4px threshold (A.7)
@@ -179,32 +180,60 @@ export class DockController {
     }
   }
 
-  // --- Tooltips with 350ms delay, shortcut chip, pointer-events none (A.8) ---
+  // --- Tooltips with 350ms delay, shortcut chip, pointer-events none (A.8, S2) ---
   private bindTooltip(el: HTMLElement | null, title: string, shortcut: string) {
     if (!el || typeof el.addEventListener !== 'function') return;
     el.addEventListener('mouseenter', () => {
-      this.scheduleTooltip(title, shortcut);
+      this.scheduleTooltip(el, title, shortcut);
     });
     el.addEventListener('mouseleave', () => {
       this.cancelTooltip();
     });
   }
 
-  private scheduleTooltip(title: string, shortcut: string) {
+  private scheduleTooltip(targetEl: HTMLElement, title: string, shortcut: string) {
     this.cancelTooltip();
     this.tooltipTimer = setTimeout(() => {
-      if (!this.calloutEl || !this.calloutTextEl) return;
-      this.calloutTextEl.textContent = title;
-      if (this.calloutMetaEl) {
+      if (!this.tooltipEl || !this.tooltipTextEl) return;
+      this.tooltipTextEl.textContent = title;
+      if (this.tooltipShortcutEl) {
         if (shortcut) {
-          this.calloutMetaEl.innerHTML = `<span class="ah-shortcut-chip">${shortcut}</span>`;
-          this.calloutMetaEl.style.display = 'inline-block';
+          this.tooltipShortcutEl.textContent = shortcut;
+          this.tooltipShortcutEl.style.display = 'inline-block';
         } else {
-          this.calloutMetaEl.textContent = '';
-          this.calloutMetaEl.style.display = 'none';
+          this.tooltipShortcutEl.textContent = '';
+          this.tooltipShortcutEl.style.display = 'none';
         }
       }
-      this.calloutEl.classList.add('show');
+
+      const win = this.getWindow();
+      const wrapperRect = this.wrapper ? this.wrapper.getBoundingClientRect() : { top: 0, left: 0, width: 0, height: 0 };
+      const btnRect = targetEl.getBoundingClientRect();
+      const winH = win.innerHeight || 800;
+      const winW = win.innerWidth || 1280;
+
+      // S2: Place ABOVE dock when dock is in lower half of viewport, BELOW otherwise
+      const isLowerHalf = wrapperRect.top > winH / 2;
+      if (isLowerHalf) {
+        this.tooltipEl.style.bottom = 'calc(100% + 8px)';
+        this.tooltipEl.style.top = 'auto';
+      } else {
+        this.tooltipEl.style.top = 'calc(100% + 8px)';
+        this.tooltipEl.style.bottom = 'auto';
+      }
+
+      this.tooltipEl.style.display = 'flex';
+      const tooltipWidth = this.tooltipEl.offsetWidth || 70;
+      const btnCenterInWrapper = btnRect.left + btnRect.width / 2 - wrapperRect.left;
+      const rawLeft = btnCenterInWrapper - tooltipWidth / 2;
+      // Clamp so tooltip is never clipped by viewport edges
+      const minLeft = 8 - wrapperRect.left;
+      const maxLeft = winW - 8 - wrapperRect.left - tooltipWidth;
+      const clampedLeft = Math.max(minLeft, Math.min(maxLeft, rawLeft));
+
+      this.tooltipEl.style.left = `${clampedLeft}px`;
+      this.tooltipEl.style.transform = 'none';
+      this.tooltipEl.classList.add('show');
     }, 350);
   }
 
@@ -213,8 +242,9 @@ export class DockController {
       clearTimeout(this.tooltipTimer);
       this.tooltipTimer = null;
     }
-    if (this.calloutEl) {
-      this.calloutEl.classList.remove('show');
+    if (this.tooltipEl) {
+      this.tooltipEl.classList.remove('show');
+      this.tooltipEl.style.display = 'none';
     }
   }
 
