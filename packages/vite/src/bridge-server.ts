@@ -978,15 +978,65 @@ export class BridgeServer {
       }
     });
 
-    // List tasks (GET /api/agent/tasks)
-    this.app.get('/api/agent/tasks', (req, res) => {
+    // List tasks (GET /api/agent/tasks). Agents pass ?deliver=1 so returned queued tasks are marked
+    // delivered ("Seen by …" in the overlay); overlay reads omit it and never change task state.
+    this.app.get('/api/agent/tasks', async (req, res) => {
       const statusParam = req.query.status as string;
       const limitParam = parseInt(req.query.limit as string, 10) || 50;
       const statusFilter = statusParam
         ? (statusParam.split(',').map((s) => s.trim()) as TaskStatus[])
         : undefined;
-      const tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      let tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      if (req.query.deliver === '1') {
+        tasks = await Promise.all(
+          tasks.map((t) => (t.status === 'queued' ? this.taskStore.markDelivered(t.id) : t)),
+        );
+      }
       res.json({ tasks });
+    });
+
+    // Listen mode: long-poll for the oldest queued task (GET /api/agent/tasks/next?wait=<seconds>).
+    // Returns immediately when a task is queued, otherwise holds the request until one arrives or
+    // `wait` (max 30 s) elapses. The returned task is marked delivered.
+    // Registered before /api/agent/tasks/:id so "next" is not treated as an id.
+    this.app.get('/api/agent/tasks/next', async (req, res) => {
+      const waitSeconds = Math.min(Math.max(parseInt(req.query.wait as string, 10) || 0, 0), 30);
+
+      const takeOldestQueued = async () => {
+        const queued = this.taskStore.listTasks({ status: ['queued'] });
+        const oldest = queued[queued.length - 1];
+        return oldest ? this.taskStore.markDelivered(oldest.id) : null;
+      };
+
+      const ready = await takeOldestQueued();
+      if (ready || waitSeconds === 0) {
+        res.json({ task: ready, timedOut: !ready });
+        return;
+      }
+
+      let settled = false;
+      const finish = async (task: AgentTask | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        this.taskStore.off('task:created', onCreated);
+        res.off('close', onClose);
+        if (!res.writableEnded) res.json({ task, timedOut: !task });
+      };
+      const onCreated = () => {
+        takeOldestQueued().then((task) => { if (task) finish(task); }).catch(() => {});
+      };
+      const onClose = () => {
+        // Client went away (e.g. the agent's tool call was cancelled): stop listening, deliver nothing.
+        settled = true;
+        clearTimeout(timer);
+        this.taskStore.off('task:created', onCreated);
+      };
+      const timer = setTimeout(() => finish(null), waitSeconds * 1000);
+      this.taskStore.on('task:created', onCreated);
+      res.on('close', onClose);
+      // Re-check once after subscribing, in case a task was queued while we were setting up.
+      onCreated();
     });
 
     // Get task + rendered prompt (GET /api/agent/tasks/:id)

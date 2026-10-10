@@ -141,7 +141,7 @@ Response: `201 Created`
 
 ### List Tasks
 ```http
-GET /api/agent/tasks?status=queued,delivered&limit=50
+GET /api/agent/tasks?status=queued,delivered&limit=50[&deliver=1]
 Authorization: Bearer <token>
 ```
 Response: `200 OK`
@@ -149,6 +149,23 @@ Response: `200 OK`
 {
   "tasks": [ ... ]
 }
+```
+With `deliver=1` (sent by the MCP `list_agent_tasks` tool), returned `queued` tasks move to `delivered` so the overlay can show "Seen by {agent}". Without it the call never changes task state, which is what the overlay uses.
+
+### Wait for Next Task (listen mode)
+```http
+GET /api/agent/tasks/next?wait=25
+Authorization: Bearer <token>
+```
+Long-poll used by the MCP `wait_for_agent_task` tool. Returns the **oldest** `queued` task at once if there is one; otherwise holds the request until a task is created or `wait` seconds pass (0–30, default 0). The returned task is marked `delivered`, so each task is handed out once. If the client disconnects while waiting, nothing is delivered.
+
+Response: `200 OK`
+```json
+{ "task": { ... }, "timedOut": false }
+```
+or, when nothing arrived in time:
+```json
+{ "task": null, "timedOut": true }
 ```
 
 ### Get Task & Formatted Prompt

@@ -207,6 +207,45 @@ async function getFromBridge(endpoint: string): Promise<string> {
 }
 
 /**
+ * Performs a request to the bridge and returns the parsed JSON body.
+ * Used where the tool composes its own text instead of passing the bridge response through.
+ */
+async function bridgeJson<T>(method: "GET" | "POST", endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+  const conn = resolveBridgeConnection();
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (conn.token) headers["Authorization"] = `Bearer ${conn.token}`;
+  const response = await fetch(`http://127.0.0.1:${conn.port}${endpoint}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    let message = text;
+    try {
+      message = JSON.parse(text).error || text;
+    } catch {}
+    throw new Error(`HTTP ${response.status}${message ? `: ${message}` : ""}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+/** Name the connected MCP client reported in `initialize` (e.g. "claude-code"), shown in the overlay. */
+function agentClientName(): string {
+  return server.getClientVersion()?.name || "mcp-agent";
+}
+
+/** Listen mode defaults. 50 s stays under the 60 s tool timeout some clients (e.g. Codex) use by default. */
+const LISTEN_DEFAULT_SECONDS = 50;
+const LISTEN_MAX_SECONDS = 600;
+/** Each bridge long-poll is capped at 30 s; keep a margin below it. */
+const LISTEN_POLL_SECONDS = 25;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
  * Initialize the Agent Hover MCP server instance.
  */
 const server = new Server(
@@ -460,6 +499,33 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "wait_for_agent_task",
+        description:
+          "Listen mode: wait until the developer sends a task from the browser, then claim it and return its full instructions. " +
+          "Use this when the user asks you to listen or watch for agent-hover tasks. Loop: call wait_for_agent_task, do the task, " +
+          "call complete_agent_task with a summary and the files you changed, then call wait_for_agent_task again. " +
+          "If nothing arrives before the timeout it returns a short 'no task yet' message; call it again to keep listening, " +
+          "or stop if the user has said they are done.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            timeoutSeconds: {
+              type: "number",
+              description: `How long to wait before returning with no task (default ${LISTEN_DEFAULT_SECONDS}, max ${LISTEN_MAX_SECONDS}). Raise it if your client allows long tool calls.`,
+            },
+            claim: {
+              type: "boolean",
+              description: "Claim the task immediately so the browser shows it as in progress (default: true).",
+            },
+            format: {
+              type: "string",
+              enum: ["compact", "standard", "deep"],
+              description: "Prompt detail level. Default: standard",
+            },
+          },
+        },
+      },
+      {
         name: "get_latest_agent_task",
         description: "Get the latest component context, instruction, or note sent from the browser UI. Deprecated: prefer list_agent_tasks and claim_agent_task for reliable queue delivery.",
         inputSchema: {
@@ -474,7 +540,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 /**
  * Handle execution of MCP tools.
  */
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -646,6 +712,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (typeof limit === "number") {
           params.set("limit", String(limit));
         }
+        // The agent has now seen these tasks: queued ones become "delivered" in the browser.
+        params.set("deliver", "1");
         const result = await getFromBridge(`/api/agent/tasks?${params.toString()}`);
         return {
           content: [{ type: "text" as const, text: result }],
@@ -661,7 +729,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: true,
           };
         }
-        await postToBridge(`/api/agent/tasks/${encodeURIComponent(id)}/claim`, { client: "mcp-agent" });
+        await postToBridge(`/api/agent/tasks/${encodeURIComponent(id)}/claim`, { client: agentClientName() });
         const taskWithPrompt = await getFromBridge(
           `/api/agent/tasks/${encodeURIComponent(id)}?format=${encodeURIComponent(format)}`
         );
@@ -709,6 +777,60 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "wait_for_agent_task": {
+        const requested = typeof args?.timeoutSeconds === "number" ? args.timeoutSeconds : LISTEN_DEFAULT_SECONDS;
+        const timeoutSeconds = Math.min(Math.max(Math.round(requested), 1), LISTEN_MAX_SECONDS);
+        const claim = args?.claim !== false;
+        const format = (args?.format as string | undefined) || "standard";
+        const signal = extra?.signal;
+        const progressToken = request.params._meta?.progressToken;
+        const deadline = Date.now() + timeoutSeconds * 1000;
+        let bridgeError: unknown = null;
+
+        while (Date.now() < deadline && !signal?.aborted) {
+          const remaining = Math.ceil((deadline - Date.now()) / 1000);
+          try {
+            const { task } = await bridgeJson<{ task: { id: string; instruction?: string } | null }>(
+              "GET",
+              `/api/agent/tasks/next?wait=${Math.min(LISTEN_POLL_SECONDS, remaining)}`,
+              undefined,
+              signal,
+            );
+            bridgeError = null;
+            if (task) {
+              const id = encodeURIComponent(task.id);
+              if (claim) await bridgeJson("POST", `/api/agent/tasks/${id}/claim`, { client: agentClientName() });
+              const { prompt } = await bridgeJson<{ prompt: string }>("GET", `/api/agent/tasks/${id}?format=${encodeURIComponent(format)}`);
+              const next = claim
+                ? `When finished, call complete_agent_task with id "${task.id}", a one-paragraph summary, and filesChanged. Then call wait_for_agent_task again to keep listening.`
+                : `Call claim_agent_task with id "${task.id}" to start it.`;
+              return {
+                content: [{ type: "text" as const, text: `${claim ? "Claimed" : "Received"} task ${task.id} from the browser.\n\n${prompt}\n\n---\n${next}` }],
+              };
+            }
+          } catch (error) {
+            if (signal?.aborted) break;
+            if (!isConnectionError(error)) throw error;
+            // Dev server not running (yet): keep listening and retry shortly.
+            bridgeError = error;
+            await sleep(Math.min(3000, Math.max(deadline - Date.now(), 0)));
+          }
+          if (progressToken !== undefined && extra?.sendNotification) {
+            await extra
+              .sendNotification({
+                method: "notifications/progress",
+                params: { progressToken, progress: timeoutSeconds - Math.ceil((deadline - Date.now()) / 1000), total: timeoutSeconds },
+              })
+              .catch(() => {});
+          }
+        }
+
+        if (bridgeError) return handleBridgeError(bridgeError);
+        return {
+          content: [{ type: "text" as const, text: `No task yet (listened ${timeoutSeconds}s). Call wait_for_agent_task again to keep listening.` }],
+        };
+      }
+
       case "get_latest_agent_task": {
         const result = await getFromBridge("/api/agent/latest");
         return {
@@ -751,22 +873,30 @@ async function main(): Promise<void> {
       const active = resolveBridgeConnection();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (active.token) headers['Authorization'] = `Bearer ${active.token}`;
-      await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
+      const presence = await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ client: 'mcp-agent', version: '0.1.1' }),
+        body: JSON.stringify({ client: agentClientName(), version: '0.1.1' }),
       });
-      await fetch(`http://127.0.0.1:${active.port}/api/mcp/hello`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ pid: process.pid, version: '0.1.1' }),
-      });
+      // Legacy heartbeat only for bridges older than presence (P1-06); sending both would list the agent twice.
+      if (presence.status === 404) {
+        await fetch(`http://127.0.0.1:${active.port}/api/mcp/hello`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ pid: process.pid, version: '0.1.1' }),
+        });
+      }
     } catch (_) {
       // Bridge dev server may not be active yet
     }
   };
-  sendHeartbeat();
-  const heartbeatTimer = setInterval(sendHeartbeat, 10000);
+  // Register presence once the client has identified itself (initialize), so the browser shows its real name.
+  server.oninitialized = () => {
+    sendHeartbeat();
+  };
+  const heartbeatTimer = setInterval(() => {
+    if (server.getClientVersion()) sendHeartbeat();
+  }, 10000);
   heartbeatTimer.unref();
 }
 

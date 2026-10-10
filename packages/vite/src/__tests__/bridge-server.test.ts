@@ -419,5 +419,74 @@ describe('BridgeServer Integration Tests', () => {
     expect(presenceList.agents.length).toBe(1);
     expect(presenceList.agents[0].client).toBe('claude-code');
   });
+  it('marks listed queued tasks delivered only when an agent asks (?deliver=1)', async () => {
+    const testPort = 45000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const auth = { Authorization: `Bearer ${server.getToken()}` };
+    const base = `http://localhost:${activePort}/api/agent/tasks`;
+
+    await fetch(base, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({ instruction: 'Tighten spacing' }),
+    });
+
+    const uiRead = await (await fetch(base, { headers: auth })).json();
+    expect(uiRead.tasks[0].status).toBe('queued');
+
+    const agentRead = await (await fetch(`${base}?deliver=1`, { headers: auth })).json();
+    expect(agentRead.tasks[0].status).toBe('delivered');
+  });
+
+  it('long-polls for the next queued task in listen mode (GET /api/agent/tasks/next)', async () => {
+    const testPort = 47000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const auth = { Authorization: `Bearer ${server.getToken()}` };
+    const base = `http://localhost:${activePort}/api/agent/tasks`;
+    const create = (instruction: string) =>
+      fetch(base, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ instruction }),
+      });
+
+    // Nothing queued and no wait: returns at once.
+    const empty = await (await fetch(`${base}/next`, { headers: auth })).json();
+    expect(empty).toEqual({ task: null, timedOut: true });
+
+    // A waiting request resolves as soon as a task is created.
+    const started = Date.now();
+    const pending = fetch(`${base}/next?wait=10`, { headers: auth }).then((r) => r.json());
+    await new Promise((r) => setTimeout(r, 150));
+    await create('Make the CTA bigger');
+    const got = await pending;
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(got.timedOut).toBe(false);
+    expect(got.task.instruction).toBe('Make the CTA bigger');
+    expect(got.task.status).toBe('delivered');
+
+    // Queued tasks are handed out oldest first, each only once.
+    await create('first');
+    await new Promise((r) => setTimeout(r, 5));
+    await create('second');
+    const a = await (await fetch(`${base}/next`, { headers: auth })).json();
+    const b = await (await fetch(`${base}/next`, { headers: auth })).json();
+    const c = await (await fetch(`${base}/next`, { headers: auth })).json();
+    expect([a.task.instruction, b.task.instruction, c.task]).toEqual(['first', 'second', null]);
+
+    // Times out with no task.
+    const timed = await (await fetch(`${base}/next?wait=1`, { headers: auth })).json();
+    expect(timed).toEqual({ task: null, timedOut: true });
+  });
+
+  it('requires auth for the listen endpoint', async () => {
+    const testPort = 49000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const res = await fetch(`http://localhost:${activePort}/api/agent/tasks/next`);
+    expect(res.status).toBe(401);
+  });
 });
 

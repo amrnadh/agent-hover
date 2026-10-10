@@ -44,6 +44,18 @@ Then run your dev server and hold `Alt` to enter pointer mode.
 | `@agent-hover/overlay` | Browser overlay UI (Shadow DOM) |
 | `@agent-hover/mcp` | MCP server for AI agent integration |
 
+## Setup check
+
+```bash
+npx agent-hover
+```
+
+Checks your project and prints the steps that are left, including MCP config for each agent (`npx agent-hover mcp cursor`).
+
+## Listen mode
+
+Tell your agent once: **"Listen for agent-hover tasks."** It calls `wait_for_agent_task`, picks up each task you send from the browser, does it, reports back with `complete_agent_task`, and waits for the next one. The browser shows each step: Sent → Seen → Working → Done.
+
 ## MCP Setup
 
 ### Claude Desktop / Claude Code
