@@ -1,16 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { clearPins, readDemoSession } from './helpers/bridge';
 import fs from 'fs';
 import path from 'path';
-
-function readDemoSession() {
-  try {
-    const sessionFile = path.resolve('demo/.agent-hover/session.json');
-    if (fs.existsSync(sessionFile)) {
-      return JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
-    }
-  } catch {}
-  return null;
-}
 
 test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
   let bridgeToken = '';
@@ -22,6 +13,11 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
       bridgeToken = session.token;
       bridgePort = session.port;
     }
+  });
+
+  // Pins created here would otherwise leak into later specs on a reused dev server.
+  test.afterEach(async ({ request }) => {
+    await clearPins(request);
   });
 
   test('inspects component, clicks Send to Agent, asserts bridge task & pin stack', async ({ page, request }) => {

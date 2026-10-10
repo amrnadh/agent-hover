@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
+import { clearPins } from './helpers/bridge';
 
 test.describe('Gate 2.6: Stabilization Pass & Parity Verification (S1-S10)', () => {
   const screenshotsDir = path.resolve(process.cwd(), 'docs/screenshots/Gate-2.6');
@@ -345,7 +346,8 @@ test.describe('Gate 2.6: Stabilization Pass & Parity Verification (S1-S10)', () 
     await page.screenshot({ path: path.join(screenshotsDir, 'S7-layout-card-srgb-hex.png') });
   });
 
-  test('S8: Pinned Stack view - 20px padding gutter, "Pin Component" empty copy, no emphasis at 0 pins', async ({ page }) => {
+  test('S8: Pinned Stack view - 20px padding gutter, "Pin Component" empty copy, no emphasis at 0 pins', async ({ page, request }) => {
+    await clearPins(request);
     await page.goto('/');
     await page.waitForSelector('#agent-hover-root', { timeout: 5000 });
 
