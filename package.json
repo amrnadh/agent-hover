@@ -10,15 +10,16 @@
   "scripts": {
     "dev": "npm run dev --workspace=demo",
     "dev:demo": "npm run dev --workspace=demo -- --force",
-    "build": "npm run build:core && npm run build:overlay && npm run build:vite && npm run build:mcp",
+    "build": "npm run build:core && npm run build:overlay && npm run build:vite && npm run build:mcp && npm run build:cli",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:overlay": "npm run build --workspace=@agent-hover/overlay",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
+    "build:cli": "npm run build --workspace=agent-hover",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/",
+    "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/ && cp LICENSE packages/cli/",
     "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
   },
   "keywords": [

@@ -1,0 +1,46 @@
+{
+  "name": "agent-hover",
+  "version": "0.1.0",
+  "description": "Setup guide for Agent Hover: point at your running React UI and send precise context to Claude Code, Cursor, Codex, and other MCP agents.",
+  "type": "module",
+  "bin": {
+    "agent-hover": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npx tsc && chmod +x dist/cli.js",
+    "prepack": "npx tsc && chmod +x dist/cli.js",
+    "dev": "npx tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "agent-hover",
+    "vite-plugin",
+    "react",
+    "mcp",
+    "claude-code",
+    "cursor",
+    "ai-agent",
+    "vibe-coding",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Arc-coder07/agent-hover#readme"
+}
