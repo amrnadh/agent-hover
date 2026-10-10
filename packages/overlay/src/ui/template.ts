@@ -1,35 +1,106 @@
 import { ICONS } from '../icons.js';
+import tokensCss from '../styles/tokens.css?inline';
+import dockCss from '../styles/dock.css?inline';
 import overlayCss from '../styles/overlay.css?inline';
 
 export function getOverlayHtml(): string {
   return `
         <style>
+${tokensCss}
 ${overlayCss}
+${dockCss}
         </style>
 
-        <div id="cp-dock-wrapper">
-          <div id="cp-dock">
-            <div id="cp-dock-tiles">
-              <div class="cp-dock-tile" id="cp-dock-toggle" title="Toggle Inspector Mode (Alt)">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
-              </div>
+        <div id="ah-capture-layer" class="ah-capture-layer" aria-hidden="true"></div>
 
-              <div class="cp-dock-tile" id="cp-dock-pins" title="Pinned Components Stack" style="position:relative;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                <span class="cp-badge-pill" id="cp-dock-pin-badge" style="display:none;">0</span>
-                <span class="cp-mcp-dot" id="cp-mcp-dot" title="MCP: Not connected"></span>
+        <div id="cp-dock-wrapper" class="ah-dock-wrapper">
+          <!-- First-Run Dismissible Hint (B) -->
+          <div id="ah-first-run-hint" class="ah-first-run-hint" style="display:none;">
+            <span class="ah-hint-text">Press Alt to inspect · drag to move</span>
+            <button id="ah-hint-dismiss" class="ah-hint-close" title="Dismiss hint" aria-label="Dismiss hint">×</button>
+          </div>
+
+          <!-- Minimized Brand Button (A.6) -->
+          <button id="ah-dock-minimized" class="ah-dock-minimized" title="Restore Agent Hover Dock" aria-label="Restore Dock" style="display:none;">
+            <div class="ah-dock-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="22" y1="12" x2="18" y2="12"/>
+                <line x1="6" y1="12" x2="2" y2="12"/>
+                <line x1="12" y1="6" x2="12" y2="2"/>
+                <line x1="12" y1="22" x2="12" y2="18"/>
+              </svg>
+            </div>
+            <span class="ah-dock-status-dot" id="cp-minimized-dot"></span>
+          </button>
+
+          <div id="cp-dock" class="ah-dock" role="toolbar" aria-label="Agent Hover Toolbar">
+            <!-- Brand Mark + Presence Status Dot (A.2: Informational only, default cursor) -->
+            <div class="ah-dock-segment ah-dock-brand-segment" id="ah-dock-brand" title="Agent Hover · Disconnected">
+              <div class="ah-dock-brand-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="22" y1="12" x2="18" y2="12"/>
+                  <line x1="6" y1="12" x2="2" y2="12"/>
+                  <line x1="12" y1="6" x2="12" y2="2"/>
+                  <line x1="12" y1="22" x2="12" y2="18"/>
+                </svg>
+                <span class="ah-dock-status-dot" id="cp-mcp-dot" title="Bridge: Disconnected"></span>
               </div>
             </div>
 
-            <!-- Bottom Drag Handle -->
-            <div class="cp-dock-handle" id="cp-dock-handle" title="Drag dock"></div>
+            <div class="ah-dock-divider"></div>
+
+            <!-- Inspect Mode Toggle (A.3: icon only, no text label) -->
+            <button class="ah-dock-btn" id="cp-dock-toggle" title="Inspect · Alt" aria-label="Inspect (Alt)" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>
+              </svg>
+            </button>
+
+            <!-- Pins Segment (A.4: icon only + count badge) -->
+            <button class="ah-dock-btn" id="cp-dock-pins" title="Pins" aria-label="Pins" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+              <span class="cp-badge-pill ah-tabular-nums" id="cp-dock-pin-badge" style="display:none;">0</span>
+            </button>
+
+            <!-- Settings / Menu (A.5: icon only) -->
+            <button class="ah-dock-btn" id="ah-dock-settings-btn" title="Settings" aria-label="Settings" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+
+            <div class="ah-dock-divider"></div>
+
+            <!-- Drag Handle (A.7: dedicated right grip) -->
+            <div class="ah-dock-handle" id="cp-dock-handle" title="Drag to move" aria-label="Drag Handle">
+              <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                <circle cx="3" cy="3" r="1.5"/>
+                <circle cx="7" cy="3" r="1.5"/>
+                <circle cx="3" cy="8" r="1.5"/>
+                <circle cx="7" cy="8" r="1.5"/>
+                <circle cx="3" cy="13" r="1.5"/>
+                <circle cx="7" cy="13" r="1.5"/>
+              </svg>
+            </div>
           </div>
 
-          <!-- Reference Callout / Speech Bubble -->
-          <div id="cp-dock-callout">
-            <div class="cp-callout-tail"></div>
-            <span class="cp-callout-message" id="cp-callout-text">Ready to point</span>
-            <span class="cp-callout-time" id="cp-callout-meta">Alt</span>
+          <!-- Dedicated Dock Tooltip (S2: pointer-events none, viewport clamped) -->
+          <div id="ah-dock-tooltip" class="ah-dock-tooltip" role="tooltip" aria-hidden="true">
+            <span id="ah-tooltip-text" class="ah-tooltip-text"></span>
+            <span id="ah-tooltip-shortcut" class="ah-shortcut-chip" style="display:none;"></span>
+          </div>
+
+          <!-- Legacy Toast Container for showCallout notifications -->
+          <div id="cp-dock-callout" class="ah-toast-callout" style="display:none; pointer-events:none !important;">
+            <span class="cp-callout-message" id="cp-callout-text"></span>
+            <span class="cp-callout-time" id="cp-callout-meta"></span>
           </div>
         </div>
 
@@ -41,7 +112,10 @@ ${overlayCss}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
               <span class="cp-badge cp-badge-accent" id="cp-flyout-badge">LENS</span>
-              <h3 id="cp-flyout-title">Component Inspector</h3>
+              <div class="cp-flyout-title-stack" style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+                <h3 id="cp-flyout-title" style="margin:0; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Component Inspector</h3>
+                <div id="cp-flyout-subtitle" class="cp-flyout-subtitle" style="display:none; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+              </div>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
               <button class="cp-flyout-tool-btn" id="cp-flyout-theme" title="Toggle Light/Dark Mode">
@@ -62,7 +136,7 @@ ${overlayCss}
           </div>
 
           <!-- Inspector View (Default) -->
-          <div id="cp-view-inspector" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+          <div id="cp-view-inspector" style="display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden;">
             <div id="cp-flyout-breadcrumb" style="display:none; padding:10px 20px; background:var(--bg-surface-sunken); border-bottom:1px solid var(--border-glass); font-family:var(--font-mono); font-size:11.5px; overflow-x:auto; white-space:nowrap;">
             </div>
 
@@ -95,7 +169,7 @@ ${overlayCss}
               <button class="cp-btn-bento primary" id="cp-send-agent-btn" style="justify-content: center; font-weight: 600; font-size: 11.5px; padding: 9px 10px;">${ICONS.send} Send to Agent</button>
               <button class="cp-btn-bento" id="cp-editor-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Open in IDE</button>
               <button class="cp-btn-bento" id="cp-pin-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Pin Component</button>
-              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing Overlay</button>
+              <button class="cp-btn-bento" id="cp-toggle-spacing" style="grid-column: span 2;" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing: Off</button>
             </div>
 
             <!-- Persistent Notes Section in Sidebar -->
@@ -110,8 +184,11 @@ ${overlayCss}
                 <div style="font-size:11px; color:var(--text-muted); font-style:italic;">No notes yet. Click the note icon on any element to add persistent notes.</div>
               </div>
             </div>
+          </div>
 
-            <div id="cp-pin-bar">
+          <!-- Pinned Components View (Dedicated Tab inside Sidebar - A.4, S8: 20px padding) -->
+          <div id="cp-view-pins" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:20px; gap:12px;">
+            <div id="cp-pin-bar" style="border:none; padding:0; background:none;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Pinned Stack (<span id="cp-pin-count">0</span>)</span>
               </div>
@@ -119,31 +196,45 @@ ${overlayCss}
               
               <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
                 <input type="text" id="cp-task-input" placeholder="Overall goal (optional, e.g. 'Align cards to dark theme')" style="width:100%; box-sizing:border-box; background:var(--bg-surface-input); border:1px solid var(--border-glass); border-radius:8px; padding:7px 10px; color:var(--text-primary); font-family:var(--font-sans); font-size:11.5px; outline:none; transition: border-color 0.2s;" />
-                <button class="cp-btn-bento primary" id="cp-gen-task" style="width:100%; font-size:11.5px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
+                <button class="cp-btn-bento" id="cp-gen-task" style="width:100%; font-size:11.5px; opacity:0.5; pointer-events:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Copy All Tasks in Order</button>
                 <button class="cp-btn-bento" id="cp-pin-send-agent" style="width:100%; font-size:11.5px; justify-content:center;">${ICONS.send} Send Pinned Tasks to Agent</button>
               </div>
             </div>
+          </div>
+
+          <!-- Settings View (Dedicated Tab inside Sidebar - A.5) -->
+          <div id="cp-view-settings" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:20px; gap:16px;">
+            <!-- Dock Actions (A.6, B) -->
+            <div class="cp-settings-section">
+              <div class="cp-settings-section-title">Dock Actions</div>
+              <div style="display:flex; gap:8px;">
+                <button class="cp-btn-bento" id="ah-settings-minimize-btn" style="flex:1;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg> Minimize Dock
+                </button>
+                <button class="cp-btn-bento" id="ah-settings-reset-pos-btn" style="flex:1;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Reset Position
+                </button>
+              </div>
             </div>
 
-            <!-- Settings View (Dedicated Page inside Sidebar) -->
-            <div id="cp-view-settings" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:20px; gap:16px;">
-              <div id="cp-update-banner" style="display:none; padding:10px 12px; background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.35); border-radius:8px; font-size:11px;">
-                <div style="font-weight:600; color:#38bdf8; display:flex; align-items:center; gap:6px;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <span>Update Available: v<span id="cp-update-latest-ver"></span></span>
-                </div>
-                <div style="margin-top:5px; color:var(--text-secondary); font-size:10.5px;">
-                  Run <code style="font-family:var(--font-mono); color:#38bdf8; background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">npm i -D @agent-hover/vite@latest</code>
-                </div>
+            <div id="cp-update-banner" style="display:none; padding:10px 12px; background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.35); border-radius:8px; font-size:11px;">
+              <div style="font-weight:600; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Update Available: v<span id="cp-update-latest-ver"></span></span>
               </div>
+              <div style="margin-top:5px; color:var(--text-secondary); font-size:10.5px;">
+                Run <code style="font-family:var(--font-mono); color:#38bdf8; background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">npm i -D @agent-hover/vite@latest</code>
+              </div>
+            </div>
 
-              <div class="cp-settings-section">
-                <div class="cp-settings-section-title">Theme</div>
-                <div style="display:flex; gap:8px;">
-                  <button class="cp-btn-bento" id="cp-theme-set-dark" style="flex:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Dark</button>
-                  <button class="cp-btn-bento" id="cp-theme-set-light" style="flex:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Light</button>
-                </div>
+            <div class="cp-settings-section">
+              <div class="cp-settings-section-title">Theme</div>
+              <div style="display:flex; gap:6px;">
+                <button class="cp-btn-bento" id="cp-theme-set-system" style="flex:1;">System</button>
+                <button class="cp-btn-bento" id="cp-theme-set-dark" style="flex:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Dark</button>
+                <button class="cp-btn-bento" id="cp-theme-set-light" style="flex:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Light</button>
               </div>
+            </div>
 
               <div class="cp-settings-section">
                 <div class="cp-settings-section-title">Dock Layout</div>
@@ -338,6 +429,7 @@ ${overlayCss}
 
           <div class="cp-snap-actions">
             <button class="cp-btn-bento" id="cp-snap-download">${ICONS.download} Download</button>
+            <button class="cp-btn-bento" id="cp-snap-open-folder" title="Open screenshots folder in system file manager">${ICONS.camera} Folder</button>
             <button class="cp-btn-bento primary" id="cp-snap-copy">${ICONS.copy} Copy Image</button>
           </div>
 

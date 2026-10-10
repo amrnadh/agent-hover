@@ -20,12 +20,12 @@ test.describe('P2-01 Visual Verification Screenshots', () => {
 
     // Hover over h1
     const h1 = page.locator('h1').first();
-    await h1.hover();
+    await h1.hover({ force: true });
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(screenshotDir, '02-inspect-hover-dark.png'), fullPage: false });
 
     // 3. Click h1 to lock selection & open Flyout Inspector
-    await h1.click();
+    await h1.click({ force: true });
     await page.waitForTimeout(600);
     await page.screenshot({ path: path.join(screenshotDir, '03-flyout-inspector-dark.png'), fullPage: false });
 

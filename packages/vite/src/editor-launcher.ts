@@ -1,5 +1,6 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { validateSafePath } from './path-validator.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -73,6 +74,27 @@ export function buildEditorLaunchPlan(options: EditorLaunchOptions): LaunchComma
         fallback: process.platform === 'darwin' ? { bin: 'open', args: [`vscode://file${file}:${line}:${col}`] } : undefined,
       };
   }
+}
+
+/**
+ * Builds safe argument array for opening a local folder without invoking a shell.
+ */
+export function buildFolderLaunchPlan(folderPath: string): { bin: string; args: string[] } {
+  if (process.platform === 'win32') {
+    return { bin: 'explorer.exe', args: [folderPath] };
+  } else if (process.platform === 'linux') {
+    return { bin: 'xdg-open', args: [folderPath] };
+  }
+  return { bin: 'open', args: [folderPath] };
+}
+
+/**
+ * Safely opens a directory after validating it is confined to the project (NO SHELL).
+ */
+export async function launchFolderSafely(targetPath: string, projectRoot: string): Promise<void> {
+  const safePath = validateSafePath(targetPath, projectRoot);
+  const plan = buildFolderLaunchPlan(safePath);
+  await execFileAsync(plan.bin, plan.args, { windowsHide: true });
 }
 
 /**

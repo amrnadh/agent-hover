@@ -50,7 +50,7 @@ test.describe('Agent Hover Baseline E2E Smoke Test (P0-02)', () => {
     // 3. Select a component on the host page (e.g. hero section or headline)
     const hostElement = page.locator('h1').first();
     await expect(hostElement).toBeVisible();
-    await hostElement.click();
+    await hostElement.click({ force: true });
 
     // 4. Verify flyout inspector opens
     const flyout = page.locator('#cp-flyout');

@@ -1,6 +1,9 @@
 // @ts-nocheck
 import { ICONS } from './icons.js';
 import { getOverlayHtml } from './ui/template.js';
+import { IsolationManager, setupPopover, showPopoverSafe, hidePopoverSafe } from './lib/isolation.js';
+import { CaptureLayer } from './ui/capture-layer.js';
+import { DockController } from './ui/dock.js';
 
 export interface OverlayConfig {
   port: number;
@@ -30,6 +33,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
 
       let ws;
       let isBridgeConnected = false;
+      let connectedAgents = [];
+      let dockController = null;
 
       function setBridgeConnected(connected) {
         isBridgeConnected = connected;
@@ -42,6 +47,13 @@ export function bootstrapOverlay(config: OverlayConfig) {
             badge.className = 'cp-badge cp-badge-rose';
             badge.textContent = 'Server Offline';
           }
+        }
+        if (dockController) {
+          dockController.updatePresence({
+            bridgeOnline: connected,
+            port,
+            agents: connectedAgents,
+          });
         }
       }
 
@@ -84,6 +96,20 @@ export function bootstrapOverlay(config: OverlayConfig) {
         })
         .catch(() => setBridgeConnected(false));
 
+      fetch(BRIDGE + '/api/presence')
+        .then(r => r.json())
+        .then(d => {
+          connectedAgents = d.agents || [];
+          if (dockController) {
+            dockController.updatePresence({
+              bridgeOnline: isBridgeConnected,
+              port,
+              agents: connectedAgents,
+            });
+          }
+        })
+        .catch(() => {});
+
       // Check on page restore from browser bfcache (e.g. Cmd+Shift+T)
       window.addEventListener('pageshow', (event) => {
         if (event.persisted) {
@@ -113,7 +139,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
       container.style.position = 'fixed';
       container.style.inset = '0';
       container.style.pointerEvents = 'none';
-      container.style.zIndex = '999990';
+      container.style.zIndex = '2147483600';
       const shadow = container.attachShadow({ mode: 'open' });
       shadow.innerHTML = getOverlayHtml();
       if (document.body) {
@@ -121,6 +147,20 @@ export function bootstrapOverlay(config: OverlayConfig) {
       } else {
         window.addEventListener('DOMContentLoaded', () => document.body.appendChild(container));
       }
+
+      // Initialize host dialog isolation manager (reparents into active modal dialogs if needed)
+      const isolationManager = new IsolationManager(container);
+
+      // Setup Popover API for floating UI surfaces
+      setupPopover(shadow.getElementById('cp-flyout'));
+      setupPopover(shadow.getElementById('cp-note-popover'));
+      setupPopover(shadow.getElementById('cp-snap-preview'));
+      setupPopover(shadow.getElementById('cp-snap-lightbox'));
+      setupPopover(shadow.getElementById('cp-mcp-modal'));
+
+      // Capture layer for isolated inspect mode (P2-03)
+      const captureLayerEl = shadow.getElementById('ah-capture-layer');
+      let captureLayer = null;
 
       // Elements
       const dockWrapper = shadow.getElementById('cp-dock-wrapper');
@@ -149,10 +189,14 @@ export function bootstrapOverlay(config: OverlayConfig) {
       const flyoutSettingsBtn = shadow.getElementById('cp-flyout-settings');
       const settingsBackBtn = shadow.getElementById('cp-settings-back');
       const viewInspector = shadow.getElementById('cp-view-inspector');
+      const viewPins = shadow.getElementById('cp-view-pins');
       const viewSettings = shadow.getElementById('cp-view-settings');
       const flyoutBadge = shadow.getElementById('cp-flyout-badge');
       const themeSetDark = shadow.getElementById('cp-theme-set-dark');
       const themeSetLight = shadow.getElementById('cp-theme-set-light');
+      const themeSetSystem = shadow.getElementById('cp-theme-set-system');
+      const settingsMinimizeBtn = shadow.getElementById('ah-settings-minimize-btn');
+      const settingsResetPosBtn = shadow.getElementById('ah-settings-reset-pos-btn');
       const prefEditorCursor = shadow.getElementById('cp-pref-editor-cursor');
       const prefEditorVscode = shadow.getElementById('cp-pref-editor-vscode');
       const prefEditorWindsurf = shadow.getElementById('cp-pref-editor-windsurf');
@@ -176,36 +220,101 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       }
 
-      // Settings View Switcher (Dedicated page inside sidebar)
+      // Host offset for coordinate calculations inside reparented dialogs (C)
+      function getHostOffset() {
+        if (!container) return { x: 0, y: 0 };
+        const r = container.getBoundingClientRect();
+        return { x: r.left || 0, y: r.top || 0 };
+      }
+
+      // Sidebar Tab & View Switcher (A.1, A.4, A.5)
+      let currentSidebarTab: 'inspector' | 'pins' | 'settings' | null = null;
       let inSettingsView = false;
-      function toggleSettingsView(force) {
-        inSettingsView = (typeof force === 'boolean') ? force : !inSettingsView;
-        if (inSettingsView) {
-          viewInspector.style.display = 'none';
-          viewSettings.style.display = 'flex';
-          flyoutBadge.style.display = 'none';
-          if (settingsBackBtn) settingsBackBtn.style.display = 'inline-flex';
-          flyoutTitle.textContent = 'Settings';
-          flyoutSettingsBtn.classList.add('active');
-          if (!flyout.classList.contains('open')) {
-            flyout.classList.add('open');
-            dockWrapper.classList.add('sidebar-open');
-          }
-        } else {
-          viewInspector.style.display = 'flex';
-          viewSettings.style.display = 'none';
-          flyoutBadge.style.display = 'inline-flex';
+
+      function setSidebarTab(tab: 'inspector' | 'pins' | 'settings' | null) {
+        currentSidebarTab = tab;
+        inSettingsView = (tab === 'settings');
+
+        if (!tab) {
+          flyout.classList.remove('open');
+          dockWrapper.classList.remove('sidebar-open');
+          if (dockController) dockController.setActiveTab(null);
+          return;
+        }
+
+        flyout.classList.add('open');
+        if (flyout.classList.contains('is-sidebar')) {
+          dockWrapper.classList.add('sidebar-open');
+        }
+        if (dockController) dockController.setActiveTab(tab);
+
+        const flyoutSubtitle = shadow.getElementById('cp-flyout-subtitle');
+
+        if (tab === 'inspector') {
+          if (viewInspector) viewInspector.style.display = 'flex';
+          if (viewPins) viewPins.style.display = 'none';
+          if (viewSettings) viewSettings.style.display = 'none';
+          if (flyoutBadge) flyoutBadge.style.display = 'inline-flex';
           if (settingsBackBtn) settingsBackBtn.style.display = 'none';
-          flyoutTitle.textContent = lastInfoName || 'Component Inspector';
-          flyoutSettingsBtn.classList.remove('active');
+          if (flyoutThemeBtn) flyoutThemeBtn.style.display = 'inline-flex';
+          if (flyoutSettingsBtn) {
+            flyoutSettingsBtn.style.display = 'inline-flex';
+            flyoutSettingsBtn.classList.remove('active');
+          }
+          if (flyoutTitle) flyoutTitle.textContent = lastInfoName || 'Component Inspector';
+          if (flyoutSubtitle && flyoutSubtitle.textContent) flyoutSubtitle.style.display = 'block';
+        } else if (tab === 'pins') {
+          if (viewInspector) viewInspector.style.display = 'none';
+          if (viewPins) viewPins.style.display = 'flex';
+          if (viewSettings) viewSettings.style.display = 'none';
+          if (flyoutBadge) flyoutBadge.style.display = 'none';
+          if (settingsBackBtn) settingsBackBtn.style.display = 'none';
+          if (flyoutThemeBtn) flyoutThemeBtn.style.display = 'none';
+          if (flyoutSettingsBtn) flyoutSettingsBtn.style.display = 'none';
+          if (flyoutTitle) flyoutTitle.textContent = 'Pinned Stack';
+          if (flyoutSubtitle) flyoutSubtitle.style.display = 'none';
+        } else if (tab === 'settings') {
+          if (viewInspector) viewInspector.style.display = 'none';
+          if (viewPins) viewPins.style.display = 'none';
+          if (viewSettings) viewSettings.style.display = 'flex';
+          if (flyoutBadge) flyoutBadge.style.display = 'none';
+          if (settingsBackBtn) settingsBackBtn.style.display = 'inline-flex';
+          if (flyoutThemeBtn) flyoutThemeBtn.style.display = 'none';
+          if (flyoutSettingsBtn) flyoutSettingsBtn.style.display = 'none';
+          if (flyoutTitle) flyoutTitle.textContent = 'Settings';
+          if (flyoutSubtitle) flyoutSubtitle.style.display = 'none';
+        }
+      }
+
+      function toggleSettingsView(force?: boolean) {
+        if (typeof force === 'boolean') {
+          setSidebarTab(force ? 'settings' : 'inspector');
+        } else {
+          setSidebarTab(currentSidebarTab === 'settings' ? null : 'settings');
         }
       }
 
       if (flyoutSettingsBtn) {
-        flyoutSettingsBtn.onclick = () => toggleSettingsView();
+        flyoutSettingsBtn.onclick = () => {
+          if (currentSidebarTab === 'settings') {
+            setSidebarTab(null);
+          } else {
+            setSidebarTab('settings');
+          }
+        };
       }
       if (settingsBackBtn) {
-        settingsBackBtn.onclick = () => toggleSettingsView(false);
+        settingsBackBtn.onclick = () => setSidebarTab('inspector');
+      }
+      if (settingsMinimizeBtn) {
+        settingsMinimizeBtn.onclick = () => {
+          if (dockController) dockController.setMinimized(true);
+        };
+      }
+      if (settingsResetPosBtn) {
+        settingsResetPosBtn.onclick = () => {
+          if (dockController) dockController.resetPosition();
+        };
       }
 
       // Editor preference
@@ -215,12 +324,23 @@ export function bootstrapOverlay(config: OverlayConfig) {
       } catch(e) {}
 
       function updateEditorPrefUI() {
-        [prefEditorCursor, prefEditorVscode, prefEditorWindsurf].forEach((b) => {
-          if (b) b.classList.remove('primary');
+        const editors = [
+          { id: 'cursor', btn: prefEditorCursor, label: 'Cursor (cursor://)' },
+          { id: 'vscode', btn: prefEditorVscode, label: 'VS Code (vscode://)' },
+          { id: 'windsurf', btn: prefEditorWindsurf, label: 'Windsurf (windsurf://)' },
+        ];
+        editors.forEach((ed) => {
+          if (!ed.btn) return;
+          if (currentEditorPref === ed.id) {
+            ed.btn.classList.add('primary');
+            ed.btn.setAttribute('aria-selected', 'true');
+            ed.btn.innerHTML = `<span style="color:var(--accent,#0d99ff); font-weight:700; margin-right:6px;">✓</span> ${ed.label}`;
+          } else {
+            ed.btn.classList.remove('primary');
+            ed.btn.setAttribute('aria-selected', 'false');
+            ed.btn.innerHTML = ed.label;
+          }
         });
-        if (currentEditorPref === 'cursor' && prefEditorCursor) prefEditorCursor.classList.add('primary');
-        if (currentEditorPref === 'vscode' && prefEditorVscode) prefEditorVscode.classList.add('primary');
-        if (currentEditorPref === 'windsurf' && prefEditorWindsurf) prefEditorWindsurf.classList.add('primary');
       }
       updateEditorPrefUI();
 
@@ -413,60 +533,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         };
       }
 
-      // Persist & Drag Dock
-      try {
-        const savedPos = localStorage.getItem('agent_hover_dock_pos');
-        if (savedPos) {
-          const parsed = JSON.parse(savedPos);
-          if (parsed.top && parsed.left) {
-            dockWrapper.style.top = parsed.top;
-            dockWrapper.style.left = parsed.left;
-            dockWrapper.style.transform = 'none';
-          }
-        }
-      } catch(e) {}
-      updateDockOrientation();
-      window.addEventListener('resize', updateDockOrientation);
+      // Dock dragging and edge-snapping managed by DockController
 
-      let isDragging = false;
-      let dragStartY = 0;
-      let dragStartX = 0;
-      let initialTop = 0;
-      let initialLeft = 0;
 
-      dockHandle.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        const rect = dockWrapper.getBoundingClientRect();
-        initialTop = rect.top;
-        initialLeft = rect.left;
-        dockWrapper.style.transform = 'none';
-        e.preventDefault();
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dockH = dockWrapper.offsetHeight || 90;
-        const dockW = dockWrapper.offsetWidth || 50;
-        const newTop = Math.max(10, Math.min(window.innerHeight - dockH - 10, initialTop + (e.clientY - dragStartY)));
-        const newLeft = Math.max(10, Math.min(window.innerWidth - dockW - 10, initialLeft + (e.clientX - dragStartX)));
-        dockWrapper.style.top = newTop + 'px';
-        dockWrapper.style.left = newLeft + 'px';
-        updateDockOrientation();
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (!isDragging) return;
-        isDragging = false;
-        updateDockOrientation();
-        try {
-          localStorage.setItem('agent_hover_dock_pos', JSON.stringify({
-            top: dockWrapper.style.top,
-            left: dockWrapper.style.left
-          }));
-        } catch(e) {}
-      });
 
       let calloutTimer = null;
       function showCallout(text, meta, duration = 2000) {
@@ -500,31 +569,24 @@ export function bootstrapOverlay(config: OverlayConfig) {
       }
 
       function updateInspectorCursor(active) {
-        let cursorStyle = document.getElementById('cp-inspector-cursor');
-        if (!cursorStyle) {
-          cursorStyle = document.createElement('style');
-          cursorStyle.id = 'cp-inspector-cursor';
-          cursorStyle.textContent = 'html.cp-inspector-active, html.cp-inspector-active * { cursor: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'%231e1e1e\' stroke=\'%23ffffff\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\'/%3E%3C/svg%3E") 4 5, crosshair !important; } #agent-hover-root, #agent-hover-root * { cursor: auto; }';
-          document.head.appendChild(cursorStyle);
-        }
-        if (active) {
-          document.documentElement.classList.add('cp-inspector-active');
-        } else {
-          document.documentElement.classList.remove('cp-inspector-active');
-        }
+        // Clean isolation: never inject into document.head or modify document.documentElement (F-07).
+        // Cursor will be applied cleanly to the shadow root capture layer in P2-03.
       }
 
       function togglePointerMode() {
         isPointerMode = !isPointerMode;
+        if (dockController) dockController.setInspectActive(isPointerMode);
         if (isPointerMode) {
           dockToggle.classList.add('active');
           showCallout('Inspector Active', 'Alt', 2200);
           updateInspectorCursor(true);
+          if (captureLayer) captureLayer.setActive(true);
           console.log('[agent-hover] Pointer mode ON');
         } else {
           dockToggle.classList.remove('active');
           showCallout('Inspector Paused', 'OFF', 1500);
           updateInspectorCursor(false);
+          if (captureLayer) captureLayer.setActive(false);
           highlight.style.display = 'none';
           if (typeof clearSelection === 'function') clearSelection();
           hideBands();
@@ -539,108 +601,129 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       }
 
-      dockToggle.onclick = togglePointerMode;
-
-      // Hover labels for dock buttons
-      dockToggle.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          calloutText.textContent = isPointerMode ? 'Inspector Mode' : 'Inspect Element';
-          calloutMeta.textContent = 'Alt';
-          callout.classList.add('show');
-        }
-      });
-      dockToggle.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockPins.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          const pinCount = shadow.getElementById('cp-pin-count')?.textContent || '0';
-          calloutText.textContent = 'Pinned Stack';
-          calloutMeta.textContent = pinCount + ' pinned';
-          callout.classList.add('show');
-        }
-      });
-      dockPins.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockHandle.addEventListener('mouseenter', () => {
-        if (!calloutTimer) {
-          calloutText.textContent = 'Drag Dock';
-          calloutMeta.textContent = 'Move';
-          callout.classList.add('show');
-        }
-      });
-      dockHandle.addEventListener('mouseleave', () => {
-        if (!calloutTimer) callout.classList.remove('show');
-      });
-
-      dockPins.onclick = () => {
-        flyout.classList.toggle('open');
-        if (flyout.classList.contains('open') && flyout.classList.contains('is-sidebar')) {
-          dockWrapper.classList.add('sidebar-open');
-        } else {
-          dockWrapper.classList.remove('sidebar-open');
-        }
-        const pinBar = shadow.getElementById('cp-pin-bar');
-        pinBar.scrollIntoView({ behavior: 'smooth' });
-      };
-
+      if (dockWrapper) {
+        dockController = new DockController(dockWrapper, {
+          shadowRoot: shadow,
+          onToggleInspect: () => togglePointerMode(),
+          onOpenPins: () => {
+            if (currentSidebarTab === 'pins') {
+              setSidebarTab(null);
+            } else {
+              setSidebarTab('pins');
+            }
+          },
+          onOpenSettings: () => {
+            if (currentSidebarTab === 'settings') {
+              setSidebarTab(null);
+            } else {
+              setSidebarTab('settings');
+            }
+          },
+          onCallout: (text, meta, duration) => showCallout(text, meta, duration),
+        });
+        dockController.updatePresence({
+          bridgeOnline: isBridgeConnected,
+          port,
+          agents: connectedAgents,
+        });
+      }
 
       // Theme toggle (dark/light mode)
       const themeToggle = shadow.getElementById('cp-flyout-theme');
       const themeIconDark = shadow.getElementById('cp-theme-icon-dark');
       const themeIconLight = shadow.getElementById('cp-theme-icon-light');
-      let isLightMode = false;
-      try { isLightMode = localStorage.getItem('agent-hover-theme') === 'light'; } catch(e) {}
-      
+      // Theme Management (P2-04: prefers-color-scheme with manual override)
+      let storedTheme = 'system';
+      try {
+        storedTheme = localStorage.getItem('agent-hover-theme') || 'system';
+      } catch(e) {}
+
+      const systemDarkMedia = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+      function resolveIsLight() {
+        if (storedTheme === 'light') return true;
+        if (storedTheme === 'dark') return false;
+        // system mode
+        return !!(systemDarkMedia && systemDarkMedia.matches);
+      }
+
+      let isLightMode = resolveIsLight();
+
       function applyTheme() {
+        isLightMode = resolveIsLight();
         if (isLightMode) {
           shadow.host.classList.add('light-mode');
           if (themeIconDark) themeIconDark.style.display = 'none';
           if (themeIconLight) themeIconLight.style.display = 'block';
-          if (themeSetDark) themeSetDark.classList.remove('primary');
-          if (themeSetLight) themeSetLight.classList.add('primary');
         } else {
           shadow.host.classList.remove('light-mode');
           if (themeIconDark) themeIconDark.style.display = 'block';
           if (themeIconLight) themeIconLight.style.display = 'none';
+        }
+
+        if (storedTheme === 'system') {
+          if (themeSetSystem) themeSetSystem.classList.add('primary');
+          if (themeSetDark) themeSetDark.classList.remove('primary');
+          if (themeSetLight) themeSetLight.classList.remove('primary');
+        } else if (storedTheme === 'dark') {
+          if (themeSetSystem) themeSetSystem.classList.remove('primary');
           if (themeSetDark) themeSetDark.classList.add('primary');
           if (themeSetLight) themeSetLight.classList.remove('primary');
+        } else if (storedTheme === 'light') {
+          if (themeSetSystem) themeSetSystem.classList.remove('primary');
+          if (themeSetDark) themeSetDark.classList.remove('primary');
+          if (themeSetLight) themeSetLight.classList.add('primary');
         }
       }
       applyTheme();
 
+      if (systemDarkMedia && typeof systemDarkMedia.addEventListener === 'function') {
+        systemDarkMedia.addEventListener('change', () => {
+          if (storedTheme === 'system') {
+            applyTheme();
+          }
+        });
+      }
+
       if (themeToggle) {
         themeToggle.onclick = () => {
-          isLightMode = !isLightMode;
+          storedTheme = isLightMode ? 'dark' : 'light';
+          try { localStorage.setItem('agent-hover-theme', storedTheme); } catch(e) {}
           applyTheme();
-          try { localStorage.setItem('agent-hover-theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
           showCallout(isLightMode ? 'Light mode' : 'Dark mode', 'THEME');
         };
       }
       if (themeSetDark) {
         themeSetDark.onclick = () => {
-          isLightMode = false;
-          applyTheme();
+          storedTheme = 'dark';
           try { localStorage.setItem('agent-hover-theme', 'dark'); } catch(e) {}
+          applyTheme();
           showCallout('Dark mode', 'THEME');
         };
       }
       if (themeSetLight) {
         themeSetLight.onclick = () => {
-          isLightMode = true;
-          applyTheme();
+          storedTheme = 'light';
           try { localStorage.setItem('agent-hover-theme', 'light'); } catch(e) {}
+          applyTheme();
           showCallout('Light mode', 'THEME');
         };
       }
+      if (themeSetSystem) {
+        themeSetSystem.onclick = () => {
+          storedTheme = 'system';
+          try { localStorage.setItem('agent-hover-theme', 'system'); } catch(e) {}
+          applyTheme();
+          showCallout('System mode', 'THEME');
+        };
+      }
 
-      shadow.getElementById('cp-flyout-close').onclick = () => {
-        flyout.classList.remove('open');
-        dockWrapper.classList.remove('sidebar-open');
-      };
+      const flyoutCloseBtn = shadow.getElementById('cp-flyout-close');
+      if (flyoutCloseBtn) {
+        flyoutCloseBtn.onclick = () => {
+          setSidebarTab(null);
+        };
+      }
 
       // Flyout Sidebar Mode Switcher & Draggable Floating Panel
       const flyoutModeToggle = shadow.getElementById('cp-flyout-mode-toggle');
@@ -786,7 +869,6 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       });
 
-      // Spacing Overlay Toggle (Opt-in Box Model)
       let showSpacingOverlay = false;
       const toggleSpacingBtn = shadow.getElementById('cp-toggle-spacing');
       if (toggleSpacingBtn) {
@@ -794,11 +876,14 @@ export function bootstrapOverlay(config: OverlayConfig) {
           showSpacingOverlay = !showSpacingOverlay;
           if (showSpacingOverlay) {
             toggleSpacingBtn.classList.add('primary');
-            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Spacing ON';
-            if (currentElement) positionBands(currentElement);
+            toggleSpacingBtn.setAttribute('aria-pressed', 'true');
+            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Spacing: On';
+            const target = selectedElement || (selectedTarget && selectedTarget.element) || currentElement;
+            if (target) positionBands(target);
           } else {
             toggleSpacingBtn.classList.remove('primary');
-            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Spacing Overlay';
+            toggleSpacingBtn.setAttribute('aria-pressed', 'false');
+            toggleSpacingBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Spacing: Off';
             hideBands();
           }
         };
@@ -1673,7 +1758,6 @@ export function bootstrapOverlay(config: OverlayConfig) {
       }
 
       // --- Dispatch to AI Agent (Queue & Clipboard per D-06) ---
-      let connectedAgents = [];
       let copyOnSend = 'auto'; // 'auto' | 'always' | 'never'
 
       async function dispatchToAgent(promptText, extra = {}) {
@@ -2325,6 +2409,26 @@ export function bootstrapOverlay(config: OverlayConfig) {
         } catch (_) {}
       });
 
+      // Open Folder button
+      shadow.getElementById('cp-snap-open-folder')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const btn = shadow.getElementById('cp-snap-open-folder');
+        try {
+          const res = await fetch(BRIDGE + '/api/screenshot/open-folder', { method: 'POST' });
+          if (res.ok) {
+            if (btn) {
+              btn.innerHTML = ICONS.check + ' Opened';
+              setTimeout(() => { btn.innerHTML = ICONS.camera + ' Folder'; }, 1500);
+            }
+            showCallout('Screenshots folder opened', 'OPENED', 2000);
+          } else {
+            showCallout('Failed to open folder', 'ERROR', 2000);
+          }
+        } catch (_) {
+          showCallout('Failed to connect to bridge', 'ERROR', 2000);
+        }
+      });
+
       // Copy button
       shadow.getElementById('cp-snap-copy')?.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -2550,6 +2654,11 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (!el) return;
         const cs = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
+        const offset = getHostOffset();
+        const top = rect.top - offset.y;
+        const bottom = rect.bottom - offset.y;
+        const left = rect.left - offset.x;
+        const right = rect.right - offset.x;
         const px = (v) => parseFloat(v) || 0;
         const mt = px(cs.marginTop), mr = px(cs.marginRight), mb = px(cs.marginBottom), ml = px(cs.marginLeft);
         const pt = px(cs.paddingTop), pr = px(cs.paddingRight), pb = px(cs.paddingBottom), pl = px(cs.paddingLeft);
@@ -2558,10 +2667,10 @@ export function bootstrapOverlay(config: OverlayConfig) {
         // 1. Draw full-canvas dashed Axis Projection Lines (Figma / Studio inspection style)
         if (axisGuides) {
           const lines = [
-            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.top) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(rect.bottom) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.left) + 'px;"></div>',
-            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(rect.right) + 'px;"></div>'
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(top) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-h" style="top:' + Math.round(bottom) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(left) + 'px;"></div>',
+            '<div class="cp-axis-line cp-axis-v" style="left:' + Math.round(right) + 'px;"></div>'
           ];
 
           // Flex / Grid direct child dashed frames
@@ -2572,7 +2681,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
               if (!(child instanceof HTMLElement) || child.id === 'agent-hover-root') continue;
               const cr = child.getBoundingClientRect();
               if (cr.width > 0 && cr.height > 0) {
-                lines.push('<div class="cp-layout-child-frame" style="top:' + Math.round(cr.top) + 'px; left:' + Math.round(cr.left) + 'px; width:' + Math.round(cr.width) + 'px; height:' + Math.round(cr.height) + 'px;"></div>');
+                lines.push('<div class="cp-layout-child-frame" style="top:' + Math.round(cr.top - offset.y) + 'px; left:' + Math.round(cr.left - offset.x) + 'px; width:' + Math.round(cr.width) + 'px; height:' + Math.round(cr.height) + 'px;"></div>');
               }
             }
           }
@@ -2584,8 +2693,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (marginBand) {
           if (mt || mr || mb || ml) {
             marginBand.style.display = 'block';
-            marginBand.style.top = (rect.top - mt) + 'px';
-            marginBand.style.left = (rect.left - ml) + 'px';
+            marginBand.style.top = (top - mt) + 'px';
+            marginBand.style.left = (left - ml) + 'px';
             marginBand.style.width = (rect.width + ml + mr) + 'px';
             marginBand.style.height = (rect.height + mt + mb) + 'px';
             marginBand.style.borderTopWidth = mt + 'px';
@@ -2601,8 +2710,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (paddingBand) {
           if (pt || pr || pb || pl) {
             paddingBand.style.display = 'block';
-            paddingBand.style.top = (rect.top + bt) + 'px';
-            paddingBand.style.left = (rect.left + blw) + 'px';
+            paddingBand.style.top = (top + bt) + 'px';
+            paddingBand.style.left = (left + blw) + 'px';
             paddingBand.style.width = Math.max(0, rect.width - blw - brw) + 'px';
             paddingBand.style.height = Math.max(0, rect.height - bt - bb) + 'px';
             paddingBand.style.borderTopWidth = pt + 'px';
@@ -2636,13 +2745,19 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (Math.abs(selRect.top - hovRect.top) < 2 && Math.abs(selRect.left - hovRect.left) < 2 &&
             Math.abs(selRect.width - hovRect.width) < 2 && Math.abs(selRect.height - hovRect.height) < 2) return;
 
-        const selBottom = selRect.top + selRect.height;
-        const selRight = selRect.left + selRect.width;
-        const hovBottom = hovRect.top + hovRect.height;
-        const hovRight = hovRect.left + hovRect.width;
+        const offset = getHostOffset();
+        const sTop = selRect.top - offset.y;
+        const sLeft = selRect.left - offset.x;
+        const sBottom = sTop + selRect.height;
+        const sRight = sLeft + selRect.width;
 
-        const overlapX = selRect.left < hovRight && selRight > hovRect.left;
-        const overlapY = selRect.top < hovBottom && selBottom > hovRect.top;
+        const hTop = hovRect.top - offset.y;
+        const hLeft = hovRect.left - offset.x;
+        const hBottom = hTop + hovRect.height;
+        const hRight = hLeft + hovRect.width;
+
+        const overlapX = sLeft < hRight && sRight > hLeft;
+        const overlapY = sTop < hBottom && sBottom > hTop;
 
         function addLine(cls, top, left, w, h) {
           const el = document.createElement('div');
@@ -2654,74 +2769,113 @@ export function bootstrapOverlay(config: OverlayConfig) {
           distanceLayer.appendChild(el);
         }
 
-        function addPill(text, top, left) {
+        function addPill(text, top, left, axis) {
+          const num = parseInt(text, 10);
+          if (isNaN(num) || num < 1) return; // Hide labels under 1px (S5)
+
+          let finalTop = top;
+          let finalLeft = left;
+
+          // Check collision with selRect and hovRect (S5: pill must not overlap measured elements, nudge clear)
+          const pW = 38;
+          const pH = 18;
+          const sBox = { left: sLeft, right: sRight, top: sTop, bottom: sBottom };
+          const hBox = { left: hLeft, right: hRight, top: hTop, bottom: hBottom };
+          const collides = (l, t) => {
+            const b = { left: l - pW / 2, right: l + pW / 2, top: t - pH / 2, bottom: t + pH / 2 };
+            return !(b.right <= sBox.left || b.left >= sBox.right || b.bottom <= sBox.top || b.top >= sBox.bottom) ||
+                   !(b.right <= hBox.left || b.left >= hBox.right || b.bottom <= hBox.top || b.top >= hBox.bottom);
+          };
+
+          if (collides(finalLeft, finalTop)) {
+            if (axis === 'vertical') {
+              if (!collides(finalLeft + 26, finalTop)) {
+                finalLeft = finalLeft + 26;
+              } else if (!collides(finalLeft - 26, finalTop)) {
+                finalLeft = finalLeft - 26;
+              }
+            } else {
+              if (!collides(finalLeft, finalTop - 16)) {
+                finalTop = finalTop - 16;
+              } else if (!collides(finalLeft, finalTop + 16)) {
+                finalTop = finalTop + 16;
+              }
+            }
+          }
+
           const el = document.createElement('div');
           el.className = 'cp-dist-pill';
           el.textContent = text;
-          el.style.top = top + 'px';
-          el.style.left = left + 'px';
+          el.style.top = finalTop + 'px';
+          el.style.left = finalLeft + 'px';
           distanceLayer.appendChild(el);
         }
 
         // Vertical gap (elements don't overlap vertically)
         if (!overlapY) {
-          const isAbove = selRect.top > hovBottom;
-          const gapTop = isAbove ? hovBottom : selBottom;
-          const gapBottom = isAbove ? selRect.top : hovRect.top;
+          const isAbove = sTop > hBottom;
+          const gapTop = isAbove ? hBottom : sBottom;
+          const gapBottom = isAbove ? sTop : hTop;
           const gap = Math.round(gapBottom - gapTop);
-          if (gap > 0) {
-            const midX = Math.max(selRect.left + selRect.width / 2, hovRect.left + hovRect.width / 2);
+          if (gap >= 1) {
+            const overlapXSpan = Math.min(sRight, hRight) - Math.max(sLeft, hLeft);
+            const midX = overlapXSpan > 0 
+              ? Math.round(Math.max(sLeft, hLeft) + overlapXSpan / 2)
+              : Math.round(Math.max(sLeft + selRect.width / 2, hLeft + hovRect.width / 2));
             addLine('vertical', gapTop, midX, null, gap);
-            addPill(gap + 'px', gapTop + gap / 2, midX);
+            addPill(gap + 'px', gapTop + gap / 2, midX, 'vertical');
           }
         }
 
         // Horizontal gap (elements don't overlap horizontally)
         if (!overlapX) {
-          const isLeft = selRect.left > hovRight;
-          const gapLeft = isLeft ? hovRight : selRight;
-          const gapRight = isLeft ? selRect.left : hovRect.left;
+          const isLeft = sLeft > hRight;
+          const gapLeft = isLeft ? hRight : sRight;
+          const gapRight = isLeft ? sLeft : hLeft;
           const gap = Math.round(gapRight - gapLeft);
-          if (gap > 0) {
-            const midY = Math.max(selRect.top + selRect.height / 2, hovRect.top + hovRect.height / 2);
+          if (gap >= 1) {
+            const overlapYSpan = Math.min(sBottom, hBottom) - Math.max(sTop, hTop);
+            const midY = overlapYSpan > 0
+              ? Math.round(Math.max(sTop, hTop) + overlapYSpan / 2)
+              : Math.round(Math.max(sTop + selRect.height / 2, hTop + hovRect.height / 2));
             addLine('horizontal', midY, gapLeft, gap, null);
-            addPill(gap + 'px', midY, gapLeft + gap / 2);
+            addPill(gap + 'px', midY, gapLeft + gap / 2, 'horizontal');
           }
         }
 
         // Both overlap (nested/containment) — show edge inset distances
         if (overlapX && overlapY) {
-          const topGap = Math.round(Math.abs(hovRect.top - selRect.top));
-          const leftGap = Math.round(Math.abs(hovRect.left - selRect.left));
-          const bottomGap = Math.round(Math.abs(selBottom - hovBottom));
-          const rightGap = Math.round(Math.abs(selRight - hovRight));
+          const topGap = Math.round(Math.abs(hTop - sTop));
+          const leftGap = Math.round(Math.abs(hLeft - sLeft));
+          const bottomGap = Math.round(Math.abs(sBottom - hBottom));
+          const rightGap = Math.round(Math.abs(sRight - hRight));
 
-          const innerLeft = Math.max(selRect.left, hovRect.left);
-          const innerRight = Math.min(selRight, hovRight);
-          const innerTop = Math.max(selRect.top, hovRect.top);
-          const innerBottom = Math.min(selBottom, hovBottom);
+          const innerLeft = Math.max(sLeft, hLeft);
+          const innerRight = Math.min(sRight, hRight);
+          const innerTop = Math.max(sTop, hTop);
+          const innerBottom = Math.min(sBottom, hBottom);
           const midX = (innerLeft + innerRight) / 2;
           const midY = (innerTop + innerBottom) / 2;
 
-          if (topGap > 4) {
-            const t = Math.min(selRect.top, hovRect.top);
+          if (topGap >= 1) {
+            const t = Math.min(sTop, hTop);
             addLine('vertical', t, midX, null, topGap);
-            addPill(topGap + 'px', t + topGap / 2, midX);
+            addPill(topGap + 'px', t + topGap / 2, midX, 'vertical');
           }
-          if (leftGap > 4) {
-            const l = Math.min(selRect.left, hovRect.left);
+          if (leftGap >= 1) {
+            const l = Math.min(sLeft, hLeft);
             addLine('horizontal', midY, l, leftGap, null);
-            addPill(leftGap + 'px', midY, l + leftGap / 2);
+            addPill(leftGap + 'px', midY, l + leftGap / 2, 'horizontal');
           }
-          if (bottomGap > 4 && bottomGap !== topGap) {
-            const bTop = Math.min(selBottom, hovBottom);
+          if (bottomGap >= 1 && bottomGap !== topGap) {
+            const bTop = Math.min(sBottom, hBottom);
             addLine('vertical', bTop, midX, null, bottomGap);
-            addPill(bottomGap + 'px', bTop + bottomGap / 2, midX);
+            addPill(bottomGap + 'px', bTop + bottomGap / 2, midX, 'vertical');
           }
-          if (rightGap > 4 && rightGap !== leftGap) {
-            const rLeft = Math.min(selRight, hovRight);
+          if (rightGap >= 1 && rightGap !== leftGap) {
+            const rLeft = Math.min(sRight, hRight);
             addLine('horizontal', midY, rLeft, rightGap, null);
-            addPill(rightGap + 'px', midY, rLeft + rightGap / 2);
+            addPill(rightGap + 'px', midY, rLeft + rightGap / 2, 'horizontal');
           }
         }
       }
@@ -3088,17 +3242,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         });
       }
 
-      // Double-click handler for text editing
-      window.addEventListener('dblclick', function(e) {
-        if (!isPointerMode) return;
-        if (e.target && e.target.closest && e.target.closest('#agent-hover-root')) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        if (!el) return;
-        if (el.closest && el.closest('#agent-hover-root')) return;
+      // Double-click handler for text editing (delegated via CaptureLayer)
+      function handleDblClickTarget(el, e) {
+        if (!el || (el.closest && el.closest('#agent-hover-root'))) return;
         if (isFormElement(el)) return;
         if (!isLeafTextElement(el)) {
           showCallout('Element has complex children — select a text element', 'TIP');
@@ -3106,7 +3252,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
 
         openTextEditor(el);
-      }, true);
+      }
 
       // Close text editor on Escape (handled in keydown handler below)
       // Close text editor on click outside
@@ -3210,8 +3356,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
             activeEl.blur();
             return;
           }
-          flyout.classList.remove('open');
-          dockWrapper.classList.remove('sidebar-open');
+          setSidebarTab(null);
           if (typeof clearSelection === 'function') clearSelection();
           return;
         }
@@ -3245,57 +3390,56 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
       });
 
-      // --- Hover Highlight (RAF-throttled, Universal Selection) ---
-      let hoverRafPending = false;
-      window.addEventListener('mousemove', (e) => {
-        if (!isPointerMode || hoverRafPending) return;
-        hoverRafPending = true;
-        requestAnimationFrame(() => {
-          hoverRafPending = false;
-
-          // Check if cursor is over Agent Hover UI
-          const path = e.composedPath ? e.composedPath() : [];
-          const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
-          if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) {
-            highlight.style.display = 'none';
-            hideBands();
-            return;
-          }
-
-          const el = document.elementFromPoint(e.clientX, e.clientY);
-          if (!el || (el.closest && el.closest('#agent-hover-root'))) {
-            highlight.style.display = 'none';
-            hideBands();
-            return;
-          }
-          if (el === currentElement) return;
-          currentElement = el;
-
-          // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
-          currentStack = buildHierarchyStack(el);
-          currentStackIndex = 0; // Default to exact element under cursor!
-
-          // If a selection is active, show measurement guides between selected and hovered
-          if (selectedRect) {
-            const hoveredRect = el.getBoundingClientRect();
-            renderDistanceGuides(selectedRect, hoveredRect);
-          } else {
-            clearDistanceGuides();
-          }
-
-          // If hovering over the selected element, hide the hover preview so borders don't double
-          if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
-            highlight.style.display = 'none';
+      // --- Hover Highlight (Universal Selection, delegated via CaptureLayer) ---
+      function handleHoverTarget(el, e) {
+        if (!el || (el.closest && el.closest('#agent-hover-root'))) {
+          highlight.style.display = 'none';
+          if (!showSpacingOverlay || (!selectedElement && !currentElement)) {
             hideBands();
           } else {
-            highlightComponent(currentStack[0], false);
+            positionBands(selectedElement || currentElement);
           }
-        });
-      });
+          clearDistanceGuides();
+          currentElement = null;
+          return;
+        }
+        if (el === currentElement) return;
+        currentElement = el;
+
+        // Build full hierarchy stack (Level 0 = DOM element, Level 1..N = React components)
+        currentStack = buildHierarchyStack(el);
+        currentStackIndex = 0; // Default to exact element under cursor!
+
+        // If a selection is active, show measurement guides between selected and hovered
+        if (selectedRect) {
+          const hoveredRect = el.getBoundingClientRect();
+          renderDistanceGuides(selectedRect, hoveredRect);
+        } else {
+          clearDistanceGuides();
+        }
+
+        // If hovering over the selected element, hide the hover preview so borders don't double
+        if (selectedTarget && ((selectedTarget.element && selectedTarget.element === el) || (selectedElement && selectedElement === el))) {
+          highlight.style.display = 'none';
+          if (showSpacingOverlay) {
+            positionBands(selectedElement || el);
+          } else {
+            hideBands();
+          }
+        } else {
+          highlightComponent(currentStack[0], false);
+          if (showSpacingOverlay && selectedElement) {
+            positionBands(selectedElement);
+          }
+        }
+      }
 
       // Reposition highlight on scroll/resize
       function repositionHighlight() {
         if (typeof updateSelectionFrame === 'function') updateSelectionFrame();
+        if (showSpacingOverlay && (selectedElement || currentElement)) {
+          positionBands(selectedElement || currentElement);
+        }
         if (!currentComponentInfo || highlight.style.display === 'none') return;
         const target = currentStack[currentStackIndex] || currentComponentInfo;
 
@@ -3352,6 +3496,37 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
         const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         return isDark ? '#09090b' : '#ffffff';
+      }
+
+      function formatColorToHex(colorStr) {
+        if (!colorStr) return '';
+        const trimmed = String(colorStr).trim();
+        if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(trimmed)) {
+          return trimmed;
+        }
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) return trimmed;
+          ctx.clearRect(0, 0, 1, 1);
+          ctx.fillStyle = trimmed;
+          ctx.fillRect(0, 0, 1, 1);
+          const data = ctx.getImageData(0, 0, 1, 1).data;
+          const r = data[0];
+          const g = data[1];
+          const b = data[2];
+          const a = data[3];
+          const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+          if (a < 255) {
+            const alphaPercent = Math.round((a / 255) * 100);
+            return `${hex} · ${alphaPercent}%`;
+          }
+          return hex;
+        } catch (_) {
+          return trimmed;
+        }
       }
 
       function triggerShutterFlash() {
@@ -3631,17 +3806,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
         return null;
       }
 
-      // --- Click to Inspect ---
-      window.addEventListener('click', async (e) => {
-        if (!isPointerMode) return;
-        const path = e.composedPath ? e.composedPath() : [];
-        const isOverHoverUi = path.some(node => node === container || (node.id === 'agent-hover-root') || (node.classList && node.classList.contains && node.classList.contains('agent-hover-panel')));
-        if (isOverHoverUi || (e.target && e.target.closest && e.target.closest('#agent-hover-root'))) return;
-        
-        e.preventDefault();
-        e.stopPropagation();
-
-        const clickedEl = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+      // --- Click to Inspect (delegated via CaptureLayer) ---
+      async function handleSelectTarget(clickedEl, e) {
         if (clickedEl && clickedEl !== document.body && clickedEl !== container && (!clickedEl.closest || !clickedEl.closest('#agent-hover-root'))) {
           currentStack = buildHierarchyStack(clickedEl);
           currentStackIndex = 0;
@@ -3686,7 +3852,17 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
 
         await renderFlyoutForStackIndex(targetIndex);
-      }, true);
+      }
+
+      // Initialize CaptureLayer inside Shadow Root (P2-03)
+      if (captureLayerEl) {
+        captureLayer = new CaptureLayer(captureLayerEl, {
+          shadowRoot: shadow,
+          onHover: handleHoverTarget,
+          onSelect: handleSelectTarget,
+          onDblClick: handleDblClickTarget,
+        });
+      }
 
       async function renderFlyoutForStackIndex(index) {
         if (!currentStack || currentStack.length === 0) return;
@@ -3699,9 +3875,19 @@ export function bootstrapOverlay(config: OverlayConfig) {
         selectedElement = item.element || currentElement;
         updateSelectionFrame();
 
-        // Update selection chip text
+        // Update selection chip text (S4: show component name or tag, with at most the first class)
         if (selName) {
-          selName.textContent = item.isDomElement ? item.name : '<' + item.name + ' />';
+          let labelText = '';
+          if (item.isDomElement) {
+            const el = item.element || currentElement;
+            const rawClass = el && (typeof el.className === 'string' ? el.className : (el.getAttribute && el.getAttribute('class')) || '');
+            const firstClass = rawClass ? rawClass.trim().split(/\s+/).filter(Boolean)[0] : '';
+            labelText = firstClass ? (item.name + '.' + firstClass) : item.name;
+          } else {
+            labelText = '<' + item.name + ' />';
+          }
+          selName.textContent = labelText;
+          selName.title = labelText;
         }
         if (selFile) {
           if (item.source) {
@@ -3728,9 +3914,9 @@ export function bootstrapOverlay(config: OverlayConfig) {
         }
         clearDistanceGuides();
 
-        flyout.classList.add('open');
-        if (flyout.classList.contains('is-sidebar')) {
-          dockWrapper.classList.add('sidebar-open');
+        setSidebarTab('inspector');
+        if (showSpacingOverlay && (item.element || selectedElement)) {
+          positionBands(item.element || selectedElement);
         }
 
         // Render interactive breadcrumbs with proper HTML escaping
@@ -3766,8 +3952,26 @@ export function bootstrapOverlay(config: OverlayConfig) {
         if (inSettingsView) toggleSettingsView(false);
 
         if (item.isDomElement) {
-          flyoutTitle.textContent = item.name;
-          const el = item.element;
+          const el = item.element || currentElement;
+          if (flyoutTitle) {
+            flyoutTitle.textContent = item.name;
+            flyoutTitle.title = item.name;
+          }
+          lastInfoName = item.name;
+          const subtitleEl = shadow.getElementById('cp-flyout-subtitle');
+          if (subtitleEl) {
+            const rawClass = el && (typeof el.className === 'string' ? el.className : (el.getAttribute && el.getAttribute('class')) || '');
+            const classStr = rawClass ? rawClass.trim() : '';
+            if (classStr) {
+              subtitleEl.textContent = classStr;
+              subtitleEl.title = classStr;
+              subtitleEl.style.display = 'block';
+            } else {
+              subtitleEl.textContent = '';
+              subtitleEl.title = '';
+              subtitleEl.style.display = 'none';
+            }
+          }
           let html = '';
 
           // Contextual In-Inspector Note Card
@@ -3876,10 +4080,12 @@ export function bootstrapOverlay(config: OverlayConfig) {
               html += '<div><span style="color:var(--text-muted);">gap:</span> ' + computedStyles.gap + '</div>';
             }
             if (computedStyles.color) {
-              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">color:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.color + '; border:1px solid rgba(255,255,255,0.2);"></span>' + computedStyles.color + '</div>';
+              const hexColor = formatColorToHex(computedStyles.color);
+              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">color:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.color + '; border:1px solid rgba(255,255,255,0.2);"></span>' + hexColor + '</div>';
             }
             if (computedStyles.backgroundColor && computedStyles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">bg:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.backgroundColor + '; border:1px solid rgba(255,255,255,0.2);"></span>' + computedStyles.backgroundColor + '</div>';
+              const hexBg = formatColorToHex(computedStyles.backgroundColor);
+              html += '<div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--text-muted);">bg:</span> <span style="width:9px; height:9px; border-radius:2px; background:' + computedStyles.backgroundColor + '; border:1px solid rgba(255,255,255,0.2);"></span>' + hexBg + '</div>';
             }
             html += '</div></details>';
           }
@@ -3933,7 +4139,31 @@ export function bootstrapOverlay(config: OverlayConfig) {
           }
         } else {
           // React Component
-          flyoutTitle.textContent = item.name;
+          if (flyoutTitle) {
+            flyoutTitle.textContent = item.name;
+            flyoutTitle.title = item.name;
+          }
+          lastInfoName = item.name;
+          const subtitleEl = shadow.getElementById('cp-flyout-subtitle');
+          if (subtitleEl) {
+            const el = item.element || currentElement;
+            const rawClass = el && (typeof el.className === 'string' ? el.className : (el.getAttribute && el.getAttribute('class')) || '');
+            const classStr = rawClass ? rawClass.trim() : '';
+            if (classStr) {
+              subtitleEl.textContent = classStr;
+              subtitleEl.title = classStr;
+              subtitleEl.style.display = 'block';
+            } else if (item.source && item.source.fileName) {
+              const shortFile = item.source.fileName.split('/').slice(-2).join('/') + ':' + item.source.lineNumber;
+              subtitleEl.textContent = shortFile;
+              subtitleEl.title = item.source.fileName + ':' + item.source.lineNumber;
+              subtitleEl.style.display = 'block';
+            } else {
+              subtitleEl.textContent = '';
+              subtitleEl.title = '';
+              subtitleEl.style.display = 'none';
+            }
+          }
           flyoutContent.innerHTML = '<p style="color:var(--text-secondary);">Loading context...</p>';
           try {
             const resolved = await resolveComponent(item);
@@ -4059,7 +4289,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
               html += '<div><span style="color:var(--text-muted);">flex-dir:</span> ' + computedStyles.flexDirection + '</div>';
               html += '<div><span style="color:var(--text-muted);">gap:</span> ' + computedStyles.gap + '</div>';
             }
-            html += '<div><span style="color:var(--text-muted);">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + computedStyles.color + '; margin-right:4px;"></span>' + computedStyles.color + '</div>';
+            const hexColor = formatColorToHex(computedStyles.color);
+            html += '<div><span style="color:var(--text-muted);">color:</span> <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + escapeHtml(computedStyles.color) + '; margin-right:4px;"></span>' + escapeHtml(hexColor) + '</div>';
             html += '</div>';
             html += '</details>';
           }
@@ -4391,6 +4622,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
           } else {
             dockPinBadge.style.display = 'none';
           }
+          if (dockController) dockController.setPinCount(count);
 
           const list = shadow.getElementById('cp-pin-list');
           list.innerHTML = '';
@@ -4452,7 +4684,22 @@ export function bootstrapOverlay(config: OverlayConfig) {
               };
             });
           } else {
-            list.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic; padding:6px 0;">No pinned components. Click "Pin Component Task" on any component to stage changes.</div>';
+            list.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic; padding:6px 0;">No pinned components. Click "Pin Component" on any component to stage changes.</div>';
+          }
+
+          const genTaskBtn = shadow.getElementById('cp-gen-task');
+          if (dataPins.pins && dataPins.pins.length > 0) {
+            if (genTaskBtn) {
+              genTaskBtn.style.opacity = '1';
+              genTaskBtn.style.pointerEvents = 'auto';
+              genTaskBtn.classList.add('primary');
+            }
+          } else {
+            if (genTaskBtn) {
+              genTaskBtn.style.opacity = '0.5';
+              genTaskBtn.style.pointerEvents = 'none';
+              genTaskBtn.classList.remove('primary');
+            }
           }
 
           const savingsDiv = shadow.getElementById('cp-token-savings');
@@ -4494,6 +4741,13 @@ export function bootstrapOverlay(config: OverlayConfig) {
               refreshState();
             } else if (payload.type === 'presence.updated') {
               connectedAgents = payload.data?.agents || [];
+              if (dockController) {
+                dockController.updatePresence({
+                  bridgeOnline: isBridgeConnected,
+                  port,
+                  agents: connectedAgents,
+                });
+              }
             } else if (payload.type === 'task.updated') {
               const task = payload.data;
               if (task) {
@@ -4638,26 +4892,24 @@ export function bootstrapOverlay(config: OverlayConfig) {
         fetch(BRIDGE + '/api/mcp-status')
           .then(r => r.json())
           .then(d => {
-            const dot = shadow.getElementById('cp-mcp-dot');
             const label = shadow.getElementById('cp-mcp-status-label');
-            if (dot) {
-              if (d.connected) {
-                dot.classList.add('connected');
-                dot.title = 'MCP: Connected';
-              } else {
-                dot.classList.remove('connected');
-                dot.title = 'MCP: Not connected';
-              }
-            }
             if (label) {
               label.textContent = d.connected ? 'Connected' : 'Not connected';
               label.style.color = d.connected ? 'var(--accent-emerald, #10b981)' : 'var(--text-muted)';
             }
+            if (d.connected && connectedAgents.length === 0) {
+              connectedAgents = [{ client: 'mcp' }];
+              if (dockController) {
+                dockController.updatePresence({
+                  bridgeOnline: isBridgeConnected,
+                  port,
+                  agents: connectedAgents,
+                });
+              }
+            }
           })
           .catch(() => {
-            const dot = shadow.getElementById('cp-mcp-dot');
             const label = shadow.getElementById('cp-mcp-status-label');
-            if (dot) { dot.classList.remove('connected'); dot.title = 'MCP: Not connected'; }
             if (label) { label.textContent = 'Not connected'; label.style.color = 'var(--text-muted)'; }
           });
       }
