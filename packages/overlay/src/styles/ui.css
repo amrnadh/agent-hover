@@ -48,6 +48,9 @@
   --ui-halo: rgba(255, 255, 255, 0.9);
 }
 
+/* The host never inherits page styles and never takes clicks itself; surfaces opt in with pointer-events. */
+:host { all: initial; display: block; position: fixed; inset: 0; pointer-events: none; z-index: 2147483600; font-family: var(--ui-font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
 /* The hidden attribute must win over every display rule below. */
 [hidden] { display: none !important; }
 
@@ -167,7 +170,7 @@
 .ah-compare { position: relative; border-radius: 8px; overflow: hidden; background: var(--ui-bg-2); border: 1px solid var(--ui-line); line-height: 0; }
 .ah-compare img { display: block; width: 100%; height: auto; max-height: 320px; object-fit: contain; }
 .ah-compare .after { position: absolute; inset: 0; clip-path: inset(0 0 0 var(--pos, 50%)); background: var(--ui-bg-2); }
-.ah-compare .after::before { content: ""; position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; margin-left: -1px; background: var(--ui-select); z-index: 1; }
+.ah-compare .after::before { content: ""; position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; margin-left: -1px; background: #ffffff; z-index: 1; }
 .ah-compare .tag { position: absolute; top: 6px; font: 500 11px/1 var(--ui-font); padding: 3px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.6); color: #fff; z-index: 2; }
 .ah-compare .tag.before { left: 6px; }
 .ah-compare .tag.after { right: 6px; }
@@ -274,6 +277,29 @@ pre.ah-src { margin: 0 16px 14px; padding: 10px; border-radius: 8px; background:
   #ah-side, #ah-side.float { top: 0; right: 0; bottom: 0; width: 100vw; border-radius: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ah-dot.pulse, .ah-marker .spin { animation: none; }
+  .ah-dot.pulse, .ah-marker .spin, .ah-flash { animation: none; }
+  .ah-flash { display: none; }
   details.ah-sec summary .chev { transition: none; }
 }
+
+/* ---------- capture layer (inspect / comment clicks) ---------- */
+.ah-capture-layer { position: fixed; inset: 0; z-index: 1; pointer-events: auto; cursor: crosshair; background: transparent; display: none; }
+.ah-capture-layer.is-active { display: block; }
+.ah-capture-layer.is-passthrough { pointer-events: none !important; }
+
+/* ---------- screenshot lightbox ---------- */
+#ah-lightbox { position: fixed; inset: 0; z-index: 75; pointer-events: auto; background: rgba(8, 9, 10, 0.6); display: grid; place-items: center; padding: 24px; }
+#ah-lightbox .dialog { border-radius: 14px; max-width: min(1200px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+#ah-lightbox .head { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--ui-line); }
+#ah-lightbox .title { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-right: auto; }
+#ah-lightbox .title b { font-weight: 600; white-space: nowrap; }
+#ah-lightbox .title .file { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ah-lightbox .body { overflow: auto; background: var(--ui-bg-2); padding: 16px; display: grid; place-items: center; min-height: 0; }
+#ah-lightbox img { display: block; max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--ui-line); }
+@media (max-width: 640px) {
+  #ah-lightbox { padding: 12px; }
+  #ah-lightbox .head { flex-wrap: wrap; }
+  #ah-lightbox .title { flex-basis: 100%; }
+}
+.ah-flash { position: fixed; inset: 0; z-index: 90; pointer-events: none; background: rgba(255, 255, 255, 0.28); animation: ah-flash 0.35s ease-out forwards; }
+@keyframes ah-flash { to { opacity: 0; } }

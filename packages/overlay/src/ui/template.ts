@@ -1,20 +1,14 @@
-import { ICONS } from '../icons.js';
 import { icon, GRIP } from '../lib/icon.js';
-import tokensCss from '../styles/tokens.css?inline';
-import overlayCss from '../styles/overlay.css?inline';
 import uiCss from '../styles/ui.css?inline';
 
 /**
  * Overlay markup (0.2 UI, see docs/design/prototype.html). Everything lives in one shadow root.
  * Surfaces: selector (hover/selection/batch/measure layers), action pill + menu, composer, task card,
- * comment card, dock (+ menu, connection popover, tooltip), toast, sidebar. Screenshot preview and
- * lightbox markup is unchanged from 0.1.
+ * comment card, dock (+ menu, connection popover, tooltip), toast, sidebar, screenshot lightbox.
  */
 export function getOverlayHtml(): string {
   return `
         <style>
-${tokensCss}
-${overlayCss}
 ${uiCss}
         </style>
 
@@ -109,85 +103,6 @@ ${uiCss}
           <div class="foot" id="ah-s-foot" hidden></div>
         </aside>
 
-        <!-- Screenshot Mode Dropdown -->
-        <div id="cp-snap-dropdown" role="menu" aria-label="Screenshot mode">
-          <button class="cp-snap-option" role="menuitem" data-mode="component">
-            <span class="cp-snap-option-label">${ICONS.boxSelect} Selected component</span>
-            <span class="cp-snap-option-caption" id="cp-snap-component-name">None selected</span>
-          </button>
-          <button class="cp-snap-option" role="menuitem" data-mode="viewport">
-            <span class="cp-snap-option-label">${ICONS.monitor} Viewport</span>
-            <span class="cp-snap-option-caption">What you see now</span>
-          </button>
-          <button class="cp-snap-option" role="menuitem" data-mode="fullpage">
-            <span class="cp-snap-option-label">${ICONS.arrowsVertical} Full page</span>
-            <span class="cp-snap-option-caption" id="cp-snap-fullpage-size">Whole scrollable page</span>
-          </button>
-          <div class="cp-snap-message" id="cp-snap-message"></div>
-        </div>
-
-        <!-- Enhanced Screenshot Toast Widget -->
-        <div id="cp-snap-preview" role="status" aria-live="polite">
-          <div class="cp-snap-header">
-            <div class="cp-snap-title">
-              ${ICONS.camera}
-              <span>Screenshot Captured</span>
-            </div>
-            <button id="cp-snap-preview-close" class="cp-snap-close" aria-label="Close" title="Close Toast">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-
-          <!-- Clickable Zoom Thumbnail -->
-          <div class="cp-snap-thumb-box" id="cp-snap-thumb-btn" title="Click to inspect full resolution">
-            <img id="cp-snap-preview-img" class="cp-snap-preview-img" alt="Screenshot preview" />
-            <div class="cp-snap-zoom-overlay">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-              <span>Click to Inspect</span>
-            </div>
-          </div>
-
-          <div class="cp-snap-meta-row">
-            <span id="cp-snap-preview-meta"></span>
-            <span id="cp-snap-preview-status" class="cp-snap-preview-status"></span>
-          </div>
-
-          <div class="cp-snap-actions">
-            <button class="cp-btn-bento" id="cp-snap-download">${ICONS.download} Download</button>
-            <button class="cp-btn-bento" id="cp-snap-open-folder" title="Open screenshots folder in system file manager">${ICONS.camera} Folder</button>
-            <button class="cp-btn-bento primary" id="cp-snap-copy">${ICONS.copy} Copy Image</button>
-          </div>
-
-          <!-- Auto-dismiss Progress Bar -->
-          <div class="cp-snap-progress-track">
-            <div id="cp-snap-progress" class="cp-snap-progress-bar"></div>
-          </div>
-        </div>
-
-        <!-- Full Lightbox Modal -->
-        <div id="cp-snap-lightbox" role="dialog" aria-modal="true" aria-label="Screenshot Lightbox Preview">
-          <div class="cp-lightbox-dialog" id="cp-lightbox-dialog">
-            <div class="cp-lightbox-header">
-              <div style="font-weight:600; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
-                <span class="cp-badge cp-badge-accent" id="cp-lightbox-mode-badge">VIEWPORT</span>
-                <span id="cp-lightbox-filename" style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">screenshot.png</span>
-                <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);" id="cp-lightbox-res"></span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <button class="cp-btn-bento" id="cp-lightbox-download">${ICONS.download} Download</button>
-                <button class="cp-btn-bento primary" id="cp-lightbox-copy">${ICONS.copy} Copy Image</button>
-                <button class="cp-snap-close" id="cp-lightbox-close" title="Close Lightbox (Esc)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="cp-lightbox-body">
-              <img id="cp-lightbox-img" src="" alt="Full Resolution Screenshot" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Region Hint Overlay (screenshot mode hover) -->
-        <div id="cp-region-hint"><span class="cp-region-label" id="cp-region-label"></span></div>
+        <div id="ah-lightbox" hidden></div>
   `;
 }

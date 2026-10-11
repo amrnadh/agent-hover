@@ -1,7 +1,7 @@
 import type { OverlayApp } from '../app/context.js';
 
 /**
- * Shortcuts. Escape closes the innermost thing first: menus → cards → composer → selection → sidebar → mode.
+ * Shortcuts. Escape closes the innermost thing first: lightbox → menus → cards → composer → selection → sidebar → mode.
  * Nothing fires while typing in an input (including inside the overlay), and letter shortcuts only work while
  * Agent Hover is in use, so the host app's own shortcuts are never taken over. Alt and ⌘/Ctrl+Shift+X are global.
  */
@@ -27,6 +27,7 @@ export function setupKeyboard(app: OverlayApp) {
   const hide = (id: string) => { const el = shadow.getElementById(id); if (el) (el as HTMLElement).hidden = true; };
 
   function escape(): boolean {
+    if (api.isLightboxOpen?.()) { api.closeLightbox(); return true; }
     for (const id of ['ah-dest-menu', 'ah-pill-menu', 'ah-dock-menu', 'ah-conn']) {
       if (visible(id)) { hide(id); return true; }
     }

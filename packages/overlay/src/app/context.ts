@@ -1,6 +1,5 @@
 import { getOverlayHtml } from '../ui/template.js';
-import { IsolationManager, setupPopover } from '../lib/isolation.js';
-import { queryDom, type OverlayDom } from './elements.js';
+import { IsolationManager } from '../lib/isolation.js';
 
 export interface OverlayConfig {
   port: number;
@@ -10,14 +9,14 @@ export interface OverlayConfig {
 
 /**
  * Mutable state shared across overlay modules. Each module initializes the keys it owns during setup.
- * Kept loosely typed: modules are migrating from the 0.1 closure one at a time.
+ * Loosely typed: each module documents the keys it owns.
  */
 export type OverlayState = Record<string, any>;
 
 /** Functions a module exposes to other modules, registered at the start of its setup. */
 export type OverlayApi = Record<string, (...args: any[]) => any>;
 
-/** Everything an overlay module needs: bridge access, the shadow root, element refs, shared state, and cross-module functions. */
+/** Everything an overlay module needs: bridge access, the shadow root, shared state, and cross-module functions. */
 export interface OverlayApp {
   port: number;
   editor: string;
@@ -29,7 +28,6 @@ export interface OverlayApp {
   container: HTMLDivElement;
   shadow: ShadowRoot;
   isolationManager: IsolationManager;
-  dom: OverlayDom;
   state: OverlayState;
   api: OverlayApi;
 }
@@ -72,9 +70,6 @@ export function createOverlayApp(config: OverlayConfig): OverlayApp {
   // Initialize host dialog isolation manager (reparents into active modal dialogs if needed)
   const isolationManager = new IsolationManager(container);
 
-  // Popover API (top layer) for the screenshot preview and lightbox, which must sit above host modals.
-  setupPopover(shadow.getElementById('cp-snap-preview'));
-  setupPopover(shadow.getElementById('cp-snap-lightbox'));
 
   const state: OverlayState = {
     mode: null,
@@ -91,7 +86,6 @@ export function createOverlayApp(config: OverlayConfig): OverlayApp {
   return {
     port, editor, token, BRIDGE, BRIDGE_TOKEN, fetch,
     container, shadow, isolationManager,
-    dom: queryDom(shadow),
     state,
     api: {},
   };

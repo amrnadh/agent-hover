@@ -6,6 +6,9 @@ import type { OverlayApp } from '../../app/context.js';
 
 declare const __AH_VERSION__: string;
 
+/** The plugin pulls in core and the overlay; the MCP server runs through npx and stays current on its own. */
+const UPDATE_CMD = 'npm i -D @agent-hover/vite@latest';
+
 /** Settings view (gear): agents, what Send does, appearance, editor, keyboard, about. */
 export function setupSettingsPanel(app: OverlayApp) {
   const { port, state, api } = app;
@@ -64,13 +67,15 @@ export function setupSettingsPanel(app: OverlayApp) {
           <span>Tasks</span><kbd>T</kbd>
           <span>Hide / show dock</span><kbd>${mod} ⇧ X</kbd>
           <span>Close / deselect</span><kbd>Esc</kbd></div></section>
-        <section class="ah-set" style="border:0"><h4>About</h4>
+        <section class="ah-set" id="ah-set-about" style="border:0"><h4>About</h4>
           <p>Agent Hover${version ? ' ' + esc(version) : ''} · bridge on port ${port} · MIT</p>
-          ${state.updateAvailable ? `<p>Update available: <b>${esc(state.updateAvailable.latest)}</b>. Run <span class="ah-mono">npm i -D @agent-hover/vite@latest</span>.</p>` : ''}
+          ${state.updateAvailable ? `<p><b>${esc(state.updateAvailable.latest)}</b> is available (you have ${esc(state.updateAvailable.current)}). Update, then restart the dev server:</p>
+            <pre class="ah-snippet">${esc(UPDATE_CMD)}</pre>
+            <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-update">${icon('copy', 14)}Copy</button></div>` : ''}
         </section>`;
 
       if (state.side.settingsFocus) {
-        const target = body.querySelector(state.side.settingsFocus === 'keys' ? '#ah-set-keys' : '#ah-set-agents');
+        const target = body.querySelector(`#ah-set-${state.side.settingsFocus}`) || body.querySelector('#ah-set-agents');
         target?.scrollIntoView({ block: 'start' });
         state.side.settingsFocus = '';
       }
@@ -98,6 +103,10 @@ export function setupSettingsPanel(app: OverlayApp) {
         if (act === 'copy-setup') {
           const ok = await api.copyText(setup.command || setup.snippet);
           api.toast(ok ? `Copied ${setup.title} setup` : 'Clipboard blocked by the browser');
+        }
+        if (act === 'copy-update') {
+          const ok = await api.copyText(UPDATE_CMD);
+          api.toast(ok ? 'Copied the update command' : 'Clipboard blocked by the browser');
         }
       };
     },

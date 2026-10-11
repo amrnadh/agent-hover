@@ -1,773 +1,249 @@
-// @ts-nocheck
-import { ICONS } from '../icons.js';
+import { esc } from '../lib/ui.js';
+import { icon } from '../lib/icon.js';
 import { getInheritedBackgroundColor } from '../lib/computed-styles.js';
 import type { OverlayApp } from '../app/context.js';
 
-/** Screenshot modes, preview toast, lightbox, and the capture engine. */
+export type SnapMode = 'component' | 'viewport' | 'fullpage';
+
+interface CaptureOptions { width?: number; height?: number; scrollX?: number; scrollY?: number }
+interface Shot { dataUrl: string; mode: SnapMode; filename: string; savedPath: string | null; width: number; height: number }
+
+const MODE_LABEL: Record<SnapMode, string> = { component: 'Element', viewport: 'Visible area', fullpage: 'Full page' };
+const BLOCK_TAGS = new Set(['div', 'p', 'section', 'article', 'header']);
+
+/**
+ * Screenshots: the element, the visible area or the full page (from the pill and dock menus). Each shot is
+ * copied to the clipboard, saved to .agent-hover/screenshots/ for agents, and announced with a toast whose
+ * View action opens the lightbox. `captureElement` is the shared engine (Compare and agent screenshot requests).
+ */
 export function setupScreenshots(app: OverlayApp) {
   const { BRIDGE, container, fetch, shadow, state, api } = app;
-  Object.assign(api, { closeSnapDropdown, handleSnapMode, captureElement });
+  Object.assign(api, { handleSnapMode, captureElement, closeLightbox, isLightboxOpen: () => !lightbox.hidden });
 
-  // --- Screenshot Mode System ---
-  let snapBusy = false;
-  let snapPreviewBlobUrl = null;
-  let lastCapturedDataUrl = null;
-  let lastCapturedFilename = null;
+  const lightbox = shadow.getElementById('ah-lightbox') as HTMLElement;
+  let busy = false;
+  let last: Shot | null = null;
+  let returnFocus: HTMLElement | null = null;
 
-  function closeSnapDropdown() {
-    const dd = shadow.getElementById('cp-snap-dropdown');
-    if (dd) dd.classList.remove('open');
-    const btn = shadow.getElementById('cp-flyout-snap-btn');
-    if (btn) btn.setAttribute('aria-expanded', 'false');
-    hideRegionHint();
-    const msg = shadow.getElementById('cp-snap-message');
-    if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
-  }
+  async function handleSnapMode(mode: SnapMode) {
+    if (busy) return;
+    const el = mode === 'component' ? (state.selectedTarget?.element || state.selectedElement) as Element | null : document.documentElement;
+    if (!el || !el.isConnected) { api.toast('Select an element first'); return; }
+    busy = true;
 
-  function hideRegionHint() {
-    const hint = shadow.getElementById('cp-region-hint');
-    if (hint) { hint.className = ''; hint.style.display = 'none'; hint.style.cssText = ''; }
-  }
-
-  function showRegionHint(mode) {
-    const hint = shadow.getElementById('cp-region-hint');
-    const label = shadow.getElementById('cp-region-label');
-    if (!hint) return;
-    hideRegionHint();
-
-    if (mode === 'component') {
-      const el = state.selectedTarget?.element || state.selectedElement;
-      if (el && el.isConnected) {
-        const r = el.getBoundingClientRect();
-        hint.className = 'component';
-        hint.style.display = 'block';
-        hint.style.position = 'fixed';
-        hint.style.left = r.left + 'px';
-        hint.style.top = r.top + 'px';
-        hint.style.width = r.width + 'px';
-        hint.style.height = r.height + 'px';
-        if (label) label.textContent = 'Element bounds';
+    // Start the clipboard write inside the click (Safari needs the user gesture); the image arrives later.
+    let resolveBlob: (b: Blob) => void = () => {};
+    let rejectBlob: (e: Error) => void = () => {};
+    const pending = new Promise<Blob>((res, rej) => { resolveBlob = res; rejectBlob = rej; });
+    let copied: Promise<boolean> = Promise.resolve(false);
+    try {
+      if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+        copied = navigator.clipboard.write([new ClipboardItem({ 'image/png': pending })]).then(() => true, () => false);
       }
-    } else if (mode === 'viewport') {
-      hint.className = 'viewport';
-      hint.style.display = 'block';
-      hint.style.position = 'fixed';
-      if (label) label.textContent = 'Visible viewport';
-    } else if (mode === 'fullpage') {
-      const w = document.documentElement.scrollWidth;
-      const h = document.documentElement.scrollHeight;
-      const sizeLabel = shadow.getElementById('cp-snap-fullpage-size');
-      if (sizeLabel) sizeLabel.textContent = 'Full scroll height, ' + w + ' x ' + h + ' px';
-    }
-  }
+    } catch { /* clipboard unsupported: the toast offers View → Download instead */ }
 
-  function openSnapDropdown() {
-    const dd = shadow.getElementById('cp-snap-dropdown');
-    const btn = shadow.getElementById('cp-flyout-snap-btn');
-    if (!dd || !btn) return;
+    // Let menus close before the capture hides the overlay.
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const opts: CaptureOptions | undefined = mode === 'viewport'
+      ? { width: window.innerWidth, height: window.innerHeight, scrollX: window.scrollX, scrollY: window.scrollY }
+      : mode === 'fullpage' ? { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight } : undefined;
 
-    // Close note popover
-    api.closeNotePopover();
-
-    // Position dropdown under the button using fixed viewport coordinates
-    const btnRect = btn.getBoundingClientRect();
-    let top = btnRect.bottom + 4;
-    let left = btnRect.right - 240;
-
-    // Flip above if no room below
-    if (btnRect.bottom + 200 > window.innerHeight) {
-      top = btnRect.top - 200;
-    }
-    // Clamp
-    left = Math.max(8, left);
-    dd.style.top = top + 'px';
-    dd.style.left = left + 'px';
-
-    // Update component name caption
-    const compCaption = shadow.getElementById('cp-snap-component-name');
-    if (compCaption) {
-      const name = state.selectedTarget?.name || (state.selectedElement ? state.selectedElement.tagName.toLowerCase() : null);
-      compCaption.textContent = name ? '<' + name + ' />' : 'None selected';
-    }
-
-    dd.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-
-    // Focus the right row
-    const options = dd.querySelectorAll('.cp-snap-option');
-    const hasSelection = state.selectedTarget?.element || state.selectedElement;
-    const focusIdx = hasSelection ? 0 : 1;
-    if (options[focusIdx]) options[focusIdx].focus();
-  }
-
-  const flyoutSnapBtn = shadow.getElementById('cp-flyout-snap-btn');
-  if (flyoutSnapBtn) {
-    flyoutSnapBtn.onclick = () => {
-      const dd = shadow.getElementById('cp-snap-dropdown');
-      if (dd?.classList.contains('open')) {
-        closeSnapDropdown();
-      } else {
-        openSnapDropdown();
-      }
-    };
-  }
-
-  // Dropdown keyboard navigation
-  shadow.getElementById('cp-snap-dropdown')?.addEventListener('keydown', (e) => {
-    const options = Array.from(shadow.querySelectorAll('.cp-snap-option'));
-    const idx = options.indexOf(e.target);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const next = e.key === 'ArrowDown' ? (idx + 1) % options.length : (idx - 1 + options.length) % options.length;
-      options[next]?.focus();
-    }
-    if (e.key === 'Home') { e.preventDefault(); options[0]?.focus(); }
-    if (e.key === 'End') { e.preventDefault(); options[options.length - 1]?.focus(); }
-    if (e.key === 'Escape' || e.key === 'Tab') {
-      e.preventDefault();
-      closeSnapDropdown();
-      flyoutSnapBtn?.focus();
-    }
-  });
-
-  // Dropdown option hover/focus region hints
-  shadow.querySelectorAll('.cp-snap-option').forEach((opt) => {
-    const mode = opt.getAttribute('data-mode');
-    opt.addEventListener('mouseenter', () => showRegionHint(mode));
-    opt.addEventListener('focus', () => showRegionHint(mode));
-    opt.addEventListener('mouseleave', () => hideRegionHint());
-    opt.addEventListener('blur', () => hideRegionHint());
-
-    opt.addEventListener('click', () => handleSnapMode(mode));
-  });
-
-  // Click outside closes dropdown
-  shadow.addEventListener('click', (e) => {
-    const dd = shadow.getElementById('cp-snap-dropdown');
-    if (dd?.classList.contains('open') && !dd.contains(e.target) && e.target !== flyoutSnapBtn && !flyoutSnapBtn?.contains(e.target)) {
-      closeSnapDropdown();
-    }
-  });
-
-  async function handleSnapMode(mode) {
-    if (snapBusy) return;
-
-    if (mode === 'component') {
-      const el = state.selectedTarget?.element || state.selectedElement;
-      if (!el || !el.isConnected) {
-        api.showCallout('Select a component on the page first', 'WARNING', 2000);
-        const msg = shadow.getElementById('cp-snap-message');
-        if (msg) {
-          msg.textContent = 'Click an element on the page first, or pick Viewport.';
-          msg.style.display = 'block';
-        }
+    try {
+      const dataUrl = await captureElement(el, opts);
+      const blob = dataUrl ? dataUrlToBlob(dataUrl) : null;
+      if (!dataUrl || !blob) {
+        rejectBlob(new Error('capture failed'));
+        api.toast(mode === 'fullpage' ? 'The page is too long to capture in one image' : 'Capture failed. Try the visible area instead.');
         return;
       }
-    }
-
-    closeSnapDropdown();
-    hideRegionHint();
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    snapBusy = true;
-    const modeLabel = mode === 'component' ? 'Component' : mode === 'viewport' ? 'Viewport' : 'Full page';
-    api.showCallout(mode === 'fullpage' ? 'Capturing full page...' : 'Capturing...', 'SNAP', 1500);
-
-    try {
-      let el, captureOpts;
-      if (mode === 'component') {
-        el = state.selectedTarget?.element || state.selectedElement;
-      } else if (mode === 'viewport') {
-        el = document.documentElement;
-        captureOpts = { width: window.innerWidth, height: window.innerHeight, scrollX: window.scrollX, scrollY: window.scrollY };
-      } else {
-        el = document.documentElement;
-        captureOpts = { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight };
-      }
-
-      const dataUrl = await captureElement(el, captureOpts);
-      if (!dataUrl) {
-        api.showCallout(mode === 'fullpage' ? 'Page is too long to capture in one image' : 'Capture failed. Try Viewport instead.', 'ERROR', 3000);
-        snapBusy = false;
-        return;
-      }
-
-      // Flash after capture completes
-      triggerShutterFlash();
-
-      // Get image dimensions for meta line
-      const img = new Image();
-      img.onload = () => {
-        const filename = mode + '-' + Date.now() + '.png';
-        lastCapturedDataUrl = dataUrl;
-        lastCapturedFilename = filename;
-        const resStr = img.naturalWidth + ' × ' + img.naturalHeight;
-        showSnapPreview(dataUrl, modeLabel + ' • ' + resStr, filename, mode);
-      };
-      img.onerror = () => {
-        const filename = mode + '-' + Date.now() + '.png';
-        lastCapturedDataUrl = dataUrl;
-        lastCapturedFilename = filename;
-        showSnapPreview(dataUrl, modeLabel, filename, mode);
-      };
-      img.src = dataUrl;
-
-      // Save to bridge for agent workflow
-      let savedForAgent = false;
-      try {
-        const res = await fetch(BRIDGE + '/api/screenshot/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl, filename: mode })
-        });
-        const result = await res.json();
-        savedForAgent = result?.success;
-      } catch (_) {}
-
-      // Update status line
-      setTimeout(() => {
-        const statusEl = shadow.getElementById('cp-snap-preview-status');
-        if (statusEl) {
-          if (savedForAgent) {
-            statusEl.className = 'cp-snap-preview-status success';
-            statusEl.innerHTML = ICONS.check + ' Saved for agent';
-          } else {
-            statusEl.className = 'cp-snap-preview-status error';
-            statusEl.innerHTML = 'Local preview only';
-          }
-        }
-      }, 100);
-
-    } catch (err) {
-      api.showCallout('Capture failed. Try Viewport instead.', 'ERROR', 3000);
-    }
-    snapBusy = false;
-  }
-
-  let lastCapturedMode = 'viewport';
-  let lastCapturedMeta = '';
-  let snapAutoDismissTimer = null;
-
-  function showSnapPreview(dataUrl, meta, filename, mode) {
-    const card = shadow.getElementById('cp-snap-preview');
-    const img = shadow.getElementById('cp-snap-preview-img');
-    const metaEl = shadow.getElementById('cp-snap-preview-meta');
-    const statusEl = shadow.getElementById('cp-snap-preview-status');
-    if (!card) return;
-
-    lastCapturedDataUrl = dataUrl;
-    lastCapturedFilename = filename || 'screenshot.png';
-    lastCapturedMode = mode || 'viewport';
-    lastCapturedMeta = meta || '';
-
-    // Revoke previous blob URL
-    if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
-
-    // Create blob URL for thumbnail
-    const blob = dataUrlToBlob(dataUrl);
-    if (blob) {
-      snapPreviewBlobUrl = URL.createObjectURL(blob);
-      if (img) img.src = snapPreviewBlobUrl;
-    } else if (img) {
-      img.src = dataUrl;
-    }
-
-    if (metaEl) metaEl.textContent = meta || '';
-    if (statusEl) {
-      statusEl.textContent = '';
-      statusEl.className = 'cp-snap-preview-status';
-    }
-
-    // Reset button labels
-    const dlBtn = shadow.getElementById('cp-snap-download');
-    const cpBtn = shadow.getElementById('cp-snap-copy');
-    if (dlBtn) dlBtn.innerHTML = ICONS.download + ' Download';
-    if (cpBtn) cpBtn.innerHTML = ICONS.copy + ' Copy Image';
-
-    // Trigger smooth opening & restart progress bar animation
-    card.classList.remove('open');
-    card.classList.remove('animating');
-    void card.offsetWidth; // Force reflow to restart CSS animation
-    card.classList.add('open');
-    card.classList.add('animating');
-
-    // Auto-dismiss after 6s (pauses on hover)
-    if (snapAutoDismissTimer) clearTimeout(snapAutoDismissTimer);
-    snapAutoDismissTimer = setTimeout(() => {
-      closeSnapPreview();
-    }, 6000);
-
-    // Hover pause / leave resume
-    card.onmouseenter = () => {
-      if (snapAutoDismissTimer) {
-        clearTimeout(snapAutoDismissTimer);
-        snapAutoDismissTimer = null;
-      }
-    };
-    card.onmouseleave = () => {
-      if (card.classList.contains('open') && !snapAutoDismissTimer) {
-        snapAutoDismissTimer = setTimeout(() => {
-          closeSnapPreview();
-        }, 3000);
-      }
-    };
-  }
-
-  function closeSnapPreview() {
-    const card = shadow.getElementById('cp-snap-preview');
-    if (card) {
-      card.classList.remove('open');
-      card.classList.remove('animating');
-    }
-    if (snapAutoDismissTimer) {
-      clearTimeout(snapAutoDismissTimer);
-      snapAutoDismissTimer = null;
-    }
-    if (snapPreviewBlobUrl) { URL.revokeObjectURL(snapPreviewBlobUrl); snapPreviewBlobUrl = null; }
-  }
-
-  // Preview card close button
-  shadow.getElementById('cp-snap-preview-close')?.addEventListener('click', closeSnapPreview);
-
-  // Clickable Zoom Thumbnail opens Full Lightbox Modal
-  const snapThumbBtn = shadow.getElementById('cp-snap-thumb-btn');
-  if (snapThumbBtn) {
-    snapThumbBtn.onclick = () => {
-      if (lastCapturedDataUrl) {
-        openLightbox(lastCapturedDataUrl, lastCapturedMode, lastCapturedFilename, lastCapturedMeta);
-      }
-    };
-  }
-
-  // Full Lightbox Modal Logic
-  function openLightbox(dataUrl, mode, filename, meta) {
-    const lb = shadow.getElementById('cp-snap-lightbox');
-    const lbImg = shadow.getElementById('cp-lightbox-img');
-    const lbBadge = shadow.getElementById('cp-lightbox-mode-badge');
-    const lbFilename = shadow.getElementById('cp-lightbox-filename');
-    const lbRes = shadow.getElementById('cp-lightbox-res');
-    if (!lb || !lbImg) return;
-
-    lbImg.src = dataUrl;
-    if (lbBadge) lbBadge.textContent = (mode || 'COMPONENT').toUpperCase();
-    if (lbFilename) lbFilename.textContent = filename || 'screenshot.png';
-    if (lbRes) lbRes.textContent = meta || '';
-
-    lb.classList.add('open');
-  }
-
-  function closeLightbox() {
-    const lb = shadow.getElementById('cp-snap-lightbox');
-    if (lb) lb.classList.remove('open');
-  }
-
-  shadow.getElementById('cp-lightbox-close')?.addEventListener('click', closeLightbox);
-  shadow.getElementById('cp-snap-lightbox')?.addEventListener('click', (e) => {
-    if (e.target === shadow.getElementById('cp-snap-lightbox')) {
-      closeLightbox();
-    }
-  });
-
-  // Lightbox download button
-  shadow.getElementById('cp-lightbox-download')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!lastCapturedDataUrl) return;
-    const blob = dataUrlToBlob(lastCapturedDataUrl);
-    if (!blob) return;
-    try {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = lastCapturedFilename || 'screenshot.png';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        try { document.body.removeChild(a); } catch(_) {}
-        URL.revokeObjectURL(url);
-      }, 3000);
-      const btn = shadow.getElementById('cp-lightbox-download');
-      if (btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = ICONS.check + ' Downloaded';
-        setTimeout(() => { btn.innerHTML = orig; }, 1500);
-      }
-      api.showCallout('Screenshot downloaded', 'SAVED', 2000);
-    } catch (_) {}
-  });
-
-  // Lightbox copy image button
-  shadow.getElementById('cp-lightbox-copy')?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!lastCapturedDataUrl) return;
-    const blob = dataUrlToBlob(lastCapturedDataUrl);
-    const btn = shadow.getElementById('cp-lightbox-copy');
-    if (blob && navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        if (btn) {
-          const orig = btn.innerHTML;
-          btn.innerHTML = ICONS.check + ' Copied';
-          setTimeout(() => { btn.innerHTML = orig; }, 1500);
-        }
-        api.showCallout('Screenshot copied to clipboard', 'COPIED', 2000);
-      } catch (_) {
-        api.showCallout('Browser blocked clipboard access. Use Download.', 'WARNING', 3000);
-      }
-    }
-  });
-
-  // Escape key closes Lightbox or Toast
-  shadow.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      const lb = shadow.getElementById('cp-snap-lightbox');
-      if (lb?.classList.contains('open')) {
-        closeLightbox();
-        e.stopPropagation();
-        return;
-      }
-      const preview = shadow.getElementById('cp-snap-preview');
-      if (preview?.classList.contains('open')) {
-        closeSnapPreview();
-      }
-    }
-  });
-
-  // Download button
-  shadow.getElementById('cp-snap-download')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!lastCapturedDataUrl) return;
-    const blob = dataUrlToBlob(lastCapturedDataUrl);
-    if (!blob) return;
-    try {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = lastCapturedFilename || 'screenshot.png';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        try { document.body.removeChild(a); } catch(_) {}
-        URL.revokeObjectURL(url);
-      }, 3000);
-      const btn = shadow.getElementById('cp-snap-download');
-      if (btn) {
-        btn.innerHTML = ICONS.check + ' Downloaded';
-        setTimeout(() => { btn.innerHTML = ICONS.download + ' Download'; }, 1500);
-      }
-      api.showCallout('Screenshot downloaded', 'SAVED', 2000);
-    } catch (_) {}
-  });
-
-  // Open Folder button
-  shadow.getElementById('cp-snap-open-folder')?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const btn = shadow.getElementById('cp-snap-open-folder');
-    try {
-      const res = await fetch(BRIDGE + '/api/screenshot/open-folder', { method: 'POST' });
-      if (res.ok) {
-        if (btn) {
-          btn.innerHTML = ICONS.check + ' Opened';
-          setTimeout(() => { btn.innerHTML = ICONS.camera + ' Folder'; }, 1500);
-        }
-        api.showCallout('Screenshots folder opened', 'OPENED', 2000);
-      } else {
-        api.showCallout('Failed to open folder', 'ERROR', 2000);
-      }
-    } catch (_) {
-      api.showCallout('Failed to connect to bridge', 'ERROR', 2000);
-    }
-  });
-
-  // Copy button
-  shadow.getElementById('cp-snap-copy')?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!lastCapturedDataUrl) return;
-    const blob = dataUrlToBlob(lastCapturedDataUrl);
-    const btn = shadow.getElementById('cp-snap-copy');
-    if (blob && navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        if (btn) {
-          btn.innerHTML = ICONS.check + ' Copied';
-          setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy Image'; }, 1500);
-        }
-        api.showCallout('Screenshot copied to clipboard', 'COPIED', 2000);
-      } catch (_) {
-        if (btn) {
-          btn.innerHTML = 'Copy failed';
-          setTimeout(() => { btn.innerHTML = ICONS.copy + ' Copy Image'; }, 2000);
-        }
-        api.showCallout('Browser blocked clipboard access. Use Download.', 'WARNING', 3000);
-      }
-    }
-  });
-
-  function triggerShutterFlash() {
-    try {
-      const flash = document.createElement('div');
-      flash.id = 'ah-shutter-flash';
-      flash.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.32);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);pointer-events:none;z-index:9999999;opacity:1;transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);';
-      document.body.appendChild(flash);
-      requestAnimationFrame(() => {
-        flash.style.opacity = '0';
-        setTimeout(() => {
-          try { if (flash.parentNode) flash.parentNode.removeChild(flash); } catch (_) {}
-        }, 400);
-      });
-    } catch (_) {}
-  }
-
-  async function captureElement(element, opts) {
-    if (!element) return null;
-    // Completely hide Agent Hover UI (dock, sidebar, overlays, markers) so only website UI is captured
-    const rootContainer = shadow.host || container;
-    const prevVisibility = rootContainer.style.visibility;
-    rootContainer.style.visibility = 'hidden';
-
-    // Capture filter: exclude agent-hover UI, preview card, dropdown, markers, popover, flash
-    const captureFilter = (node) => {
-      if (!node) return true;
-      if (node.id === 'agent-hover-root' || node === container) return false;
-      if (node.id === 'ah-shutter-flash') return false;
-      if (node.classList && node.classList.contains && (
-        node.classList.contains('agent-hover-ignore') ||
-        node.classList.contains('cp-comment-marker') ||
-        node.classList.contains('cp-marker-preview')
-      )) return false;
-      return true;
-    };
-
-    try {
-      const isViewport = opts && opts.scrollX !== undefined;
-      const isFullPage = opts && opts.height > window.innerHeight;
-      const isComponent = !isViewport && !isFullPage;
-
-      if (isComponent && element.getBoundingClientRect) {
-        const rect = element.getBoundingClientRect();
-        const inViewport = rect.top >= 0 && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
-        if (!inViewport && element.scrollIntoView) {
-          element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
-          await new Promise(r => setTimeout(r, 100));
-        }
-      }
-
-      let scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2);
-      const solidBg = getInheritedBackgroundColor(element);
-
-      // Build capture options
-      const captureOpts = {
-        scale,
-        backgroundColor: solidBg,
-        filter: captureFilter,
-        onCloneNode: (clonedRoot) => {
-          if (!clonedRoot) return;
-          const fixNode = (node) => {
-            if (!node || node.nodeType !== 1) return;
-            const text = node.textContent ? node.textContent.trim() : '';
-            if (text.length > 0 && text.length <= 60 && !text.includes(String.fromCharCode(10))) {
-              const hasBlockChild = Array.from(node.children || []).some((c) => {
-                const tag = c.tagName ? c.tagName.toLowerCase() : '';
-                return tag === 'div' || tag === 'p' || tag === 'section' || tag === 'article' || tag === 'header';
-              });
-              if (!hasBlockChild) {
-                node.style.whiteSpace = 'nowrap';
-              }
-            }
-            if (node.children) {
-              for (let i = 0; i < node.children.length; i++) {
-                fixNode(node.children[i]);
-              }
-            }
-          };
-          fixNode(clonedRoot);
-        },
-        onCloneEachNode: (clonedNode) => {
-          if (clonedNode && clonedNode.nodeType === 1) {
-            const text = clonedNode.textContent ? clonedNode.textContent.trim() : '';
-            if (text.length > 0 && text.length <= 60 && !text.includes(String.fromCharCode(10))) {
-              const hasBlockChild = Array.from(clonedNode.children || []).some((c) => {
-                const tag = c.tagName ? c.tagName.toLowerCase() : '';
-                return tag === 'div' || tag === 'p' || tag === 'section' || tag === 'article';
-              });
-              if (!hasBlockChild) {
-                clonedNode.style.whiteSpace = 'nowrap';
-              }
-            }
-          }
-        }
-      };
-
-      // Viewport mode: capture at viewport dimensions with scroll offset
-      if (isViewport) {
-        captureOpts.width = opts.width || window.innerWidth;
-        captureOpts.height = opts.height || window.innerHeight;
-        // Offset by scroll position through the clone's style
-        captureOpts.style = {
-          transform: 'translate(-' + (opts.scrollX || 0) + 'px, -' + (opts.scrollY || 0) + 'px)',
-          transformOrigin: 'top left',
-        };
-      }
-
-      // Full page mode: pass dimensions without mutating live DOM
-      if (isFullPage) {
-        captureOpts.width = opts.width || document.documentElement.scrollWidth;
-        captureOpts.height = opts.height || document.documentElement.scrollHeight;
-      }
-
-      // Primary: Use modernScreenshot
-      if (window.modernScreenshot && window.modernScreenshot.domToPng) {
-        try {
-          const dataUrl = await window.modernScreenshot.domToPng(element, captureOpts);
-          if (dataUrl) return dataUrl;
-        } catch (err) {
-          // Retry full page at lower scale on canvas failure
-          if (isFullPage && scale > 1) {
-            console.warn('[agent-hover] Full page capture failed at scale ' + scale + ', retrying at scale 1');
-            captureOpts.scale = 1;
-            try {
-              const dataUrl = await window.modernScreenshot.domToPng(element, captureOpts);
-              if (dataUrl) return dataUrl;
-            } catch (_) {}
-          }
-        }
-      }
-
-      // Fallback: domtoimage
-      if (window.domtoimage && window.domtoimage.toPng) {
-        const rect = isComponent && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
-        const captureWidth = Math.max(Math.round(
-          opts?.width || (isComponent ? (element.offsetWidth || element.clientWidth || (rect ? rect.width : 300)) : window.innerWidth)
-        ), 10);
-        const captureHeight = Math.max(Math.round(
-          opts?.height || (isComponent ? (element.offsetHeight || element.clientHeight || (rect ? rect.height : 200)) : window.innerHeight)
-        ), 10);
-        const dataUrl = await window.domtoimage.toPng(element, {
-          width: captureWidth,
-          height: captureHeight,
-          pixelRatio: scale,
-          bgcolor: solidBg,
-          imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=',
-          filter: captureFilter,
-        });
-        return dataUrl;
-      }
-
-      console.error('[agent-hover] No screenshot capture library available');
-      return null;
-    } catch (err) {
-      console.error('[agent-hover] Screenshot capture failed:', err);
-      return null;
+      resolveBlob(blob);
+      flash();
+      // Sizes are in page (CSS) pixels; the image itself is captured at up to 2× for sharpness.
+      const r = el.getBoundingClientRect();
+      const size = mode === 'component' ? { width: Math.round(r.width), height: Math.round(r.height) } : { width: opts!.width!, height: opts!.height! };
+      const name = mode === 'component' ? api.labelFor?.(state.selectedTarget)?.replace(/[<>/\s]+/g, '') || 'element' : mode;
+      const savedPath = await saveToProject(dataUrl, name);
+      last = { dataUrl, mode, filename: savedPath?.split('/').pop() || `${name}-${Date.now()}.png`, savedPath, ...size };
+      const didCopy = await copied;
+      const where = savedPath ? 'saved to .agent-hover/screenshots' : 'not saved (dev server offline)';
+      api.toast(`${didCopy ? 'Screenshot copied · ' : 'Screenshot '}${where}`, { action: 'View', onAction: openLightbox, ms: 6000 });
+    } catch {
+      rejectBlob(new Error('capture failed'));
+      api.toast('Capture failed. Try the visible area instead.');
     } finally {
-      rootContainer.style.visibility = prevVisibility || 'visible';
+      busy = false;
     }
   }
 
-  function dataUrlToBlob(dataUrl) {
-    try {
-      const parts = dataUrl.split(';base64,');
-      const contentType = (parts[0] && parts[0].split(':')[1]) || 'image/png';
-      const byteCharacters = atob(parts[1]);
-      const byteArrays = [];
-      for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-        const slice = byteCharacters.slice(offset, offset + 1024);
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        byteArrays.push(new Uint8Array(byteNumbers));
-      }
-      return new Blob(byteArrays, { type: contentType });
-    } catch (e) {
-      console.error('[agent-hover] Blob conversion error:', e);
-      return null;
-    }
-  }
-
-  async function downloadCleanScreenshot(targetEl, name) {
-    triggerShutterFlash();
-    api.showCallout('Capturing screenshot...', 'SNAP', 800);
-    const el = (targetEl && targetEl.isConnected) ? targetEl : document.body;
-    const cleanName = (name || 'screenshot').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const timestamp = Date.now();
-    const filename = cleanName + '_' + timestamp + '.png';
-
-    const dataUrl = await captureElement(el);
-    if (!dataUrl) {
-      api.showCallout('Failed to capture screenshot', 'ERROR', 2500);
-      return;
-    }
-
-    const blob = dataUrlToBlob(dataUrl);
-
-    // 1. Direct browser download via Blob Object URL
-    let browserDownloaded = false;
-    if (blob) {
-      try {
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          try { document.body.removeChild(a); } catch (_) {}
-          URL.revokeObjectURL(blobUrl);
-        }, 5000);
-        browserDownloaded = true;
-      } catch (e) {
-        console.warn('[agent-hover] Browser blob download failed:', e);
-      }
-    }
-
-    // 2. Direct copy to system clipboard for immediate pasting (Cmd+V / Ctrl+V)
-    let clipboardCopied = false;
-    if (blob && navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
-        clipboardCopied = true;
-      } catch (_) {}
-    }
-
-    // 3. Save directly to project disk via Bridge server (.agent-hover/screenshots/)
-    let diskSaved = false;
+  async function saveToProject(dataUrl: string, name: string): Promise<string | null> {
     try {
       const res = await fetch(BRIDGE + '/api/screenshot/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl, filename: cleanName })
+        body: JSON.stringify({ dataUrl, filename: name }),
       });
-      const result = await res.json();
-      if (result && result.success) {
-        diskSaved = true;
-      }
-    } catch (_) {}
-
-    if (diskSaved || browserDownloaded) {
-      const testImg = new Image();
-      testImg.onload = () => {
-        showSnapPreview(dataUrl, (name || 'Component') + ' • ' + testImg.naturalWidth + ' × ' + testImg.naturalHeight, filename, 'component');
-      };
-      testImg.onerror = () => {
-        showSnapPreview(dataUrl, (name || 'Component'), filename, 'component');
-      };
-      testImg.src = dataUrl;
-
-      if (clipboardCopied && diskSaved) {
-        api.showCallout('Screenshot saved and copied to clipboard', 'SAVED', 3500);
-      } else if (clipboardCopied) {
-        api.showCallout('Downloaded and copied to clipboard', 'SAVED', 3000);
-      } else if (diskSaved) {
-        api.showCallout('Saved to .agent-hover/screenshots/', 'SAVED', 3000);
-      } else {
-        api.showCallout('Screenshot downloaded', 'SAVED', 3000);
-      }
-    } else {
-      api.showCallout('Failed to save screenshot', 'ERROR', 2500);
+      const data = await res.json();
+      return data?.success ? data.path || '' : null;
+    } catch {
+      return null;
     }
+  }
+
+  // ---------- lightbox ----------
+  function openLightbox() {
+    if (!last) return;
+    const dims = last.width ? `${last.width} × ${last.height}` : '';
+    lightbox.innerHTML = `<div class="dialog ah-surface" role="dialog" aria-modal="true" aria-label="Screenshot">
+        <div class="head">
+          <div class="title"><b>${esc(MODE_LABEL[last.mode])}</b><span class="ah-muted">${esc(dims)}</span>
+            <span class="ah-mono ah-muted file" title="${esc(last.savedPath || last.filename)}">${esc(last.savedPath || last.filename)}</span></div>
+          <button class="ah-tbtn outline" data-act="copy">${icon('copy', 14)}Copy image</button>
+          <button class="ah-tbtn outline" data-act="download">${icon('download', 14)}Download</button>
+          ${last.savedPath ? `<button class="ah-tbtn outline" data-act="folder">${icon('folder', 14)}Show in folder</button>` : ''}
+          <button class="ah-ibtn" data-act="close" aria-label="Close (Esc)" title="Close (Esc)">${icon('x')}</button>
+        </div>
+        <div class="body"><img src="${last.dataUrl}" alt="${esc(MODE_LABEL[last.mode])} screenshot"${last.width ? ` style="width:${last.width}px"` : ''}></div>
+      </div>`;
+    returnFocus = shadow.activeElement as HTMLElement | null;
+    lightbox.hidden = false;
+    (lightbox.querySelector('[data-act=close]') as HTMLElement).focus();
+  }
+
+  function closeLightbox() {
+    if (lightbox.hidden) return;
+    lightbox.hidden = true;
+    lightbox.innerHTML = '';
+    returnFocus?.focus?.();
+    returnFocus = null;
+  }
+
+  lightbox.addEventListener('click', async (e) => {
+    if (e.target === lightbox) { closeLightbox(); return; }
+    const b = (e.target as Element).closest('button') as HTMLElement | null;
+    if (!b || !last) return;
+    const act = b.dataset.act;
+    if (act === 'close') closeLightbox();
+    if (act === 'download') download(last);
+    if (act === 'copy') {
+      const blob = dataUrlToBlob(last.dataUrl);
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob! })]);
+        api.toast('Screenshot copied');
+      } catch {
+        api.toast('Clipboard blocked by the browser. Use Download.');
+      }
+    }
+    if (act === 'folder') {
+      try {
+        const res = await fetch(BRIDGE + '/api/screenshot/open-folder', { method: 'POST' });
+        api.toast(res.ok ? 'Opened .agent-hover/screenshots' : 'Could not open the folder');
+      } catch {
+        api.toast('Dev server unreachable');
+      }
+    }
+  });
+
+  // Keep Tab inside the lightbox while it is open.
+  lightbox.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const items = Array.from(lightbox.querySelectorAll('button')) as HTMLElement[];
+    const i = items.indexOf(shadow.activeElement as HTMLElement);
+    const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : (i + 1) % items.length;
+    e.preventDefault();
+    items[next]?.focus();
+  });
+
+  function download(shot: Shot) {
+    const blob = dataUrlToBlob(shot.dataUrl);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = shot.filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 3000);
+  }
+
+  function flash() {
+    const f = document.createElement('div');
+    f.className = 'ah-flash';
+    shadow.appendChild(f);
+    setTimeout(() => f.remove(), 400);
+  }
+
+  // ---------- capture engine ----------
+  async function captureElement(element: Element | null, opts?: CaptureOptions): Promise<string | null> {
+    if (!element) return null;
+    const lib = (window as any).modernScreenshot;
+    if (!lib?.domToPng) {
+      console.error('[agent-hover] Screenshot library not loaded');
+      return null;
+    }
+    // Hide the whole overlay so only the page is captured.
+    const root = (shadow.host as HTMLElement) || container;
+    const prevVisibility = root.style.visibility;
+    root.style.visibility = 'hidden';
+
+    const isViewport = opts?.scrollX !== undefined;
+    const isFullPage = !!opts?.height && opts.height > window.innerHeight;
+    try {
+      if (!isViewport && !isFullPage) {
+        const r = element.getBoundingClientRect();
+        if (r.top < 0 || r.left < 0 || r.bottom > window.innerHeight || r.right > window.innerWidth) {
+          element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+          await new Promise((r2) => setTimeout(r2, 100));
+        }
+      }
+      const options: Record<string, any> = {
+        scale: 2,
+        backgroundColor: getInheritedBackgroundColor(element),
+        filter: (node: any) => node?.id !== 'agent-hover-root' && node !== container && !node?.classList?.contains?.('agent-hover-ignore'),
+        // Short single-line labels can wrap in the clone because of font metrics; keep them on one line.
+        onCloneEachNode: (node: any) => {
+          if (node?.nodeType !== 1) return;
+          const text = (node.textContent || '').trim();
+          if (!text || text.length > 60 || text.includes('\n')) return;
+          const hasBlockChild = Array.from(node.children || []).some((c: any) => BLOCK_TAGS.has(String(c.tagName || '').toLowerCase()));
+          if (!hasBlockChild) node.style.whiteSpace = 'nowrap';
+        },
+      };
+      if (isViewport) {
+        options.width = opts!.width || window.innerWidth;
+        options.height = opts!.height || window.innerHeight;
+        options.style = { transform: `translate(-${opts!.scrollX || 0}px, -${opts!.scrollY || 0}px)`, transformOrigin: 'top left' };
+      }
+      if (isFullPage) {
+        options.width = opts!.width;
+        options.height = opts!.height;
+      }
+      try {
+        return (await lib.domToPng(element, options)) || null;
+      } catch (err) {
+        // Very tall pages can exceed the canvas limit at 2×; retry at 1×.
+        if (!isFullPage) throw err;
+        options.scale = 1;
+        return (await lib.domToPng(element, options)) || null;
+      }
+    } catch (err) {
+      console.error('[agent-hover] Screenshot capture failed:', err);
+      return null;
+    } finally {
+      root.style.visibility = prevVisibility || 'visible';
+    }
+  }
+}
+
+export function dataUrlToBlob(dataUrl: string): Blob | null {
+  try {
+    const [head, data] = dataUrl.split(';base64,');
+    const type = head.split(':')[1] || 'image/png';
+    const bytes = atob(data);
+    const out = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) out[i] = bytes.charCodeAt(i);
+    return new Blob([out], { type });
+  } catch {
+    return null;
   }
 }

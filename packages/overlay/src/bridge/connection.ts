@@ -1,3 +1,4 @@
+import { readPref, writePref } from '../lib/ui.js';
 import type { OverlayApp } from '../app/context.js';
 
 /**
@@ -31,8 +32,15 @@ export function setupBridgeConnection(app: OverlayApp) {
     presenceChanged();
   }
 
+  /** A newer @agent-hover/vite is on npm (the bridge checks once a day). Shown in the dock popover and
+   *  Settings › About, plus one toast per new version. */
   function handleUpdateAvailable(info: any) {
-    if (info?.latest) state.updateAvailable = info;
+    if (!info?.latest || state.updateAvailable?.latest === info.latest) return;
+    state.updateAvailable = info;
+    api.renderDock?.();
+    if (readPref('agent-hover-update-seen', '') === info.latest) return;
+    writePref('agent-hover-update-seen', info.latest);
+    api.toast?.(`Agent Hover ${info.latest} is available`, { action: 'Details', onAction: () => api.openSettings('about'), ms: 8000 });
   }
 
   try {

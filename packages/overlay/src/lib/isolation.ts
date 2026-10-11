@@ -1,7 +1,6 @@
 /**
- * Manages host DOM isolation, Popover API top-layer projection,
- * and handles host <dialog>.showModal() inert behavior by dynamically
- * reparenting the overlay host into the active modal dialog when open.
+ * Keeps the overlay usable while the host app shows a modal <dialog>: showModal() makes everything outside
+ * the dialog inert, so the overlay host is moved into the open modal dialog and back when it closes.
  */
 export class IsolationManager {
   private host: HTMLElement;
@@ -70,35 +69,5 @@ export class IsolationManager {
     if (this.defaultParent && !this.defaultParent.contains(this.host)) {
       this.defaultParent.appendChild(this.host);
     }
-  }
-}
-
-/**
- * Configure an element to use Popover API (manual mode) with reset UA styles.
- */
-export function setupPopover(el: HTMLElement | null) {
-  if (!el) return;
-  if (typeof el.showPopover === 'function') {
-    try {
-      el.setAttribute('popover', 'manual');
-    } catch (_) {}
-  }
-}
-
-export function showPopoverSafe(el: HTMLElement | null) {
-  if (!el) return;
-  if (typeof el.showPopover === 'function' && el.hasAttribute('popover')) {
-    try {
-      el.showPopover();
-    } catch (_) {}
-  }
-}
-
-export function hidePopoverSafe(el: HTMLElement | null) {
-  if (!el) return;
-  if (typeof el.hidePopover === 'function' && el.hasAttribute('popover')) {
-    try {
-      el.hidePopover();
-    } catch (_) {}
   }
 }

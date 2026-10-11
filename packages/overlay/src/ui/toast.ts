@@ -8,10 +8,10 @@ export interface ToastOptions {
   ms?: number;
 }
 
-/** Single-line toast above the dock. `showCallout` is kept for modules written against the 0.1 API. */
+/** Single-line toast above the dock, with an optional action button. */
 export function setupToast(app: OverlayApp) {
   const { shadow, api } = app;
-  Object.assign(api, { toast, showCallout });
+  Object.assign(api, { toast });
 
   const el = shadow.getElementById('ah-toast') as HTMLElement;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -33,9 +33,5 @@ export function setupToast(app: OverlayApp) {
     el.style.bottom = above ? `${Math.round(window.innerHeight - d!.top + 10)}px` : '';
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => { el.hidden = true; }, opts.ms ?? (hasAction ? 5000 : 3000));
-  }
-
-  function showCallout(text: string, _meta?: string, duration?: number) {
-    toast(text, { ms: duration });
   }
 }

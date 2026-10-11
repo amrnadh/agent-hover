@@ -15,6 +15,9 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { discoverSession, BRAND } from "@agent-hover/core";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 /** Default port for the Agent Hover bridge server */
 const DEFAULT_BRIDGE_PORT = 9850;
@@ -245,13 +248,22 @@ const LISTEN_POLL_SECONDS = 25;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** This package's version, from its package.json. */
+const VERSION: string = (() => {
+  try {
+    return JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")).version;
+  } catch {
+    return "0.0.0";
+  }
+})();
+
 /**
  * Initialize the Agent Hover MCP server instance.
  */
 const server = new Server(
   {
     name: "agent-hover",
-    version: "0.1.1",
+    version: VERSION,
   },
   {
     capabilities: {
@@ -876,14 +888,14 @@ async function main(): Promise<void> {
       const presence = await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ client: agentClientName(), version: '0.1.1' }),
+        body: JSON.stringify({ client: agentClientName(), version: VERSION }),
       });
       // Legacy heartbeat only for bridges older than presence (P1-06); sending both would list the agent twice.
       if (presence.status === 404) {
         await fetch(`http://127.0.0.1:${active.port}/api/mcp/hello`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ pid: process.pid, version: '0.1.1' }),
+          body: JSON.stringify({ pid: process.pid, version: VERSION }),
         });
       }
     } catch (_) {

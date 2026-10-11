@@ -97,9 +97,13 @@ export function setupDock(app: OverlayApp) {
            <button class="ah-tbtn primary" data-act="agents">Connect an agent</button>`
         : `<div class="row"><span class="ah-dot"></span><b>Dev server offline</b></div>
            <p>Agent Hover talks to your coding agent through the Vite dev server. Start it again (npm run dev) and this page reconnects.</p>`;
+    const up = state.updateAvailable;
+    if (up) conn.innerHTML += `<hr><div class="row"><span class="ah-dot"></span><b>Update available</b><span class="ah-muted" style="margin-left:auto;font-size:12px">${esc(up.current)} → ${esc(up.latest)}</span></div>
+         <button class="ah-tbtn outline" data-act="about">How to update</button>`;
   }
   conn.onclick = (e) => {
     if ((e.target as Element).closest('[data-act=agents]')) { conn.hidden = true; api.openSettings('agents'); }
+    if ((e.target as Element).closest('[data-act=about]')) { conn.hidden = true; api.openSettings('about'); }
   };
 
   function openNear(panel: HTMLElement, btn: HTMLElement) {
