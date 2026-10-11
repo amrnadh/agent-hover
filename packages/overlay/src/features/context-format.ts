@@ -74,7 +74,7 @@ export function setupContextFormat(app: OverlayApp) {
     const nl = String.fromCharCode(10);
     const el = target?.element || state.selectedElement;
     const tag = el ? el.tagName.toLowerCase() : 'element';
-    const classes = el && el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 3).join('.') : '';
+    const classes = el && el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '';
     const selector = (typeof api.buildCSSSelector === 'function' && el) ? api.buildCSSSelector(el) : tag + classes;
 
     let text = '### UI Element Task: <' + tag + classes + ' />' + nl;

@@ -22,7 +22,7 @@ function describeElement(el) {
   if (el.id) {
     desc += '#' + el.id;
   } else if (el.className && typeof el.className === 'string') {
-    const cls = el.className.trim().split(/\\s+/).slice(0, 2);
+    const cls = el.className.trim().split(/\s+/).slice(0, 2);
     if (cls.length && cls[0]) desc += '.' + cls.join('.');
   }
   return desc;

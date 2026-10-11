@@ -88,6 +88,9 @@ export interface ElementComment {
   text: string;
   createdAt: string;
   resolved?: boolean;
+  /** Where the pin sits inside the element, as fractions of its width/height (0.2+). */
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface PinSet {

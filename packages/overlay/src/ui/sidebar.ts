@@ -1,242 +1,147 @@
-// @ts-nocheck
+import { readPref, writePref } from '../lib/ui.js';
 import type { OverlayApp } from '../app/context.js';
 
-/** Sidebar tab/view switching, docked vs floating mode, and floating-panel dragging. */
+export type Tab = 'inspect' | 'tasks' | 'comments' | 'batch';
+
+export interface PanelRenderer {
+  /** Fill `body` (and optionally `foot`, which starts hidden) for the current state. */
+  render(body: HTMLElement, foot: HTMLElement): void;
+}
+
+const WIDTH_KEY = 'agent-hover-side-w';
+const FLOAT_KEY = 'agent-hover-side-float';
+const MIN_W = 320, MAX_W = 520, DEFAULT_W = 380;
+
+/**
+ * Sidebar shell: tabs (Inspect · Tasks · Comments · Batch), Settings (gear), float/dock toggle, close,
+ * and a resize rail (320–520px, double-click resets). Each tab's content comes from a registered panel.
+ */
 export function setupSidebar(app: OverlayApp) {
-  const { shadow, state, dom, api } = app;
-  Object.assign(api, { setSidebarTab, toggleSettingsView });
+  const { shadow, state, api } = app;
+  Object.assign(api, { openSidebar, closeSidebar, toggleSidebar, openSettings, renderSidebar, registerPanel, isSidebarOpen: () => state.side.open });
 
-  // Sidebar Tab & View Switcher (A.1, A.4, A.5)
-  state.currentSidebarTab = null;
-  state.inSettingsView = false;
+  const side = shadow.getElementById('ah-side') as HTMLElement;
+  const tabs = shadow.getElementById('ah-tabs') as HTMLElement;
+  const body = shadow.getElementById('ah-s-body') as HTMLElement;
+  const foot = shadow.getElementById('ah-s-foot') as HTMLElement;
+  const gear = shadow.getElementById('ah-s-gear') as HTMLElement;
+  const floatBtn = shadow.getElementById('ah-s-float') as HTMLElement;
+  const panels = new Map<string, PanelRenderer>();
 
-  function setSidebarTab(tab: 'inspector' | 'pins' | 'settings' | null) {
-    state.currentSidebarTab = tab;
-    state.inSettingsView = (tab === 'settings');
+  state.side = {
+    open: false,
+    tab: 'inspect' as Tab,
+    settings: false,
+    settingsFocus: '' as string,
+    float: readPref(FLOAT_KEY, '') === '1',
+    width: Math.min(MAX_W, Math.max(MIN_W, parseInt(readPref(WIDTH_KEY, String(DEFAULT_W)), 10) || DEFAULT_W)),
+  };
 
-    if (!tab) {
-      dom.flyout.classList.remove('open');
-      dom.dockWrapper.classList.remove('sidebar-open');
-      if (state.dockController) state.dockController.setActiveTab(null);
+  function registerPanel(name: string, panel: PanelRenderer) {
+    panels.set(name, panel);
+  }
+
+  function openSidebar(tab?: Tab) {
+    state.side.open = true;
+    state.side.settings = false;
+    if (tab) state.side.tab = tab;
+    renderSidebar();
+  }
+
+  function openSettings(focus = '') {
+    state.side.open = true;
+    state.side.settings = true;
+    state.side.settingsFocus = focus;
+    renderSidebar();
+  }
+
+  function closeSidebar() {
+    if (!state.side.open) return;
+    state.side.open = false;
+    renderSidebar();
+  }
+
+  function toggleSidebar(tab: Tab) {
+    if (state.side.open && !state.side.settings && state.side.tab === tab) closeSidebar();
+    else openSidebar(tab);
+  }
+
+  /** Re-render. With `onlyTab`, skip the work unless that tab is what the sidebar is showing. */
+  function renderSidebar(onlyTab?: string) {
+    if (onlyTab && !(state.side.open && !state.side.settings && state.side.tab === onlyTab)) {
+      updateCounts();
       return;
     }
-
-    dom.flyout.classList.add('open');
-    if (dom.flyout.classList.contains('is-sidebar')) {
-      dom.dockWrapper.classList.add('sidebar-open');
-    }
-    if (state.dockController) state.dockController.setActiveTab(tab);
-
-    const flyoutSubtitle = shadow.getElementById('cp-flyout-subtitle');
-
-    if (tab === 'inspector') {
-      if (dom.viewInspector) dom.viewInspector.style.display = 'flex';
-      if (dom.viewPins) dom.viewPins.style.display = 'none';
-      if (dom.viewSettings) dom.viewSettings.style.display = 'none';
-      if (dom.flyoutBadge) dom.flyoutBadge.style.display = 'inline-flex';
-      if (dom.settingsBackBtn) dom.settingsBackBtn.style.display = 'none';
-      if (dom.flyoutThemeBtn) dom.flyoutThemeBtn.style.display = 'inline-flex';
-      if (dom.flyoutSettingsBtn) {
-        dom.flyoutSettingsBtn.style.display = 'inline-flex';
-        dom.flyoutSettingsBtn.classList.remove('active');
-      }
-      if (dom.flyoutTitle) dom.flyoutTitle.textContent = state.lastInfoName || 'Component Inspector';
-      if (flyoutSubtitle && flyoutSubtitle.textContent) flyoutSubtitle.style.display = 'block';
-    } else if (tab === 'pins') {
-      if (dom.viewInspector) dom.viewInspector.style.display = 'none';
-      if (dom.viewPins) dom.viewPins.style.display = 'flex';
-      if (dom.viewSettings) dom.viewSettings.style.display = 'none';
-      if (dom.flyoutBadge) dom.flyoutBadge.style.display = 'none';
-      if (dom.settingsBackBtn) dom.settingsBackBtn.style.display = 'none';
-      if (dom.flyoutThemeBtn) dom.flyoutThemeBtn.style.display = 'none';
-      if (dom.flyoutSettingsBtn) dom.flyoutSettingsBtn.style.display = 'none';
-      if (dom.flyoutTitle) dom.flyoutTitle.textContent = 'Pinned Stack';
-      if (flyoutSubtitle) flyoutSubtitle.style.display = 'none';
-    } else if (tab === 'settings') {
-      if (dom.viewInspector) dom.viewInspector.style.display = 'none';
-      if (dom.viewPins) dom.viewPins.style.display = 'none';
-      if (dom.viewSettings) dom.viewSettings.style.display = 'flex';
-      if (dom.flyoutBadge) dom.flyoutBadge.style.display = 'none';
-      if (dom.settingsBackBtn) dom.settingsBackBtn.style.display = 'inline-flex';
-      if (dom.flyoutThemeBtn) dom.flyoutThemeBtn.style.display = 'none';
-      if (dom.flyoutSettingsBtn) dom.flyoutSettingsBtn.style.display = 'none';
-      if (dom.flyoutTitle) dom.flyoutTitle.textContent = 'Settings';
-      if (flyoutSubtitle) flyoutSubtitle.style.display = 'none';
-    }
+    side.hidden = !state.side.open;
+    side.classList.toggle('float', state.side.float);
+    side.style.setProperty('--ah-side-w', state.side.width + 'px');
+    floatBtn.setAttribute('aria-pressed', String(state.side.float));
+    floatBtn.title = state.side.float ? 'Dock sidebar' : 'Float sidebar';
+    floatBtn.setAttribute('aria-label', floatBtn.title);
+    gear.setAttribute('aria-pressed', String(state.side.settings));
+    tabs.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(!state.side.settings && b.dataset.tab === state.side.tab)));
+    updateCounts();
+    api.renderDock?.();
+    api.requestLayout?.();
+    if (!state.side.open) return;
+    const scroll = body.scrollTop;
+    const key = state.side.settings ? 'settings' : state.side.tab;
+    foot.hidden = true;
+    foot.innerHTML = '';
+    panels.get(key)?.render(body, foot);
+    if (body.dataset.panel === key) body.scrollTop = scroll;
+    body.dataset.panel = key;
   }
 
-  function toggleSettingsView(force?: boolean) {
-    if (typeof force === 'boolean') {
-      setSidebarTab(force ? 'settings' : 'inspector');
-    } else {
-      setSidebarTab(state.currentSidebarTab === 'settings' ? null : 'settings');
-    }
+  function updateCounts() {
+    const tasks = state.tasks ? [...state.tasks.values()] : [];
+    const active = tasks.filter((t: any) => api.isTaskActive?.(t)).length;
+    setCount('ah-n-tasks', active || '');
+    setCount('ah-n-comments', (state.comments || []).filter((c: any) => !c.resolved).length || '');
+    setCount('ah-n-batch', (state.batch || []).length || '');
   }
 
-  if (dom.flyoutSettingsBtn) {
-    dom.flyoutSettingsBtn.onclick = () => {
-      if (state.currentSidebarTab === 'settings') {
-        setSidebarTab(null);
-      } else {
-        setSidebarTab('settings');
-      }
-    };
-  }
-  if (dom.settingsBackBtn) {
-    dom.settingsBackBtn.onclick = () => setSidebarTab('inspector');
-  }
-  if (dom.settingsMinimizeBtn) {
-    dom.settingsMinimizeBtn.onclick = () => {
-      if (state.dockController) state.dockController.setMinimized(true);
-    };
-  }
-  if (dom.settingsResetPosBtn) {
-    dom.settingsResetPosBtn.onclick = () => {
-      if (state.dockController) state.dockController.resetPosition();
-    };
+  function setCount(id: string, value: number | string) {
+    const el = shadow.getElementById(id);
+    if (el) el.textContent = String(value);
   }
 
-  // Flyout Sidebar Mode Switcher & Draggable Floating Panel
-  const flyoutModeToggle = shadow.getElementById('cp-flyout-mode-toggle');
-  const modeSidebarIcon = shadow.getElementById('cp-mode-sidebar-icon');
-  const modeFloatIcon = shadow.getElementById('cp-mode-float-icon');
-  const flyoutHeader = shadow.getElementById('cp-flyout-header');
+  tabs.onclick = (e) => {
+    const b = (e.target as Element).closest('[data-tab]') as HTMLElement | null;
+    if (b) openSidebar(b.dataset.tab as Tab);
+  };
+  gear.onclick = () => (state.side.settings ? openSidebar() : openSettings());
+  floatBtn.onclick = () => {
+    state.side.float = !state.side.float;
+    writePref(FLOAT_KEY, state.side.float ? '1' : '');
+    renderSidebar();
+  };
+  (shadow.getElementById('ah-s-close') as HTMLElement).onclick = closeSidebar;
 
-  // Requirement 4: The sidebar by default should be attached for now.
-  let flyoutMode = 'sidebar';
-  try {
-    flyoutMode = localStorage.getItem('agent-hover-flyout-mode-v2') || 'sidebar';
-  } catch(e) {}
+  // Follow the selection while Inspect is showing.
+  api.onSelectionChange(() => renderSidebar('inspect'));
 
-  function applyFlyoutMode(mode) {
-    flyoutMode = mode;
-    try {
-      localStorage.setItem('agent-hover-flyout-mode-v2', mode);
-    } catch(e) {}
-
-    if (mode === 'sidebar') {
-      dom.flyout.classList.add('is-sidebar');
-      dom.flyout.style.left = '';
-      dom.flyout.style.top = '';
-      dom.flyout.style.right = '';
-      dom.flyout.style.bottom = '';
-      if (flyoutHeader) flyoutHeader.style.cursor = 'default';
-      if (modeSidebarIcon) modeSidebarIcon.style.display = 'none';
-      if (modeFloatIcon) modeFloatIcon.style.display = 'block';
-      if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Detach Sidebar (Float Window)');
-      if (dom.flyout.classList.contains('open')) {
-        dom.dockWrapper.classList.add('sidebar-open');
-      }
-    } else {
-      dom.flyout.classList.remove('is-sidebar');
-      if (flyoutHeader) flyoutHeader.style.cursor = 'grab';
-      if (modeSidebarIcon) modeSidebarIcon.style.display = 'block';
-      if (modeFloatIcon) modeFloatIcon.style.display = 'none';
-      if (flyoutModeToggle) flyoutModeToggle.setAttribute('title', 'Attach Sidebar (Dock to Edge)');
-      dom.dockWrapper.classList.remove('sidebar-open');
-
-      // Position screen-friendly within viewport
-      try {
-        const savedFlyoutPos = localStorage.getItem('agent_hover_flyout_pos');
-        if (savedFlyoutPos) {
-          const parsed = JSON.parse(savedFlyoutPos);
-          const fW = 440;
-          const fH = 600;
-          const maxLeft = Math.max(12, window.innerWidth - fW - 12);
-          const maxTop = Math.max(12, window.innerHeight - fH - 12);
-          const clampedLeft = Math.max(12, Math.min(maxLeft, parseInt(parsed.left, 10) || maxLeft));
-          const clampedTop = Math.max(12, Math.min(maxTop, parseInt(parsed.top, 10) || 60));
-          dom.flyout.style.left = clampedLeft + 'px';
-          dom.flyout.style.top = clampedTop + 'px';
-          dom.flyout.style.right = 'auto';
-        } else {
-          const defaultLeft = Math.max(12, window.innerWidth - 440 - 24);
-          dom.flyout.style.left = defaultLeft + 'px';
-          dom.flyout.style.top = '60px';
-          dom.flyout.style.right = 'auto';
-        }
-      } catch(e) {
-        dom.flyout.style.left = Math.max(12, window.innerWidth - 440 - 24) + 'px';
-        dom.flyout.style.top = '60px';
-        dom.flyout.style.right = 'auto';
-      }
-    }
-  }
-
-  applyFlyoutMode(flyoutMode);
-
-  if (flyoutModeToggle) {
-    flyoutModeToggle.onclick = () => {
-      applyFlyoutMode(flyoutMode === 'sidebar' ? 'float' : 'sidebar');
-      api.showCallout(flyoutMode === 'sidebar' ? 'Sidebar: Attached' : 'Sidebar: Detached & Draggable', 'MODE');
-    };
-  }
-
-  // Detached Draggable Flyout Mechanics (Requirements 2 & 5)
-  let isFlyoutDragging = false;
-  let flyoutDragStartX = 0;
-  let flyoutDragStartY = 0;
-  let flyoutInitialTop = 0;
-  let flyoutInitialLeft = 0;
-
-  if (flyoutHeader) {
-    flyoutHeader.addEventListener('mousedown', (e) => {
-      if (dom.flyout.classList.contains('is-sidebar')) return;
-      if (e.target.closest('button') || e.target.closest('.cp-dock-tile') || e.target.closest('select') || e.target.closest('input')) return;
-
-      isFlyoutDragging = true;
-      flyoutDragStartX = e.clientX;
-      flyoutDragStartY = e.clientY;
-      const rect = dom.flyout.getBoundingClientRect();
-      flyoutInitialTop = rect.top;
-      flyoutInitialLeft = rect.left;
-      flyoutHeader.style.cursor = 'grabbing';
-      e.preventDefault();
-    });
-  }
-
+  // ---------- resize rail ----------
+  const rail = shadow.getElementById('ah-side-rail') as HTMLElement;
+  let resizing = false;
+  rail.addEventListener('mousedown', (e) => {
+    resizing = true;
+    e.preventDefault();
+  });
   window.addEventListener('mousemove', (e) => {
-    if (!isFlyoutDragging || dom.flyout.classList.contains('is-sidebar')) return;
-    const fW = dom.flyout.offsetWidth || 440;
-    const fH = dom.flyout.offsetHeight || 600;
-    const newLeft = flyoutInitialLeft + (e.clientX - flyoutDragStartX);
-    const newTop = flyoutInitialTop + (e.clientY - flyoutDragStartY);
-    const maxLeft = Math.max(12, window.innerWidth - fW - 12);
-    const maxTop = Math.max(12, window.innerHeight - fH - 12);
-    const clampedLeft = Math.max(12, Math.min(maxLeft, newLeft));
-    const clampedTop = Math.max(12, Math.min(maxTop, newTop));
-    dom.flyout.style.left = clampedLeft + 'px';
-    dom.flyout.style.top = clampedTop + 'px';
-    dom.flyout.style.right = 'auto';
-    dom.flyout.style.bottom = 'auto';
+    if (!resizing) return;
+    state.side.width = Math.min(MAX_W, Math.max(MIN_W, window.innerWidth - e.clientX));
+    side.style.setProperty('--ah-side-w', state.side.width + 'px');
+    api.requestLayout();
   });
-
   window.addEventListener('mouseup', () => {
-    if (!isFlyoutDragging) return;
-    isFlyoutDragging = false;
-    if (flyoutHeader && !dom.flyout.classList.contains('is-sidebar')) {
-      flyoutHeader.style.cursor = 'grab';
-    }
-    try {
-      localStorage.setItem('agent_hover_flyout_pos', JSON.stringify({
-        left: dom.flyout.style.left,
-        top: dom.flyout.style.top
-      }));
-    } catch(e) {}
+    if (!resizing) return;
+    resizing = false;
+    writePref(WIDTH_KEY, String(state.side.width));
   });
-
-  // Window resize bounds keeper
-  window.addEventListener('resize', () => {
-    if (dom.flyout.classList.contains('is-sidebar')) return;
-    const rect = dom.flyout.getBoundingClientRect();
-    const fW = rect.width || 440;
-    const fH = rect.height || 600;
-    const maxLeft = Math.max(12, window.innerWidth - fW - 12);
-    const maxTop = Math.max(12, window.innerHeight - fH - 12);
-    if (rect.left > maxLeft || rect.top > maxTop) {
-      dom.flyout.style.left = Math.max(12, Math.min(maxLeft, rect.left)) + 'px';
-      dom.flyout.style.top = Math.max(12, Math.min(maxTop, rect.top)) + 'px';
-      dom.flyout.style.right = 'auto';
-    }
+  rail.addEventListener('dblclick', () => {
+    state.side.width = DEFAULT_W;
+    writePref(WIDTH_KEY, String(DEFAULT_W));
+    renderSidebar();
   });
 }

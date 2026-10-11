@@ -1,123 +1,25 @@
 // @ts-nocheck
-import { ICONS } from '../icons.js';
 import { getFiberNode } from '../lib/fiber.js';
 import type { OverlayApp } from '../app/context.js';
 
-/** Bridge state refresh and pin-stack rendering. */
+/**
+ * Routes bridge WebSocket messages: tasks, comments, frozen components, presence, updates, and the
+ * MCP server's requests for screenshots and the mounted component list.
+ */
 export function setupStateSync(app: OverlayApp) {
-  const { BRIDGE, fetch, port, shadow, state, dom, api } = app;
+  const { BRIDGE, fetch, state, api } = app;
   Object.assign(api, { refreshState });
 
+  /** Load what the bridge already knows: frozen components, tasks, comments. */
   async function refreshState() {
     try {
-      const resPins = await fetch(BRIDGE + '/api/pins');
-      const dataPins = await resPins.json();
-      state.currentPins = dataPins.pins || [];
-      const count = state.currentPins.length;
-      shadow.getElementById('cp-pin-count').textContent = count;
-
-      if (count > 0) {
-        dom.dockPinBadge.style.display = 'inline-flex';
-        dom.dockPinBadge.textContent = count;
-      } else {
-        dom.dockPinBadge.style.display = 'none';
-      }
-      if (state.dockController) state.dockController.setPinCount(count);
-
-      const list = shadow.getElementById('cp-pin-list');
-      list.innerHTML = '';
-      if (dataPins.pins && dataPins.pins.length > 0) {
-        dataPins.pins.forEach(function(pin, index) {
-          const card = document.createElement('div');
-          card.className = 'cp-pin-card';
-          const name = pin.context ? pin.context.component.name : pin.id;
-          const file = pin.context ? pin.context.source.file.split('/').pop() : '';
-          
-          const isPinFrozen = state.frozenEntries.some(f => (pin.context && f.file === pin.context.source.file) || f.id === pin.id);
-          const lockIcon = isPinFrozen ? '<span style="color:#fb7185; margin-right:4px;">' + ICONS.lock + '</span>' : '';
-          
-          card.innerHTML =
-            '<div class="cp-pin-header">' +
-              '<div class="cp-pin-title">' +
-                '<span class="cp-pin-badge">#' + (index + 1) + '</span>' +
-                '<span>' + lockIcon + '&lt;' + name + ' /&gt;</span>' +
-                '<span class="cp-pin-file">' + file + '</span>' +
-              '</div>' +
-              '<button class="cp-pin-remove" data-id="' + pin.id + '" title="Remove pin">' + ICONS.x + '</button>' +
-            '</div>' +
-            '<textarea class="cp-pin-textarea" rows="2" placeholder="Task for this component..." data-id="' + pin.id + '">' + (pin.task || '') + '</textarea>';
-          list.appendChild(card);
-        });
-
-        // Listen for changes/blur on task textareas to update-task
-        const textareas = list.querySelectorAll('.cp-pin-textarea');
-        textareas.forEach(ta => {
-          const saveTask = async () => {
-            const id = ta.getAttribute('data-id');
-            const p = dataPins.pins.find(x => x.id === id);
-            if (p && p.task !== ta.value) {
-              p.task = ta.value;
-              await fetch(BRIDGE + '/api/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update-task', id, task: ta.value })
-              });
-            }
-          };
-          ta.addEventListener('change', saveTask);
-          ta.addEventListener('blur', saveTask);
-        });
-
-        const removeBtns = list.querySelectorAll('.cp-pin-remove');
-        removeBtns.forEach(btn => {
-          btn.onclick = async () => {
-            const id = btn.getAttribute('data-id');
-            const p = dataPins.pins.find(x => x.id === id);
-            if (p) {
-              await fetch(BRIDGE + '/api/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'remove', file: p.context.source.file, id })
-              });
-              refreshState();
-            }
-          };
-        });
-      } else {
-        list.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic; padding:6px 0;">No pinned components. Click "Pin Component" on any component to stage changes.</div>';
-      }
-
-      const genTaskBtn = shadow.getElementById('cp-gen-task');
-      if (dataPins.pins && dataPins.pins.length > 0) {
-        if (genTaskBtn) {
-          genTaskBtn.style.opacity = '1';
-          genTaskBtn.style.pointerEvents = 'auto';
-          genTaskBtn.classList.add('primary');
-        }
-      } else {
-        if (genTaskBtn) {
-          genTaskBtn.style.opacity = '0.5';
-          genTaskBtn.style.pointerEvents = 'none';
-          genTaskBtn.classList.remove('primary');
-        }
-      }
-
-      const savingsDiv = shadow.getElementById('cp-token-savings');
-      if (dataPins.pins && dataPins.pins.length > 0 && dataPins.totalTokens) {
-        const levelSelect = shadow.getElementById('cp-context-level');
-        const level = levelSelect.value;
-        const cost = dataPins.totalTokens[level] || dataPins.totalTokens.current;
-        
-        savingsDiv.style.display = 'block';
-        savingsDiv.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Stack: ' + cost.toLocaleString() + ' tokens (' + dataPins.pins.length + ' pinned)';
-      } else {
-        savingsDiv.style.display = 'none';
-      }
-    } catch(e) { }
-  }
-
-  function refreshPins() {
-    refreshState();
+      const res = await fetch(BRIDGE + '/api/freeze');
+      const data = await res.json();
+      state.frozenEntries = data.frozenEntries || [];
+    } catch (e) {}
+    api.refreshTasks();
+    api.loadComments();
+    api.requestLayout();
   }
 
   if (state.ws) {
@@ -126,46 +28,18 @@ export function setupStateSync(app: OverlayApp) {
         const payload = JSON.parse(msg.data);
         if (payload.type === 'state-update') {
           state.frozenEntries = payload.data.frozenEntries || [];
-          if (payload.data.updateAvailable) {
-            api.handleUpdateAvailable(payload.data.updateAvailable);
-          }
-          if (payload.data.comments) {
-            state.comments = payload.data.comments;
-            api.renderCommentMarkers();
-            api.renderSidebarNotes();
-          }
-          refreshState();
+          if (payload.data.updateAvailable) api.handleUpdateAvailable(payload.data.updateAvailable);
+          if (payload.data.comments) api.setComments(payload.data.comments);
+          api.requestLayout();
         } else if (payload.type === 'update-available') {
           api.handleUpdateAvailable(payload.data);
-        } else if (payload.type === 'pins-update') {
-          refreshState();
         } else if (payload.type === 'presence.updated') {
-          state.connectedAgents = payload.data?.agents || [];
-          if (state.dockController) {
-            state.dockController.updatePresence({
-              bridgeOnline: state.isBridgeConnected,
-              port,
-              agents: state.connectedAgents,
-            });
-          }
-        } else if (payload.type === 'task.updated') {
-          const task = payload.data;
-          if (task) {
-            if (task.status === 'delivered') {
-              api.showCallout('Seen by ' + (task.claimedBy || 'agent'), 'INFO', 2000);
-            } else if (task.status === 'in_progress') {
-              api.showCallout('Working…', 'WORKING', 2500);
-            } else if (task.status === 'done') {
-              const files = task.result?.filesChanged?.length ? task.result.filesChanged.length + ' files' : 'complete';
-              api.showCallout('Done · ' + files, 'SUCCESS', 3000);
-            } else if (task.status === 'failed') {
-              api.showCallout('Failed: ' + (task.result?.error || 'error'), 'ERROR', 3000);
-            }
-          }
+          api.setConnectedAgents(payload.data?.agents || []);
+        } else if (payload.type === 'task.created' || payload.type === 'task.updated') {
+          api.onTaskEvent(payload.data);
         } else if (payload.type === 'source-updated') {
-          api.showCallout('Source updated: ' + (payload.data.file ? payload.data.file.split('/').pop() : 'file'), 'HMR');
-        } else if (payload.type === 'source-reverted') {
-          api.showCallout('Source reverted: ' + (payload.data.description || 'change'), 'UNDO');
+          // HMR follows; markers and frames re-measure on the next layout.
+          setTimeout(() => api.requestLayout(), 300);
         } else if (payload.type === 'capture-screenshot') {
           const { requestId, file, component, label, componentId } = payload.data;
           const el = api.findComponentElement(component);
@@ -282,7 +156,7 @@ export function setupStateSync(app: OverlayApp) {
             state.ws.send(JSON.stringify({ type: 'component-list-response', requestId, data: result }));
           }
         }
-      } catch(e) {}
+      } catch (e) {}
     };
   }
 }

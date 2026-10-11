@@ -556,6 +556,13 @@ export class BridgeServer {
             createdAt: commentObj.createdAt || new Date().toISOString(),
             resolved: false,
           };
+          const clampFraction = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : undefined);
+          const offsetX = clampFraction(commentObj.offsetX);
+          const offsetY = clampFraction(commentObj.offsetY);
+          if (offsetX !== undefined && offsetY !== undefined) {
+            newComment.offsetX = offsetX;
+            newComment.offsetY = offsetY;
+          }
           this.comments.push(newComment);
           await this.saveComments();
           this.broadcastState();

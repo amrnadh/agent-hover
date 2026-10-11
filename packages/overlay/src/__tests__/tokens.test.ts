@@ -60,7 +60,7 @@ describe('Design Tokens Architecture (P2-04 / §7.10)', () => {
       const textSecondary = '#9aa0a6';
       const textMuted = '#757d8a';
       const textOnAccent = '#ffffff';
-      const accentPrimary = '#0090ff';
+      const accentPrimary = '#edeef0';
 
       // Primary body text: expected >= 15:1 (WCAG AAA >= 7:1)
       const ratioPrimary = getContrastRatio(textPrimary, surfaceBase);
@@ -86,7 +86,7 @@ describe('Design Tokens Architecture (P2-04 / §7.10)', () => {
       const textSecondary = '#4b5563';
       const textMuted = '#6b7280';
       const textOnAccent = '#ffffff';
-      const accentPrimary = '#0070f3';
+      const accentPrimary = '#111214';
 
       // Primary text on white: expected >= 15:1 (WCAG AAA >= 7:1)
       const ratioPrimary = getContrastRatio(textPrimary, surfaceBase);

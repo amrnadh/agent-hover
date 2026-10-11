@@ -52,15 +52,19 @@
   --ah-border-subtle: rgba(255, 255, 255, 0.08);
   --ah-border-standard: rgba(255, 255, 255, 0.12);
   --ah-border-emphasis: rgba(255, 255, 255, 0.22);
-  --ah-border-focus: #0090ff;
+  --ah-border-focus: rgba(255, 255, 255, 0.72);
   --ah-text-primary: #f2f4f8;
   --ah-text-secondary: #9aa0a6;
   --ah-text-muted: #757d8a;
   --ah-text-on-accent: #090a0b;
-  --ah-accent-primary: #0090ff;
-  --ah-accent-hover: #0080e5;
-  --ah-accent-subtle: rgba(0, 144, 255, 0.12);
-  --ah-accent-glow: rgba(0, 144, 255, 0.25);
+  /* Neutral accent: ink on dark (no brand hue, D-10 revised 2026-10). */
+  --ah-accent-primary: #edeef0;
+  --ah-accent-hover: #ffffff;
+  --ah-accent-subtle: rgba(255, 255, 255, 0.10);
+  --ah-accent-glow: rgba(255, 255, 255, 0.18);
+  /* Selection reticle drawn over the host page: line + contrasting halo so it reads on any background. */
+  --ah-reticle: #ffffff;
+  --ah-reticle-halo: rgba(0, 0, 0, 0.85);
   --ah-emerald: #10b981;
   --ah-emerald-subtle: rgba(16, 185, 129, 0.12);
   --ah-rose: #f43f5e;
@@ -93,9 +97,9 @@
   --shadow-popover: var(--ah-shadow-popover);
   --border-accent: rgba(255, 255, 255, 0.22);
   --accent-subtle: var(--ah-accent-subtle);
-  --measure-color: var(--ah-accent-primary);
-  --frame-color: var(--ah-accent-primary);
-  --frame-raw: var(--ah-accent-hover);
+  --measure-color: var(--ah-reticle);
+  --frame-color: var(--ah-reticle);
+  --frame-raw: var(--ah-reticle);
 }
 
 :host(.light-mode) {
@@ -108,15 +112,17 @@
   --ah-border-subtle: rgba(0, 0, 0, 0.08);
   --ah-border-standard: rgba(0, 0, 0, 0.14);
   --ah-border-emphasis: rgba(0, 0, 0, 0.28);
-  --ah-border-focus: #0070f3;
+  --ah-border-focus: #111214;
   --ah-text-primary: #111827;
   --ah-text-secondary: #4b5563;
   --ah-text-muted: #6b7280;
   --ah-text-on-accent: #ffffff;
-  --ah-accent-primary: #0070f3;
-  --ah-accent-hover: #0060df;
-  --ah-accent-subtle: rgba(0, 112, 243, 0.10);
-  --ah-accent-glow: rgba(0, 112, 243, 0.20);
+  --ah-accent-primary: #111214;
+  --ah-accent-hover: #2a2c30;
+  --ah-accent-subtle: rgba(17, 18, 20, 0.07);
+  --ah-accent-glow: rgba(17, 18, 20, 0.14);
+  --ah-reticle: #111214;
+  --ah-reticle-halo: rgba(255, 255, 255, 0.95);
   --ah-emerald: #059669;
   --ah-emerald-subtle: rgba(5, 150, 105, 0.10);
   --ah-rose: #e11d48;
@@ -147,9 +153,9 @@
   --shadow-popover: var(--ah-shadow-popover);
   --border-accent: rgba(0, 0, 0, 0.28);
   --accent-subtle: var(--ah-accent-subtle);
-  --measure-color: var(--ah-accent-primary);
-  --frame-color: var(--ah-accent-primary);
-  --frame-raw: var(--ah-accent-hover);
+  --measure-color: var(--ah-reticle);
+  --frame-color: var(--ah-reticle);
+  --frame-raw: var(--ah-reticle);
 }
 
 /* Tabular Numbers on Numeric Readouts */

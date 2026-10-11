@@ -13,7 +13,7 @@ export function buildCSSSelector(el: Element | null): string {
   while (curr && (typeof document === 'undefined' || curr !== document.body) && parts.length < 6) {
     let sel = curr.tagName.toLowerCase();
     if (curr.id) {
-      sel += '#' + curr.id;
+      sel += '#' + (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(curr.id) : curr.id);
       parts.unshift(sel);
       break; // ID is unique enough
     }

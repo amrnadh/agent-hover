@@ -9,80 +9,13 @@ export interface OverlayConfig {
 }
 
 /**
- * Mutable state shared across overlay modules. Each module initializes the keys it owns
- * during setup; values are intentionally untyped until the modules are typed individually.
+ * Mutable state shared across overlay modules. Each module initializes the keys it owns during setup.
+ * Kept loosely typed: modules are migrating from the 0.1 closure one at a time.
  */
-export interface OverlayState {
-  ws: any;
-  isBridgeConnected: any;
-  connectedAgents: any;
-  dockController: any;
-  isPointerMode: any;
-  currentElement: any;
-  currentComponentInfo: any;
-  frozenEntries: any;
-  captureLayer: any;
-  currentSidebarTab: any;
-  inSettingsView: any;
-  currentEditorPref: any;
-  showSpacingOverlay: any;
-  lastCopiedContext: any;
-  lastResolved: any;
-  lastInfoName: any;
-  lastComputedStyles: any;
-  selectedTarget: any;
-  selectedElement: any;
-  comments: any;
-  editingComment: any;
-  activeNoteMarker: any;
-  pendingNoteTarget: any;
-  pendingPinTarget: any;
-  currentPins: any;
-  currentStack: any;
-  currentStackIndex: any;
-  selectedRect: any;
-  textEditorVisible: any;
-}
+export type OverlayState = Record<string, any>;
 
-/** Functions a module exposes to other modules. Registered by each module at the start of its setup. */
-export interface OverlayApi {
-  handleUpdateAvailable: (...args: any[]) => any;
-  getHostOffset: (...args: any[]) => any;
-  setSidebarTab: (...args: any[]) => any;
-  toggleSettingsView: (...args: any[]) => any;
-  showCallout: (...args: any[]) => any;
-  togglePointerMode: (...args: any[]) => any;
-  clearSelection: (...args: any[]) => any;
-  updateSelectionFrame: (...args: any[]) => any;
-  loadComments: (...args: any[]) => any;
-  renderCommentMarkers: (...args: any[]) => any;
-  renderSidebarNotes: (...args: any[]) => any;
-  openNotePopover: (...args: any[]) => any;
-  closeNotePopover: (...args: any[]) => any;
-  saveNote: (...args: any[]) => any;
-  openPinDialog: (...args: any[]) => any;
-  dispatchToAgent: (...args: any[]) => any;
-  openInEditor: (...args: any[]) => any;
-  closeSnapDropdown: (...args: any[]) => any;
-  handleSnapMode: (...args: any[]) => any;
-  positionBands: (...args: any[]) => any;
-  hideBands: (...args: any[]) => any;
-  clearDistanceGuides: (...args: any[]) => any;
-  renderDistanceGuides: (...args: any[]) => any;
-  closeTextEditor: (...args: any[]) => any;
-  buildCSSSelector: (...args: any[]) => any;
-  handleDblClickTarget: (...args: any[]) => any;
-  highlightComponent: (...args: any[]) => any;
-  captureElement: (...args: any[]) => any;
-  findComponentElement: (...args: any[]) => any;
-  renderFlyoutForStackIndex: (...args: any[]) => any;
-  loadComponentContext: (...args: any[]) => any;
-  resolveComponent: (...args: any[]) => any;
-  escapeHtml: (...args: any[]) => any;
-  formatContextForAiPrompt: (...args: any[]) => any;
-  formatDomElementPrompt: (...args: any[]) => any;
-  refreshState: (...args: any[]) => any;
-}
+/** Functions a module exposes to other modules, registered at the start of its setup. */
+export type OverlayApi = Record<string, (...args: any[]) => any>;
 
 /** Everything an overlay module needs: bridge access, the shadow root, element refs, shared state, and cross-module functions. */
 export interface OverlayApp {
@@ -139,27 +72,27 @@ export function createOverlayApp(config: OverlayConfig): OverlayApp {
   // Initialize host dialog isolation manager (reparents into active modal dialogs if needed)
   const isolationManager = new IsolationManager(container);
 
-  // Setup Popover API for floating UI surfaces
-  setupPopover(shadow.getElementById('cp-flyout'));
-  setupPopover(shadow.getElementById('cp-note-popover'));
+  // Popover API (top layer) for the screenshot preview and lightbox, which must sit above host modals.
   setupPopover(shadow.getElementById('cp-snap-preview'));
   setupPopover(shadow.getElementById('cp-snap-lightbox'));
-  setupPopover(shadow.getElementById('cp-mcp-modal'));
 
-  const state = {
-    isPointerMode: false,
-    currentElement: null,
-    currentComponentInfo: null,
+  const state: OverlayState = {
+    mode: null,
+    currentStack: [],
+    currentStackIndex: -1,
+    selectedTarget: null,
+    selectedElement: null,
     frozenEntries: [],
-    // Capture layer for isolated inspect mode (P2-03); created by the inspector module.
+    comments: [],
+    connectedAgents: [],
     captureLayer: null,
-  } as unknown as OverlayState;
+  };
 
   return {
     port, editor, token, BRIDGE, BRIDGE_TOKEN, fetch,
     container, shadow, isolationManager,
     dom: queryDom(shadow),
     state,
-    api: {} as OverlayApi,
+    api: {},
   };
 }

@@ -1,39 +1,41 @@
-// @ts-nocheck
+import { esc } from '../lib/ui.js';
 import type { OverlayApp } from '../app/context.js';
 
-/** Dock callout toast (showCallout). */
+export interface ToastOptions {
+  /** Label for an optional action button, e.g. "View". */
+  action?: string;
+  onAction?: () => void;
+  ms?: number;
+}
+
+/** Single-line toast above the dock. `showCallout` is kept for modules written against the 0.1 API. */
 export function setupToast(app: OverlayApp) {
-  const { dom, api } = app;
-  Object.assign(api, { showCallout });
+  const { shadow, api } = app;
+  Object.assign(api, { toast, showCallout });
 
-  let calloutTimer = null;
-  function showCallout(text, meta, duration = 2000) {
-    dom.calloutText.textContent = text;
-    dom.calloutMeta.textContent = meta || '';
+  const el = shadow.getElementById('ah-toast') as HTMLElement;
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
-    // Reset and apply theme-aware meta classification
-    dom.callout.className = '';
-    dom.calloutMeta.className = 'cp-callout-time';
-
-    if (meta) {
-      const m = String(meta).toLowerCase();
-      let metaClass = 'meta-info';
-      if (m === 'saved' || m === 'copied') metaClass = 'meta-success';
-      else if (m === 'snap') metaClass = 'meta-snap';
-      else if (m === 'error') metaClass = 'meta-error';
-      else if (m === 'warning') metaClass = 'meta-warning';
-      else if (m === 'hmr' || m === 'edit' || m === 'source' || m === 'undo') metaClass = 'meta-code';
-      else if (m === 'pin' || m === 'note' || m === 'tip' || m === 'alt' || m === 'dock' || m === 'theme' || m === 'mode' || m === 'set' || m === 'ide') metaClass = 'meta-info';
-
-      dom.callout.classList.add(metaClass);
-      dom.calloutMeta.classList.add(metaClass);
+  function toast(message: string, opts: ToastOptions = {}) {
+    const hasAction = !!(opts.action && opts.onAction);
+    el.innerHTML = `<span>${esc(message)}</span>` + (hasAction ? `<button class="ah-tbtn outline" data-act>${esc(opts.action)}</button>` : '');
+    if (hasAction) {
+      (el.querySelector('[data-act]') as HTMLElement).onclick = () => {
+        el.hidden = true;
+        opts.onAction!();
+      };
     }
+    el.hidden = false;
+    // Sit above the dock wherever it is.
+    const dock = shadow.getElementById('ah-dock');
+    const d = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
+    const above = d && d.top > window.innerHeight / 2 && !dock!.classList.contains('vertical');
+    el.style.bottom = above ? `${Math.round(window.innerHeight - d!.top + 10)}px` : '';
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { el.hidden = true; }, opts.ms ?? (hasAction ? 5000 : 3000));
+  }
 
-    dom.callout.classList.add('show');
-    if (calloutTimer) clearTimeout(calloutTimer);
-    calloutTimer = setTimeout(() => {
-      dom.callout.classList.remove('show');
-      calloutTimer = null;
-    }, duration);
+  function showCallout(text: string, _meta?: string, duration?: number) {
+    toast(text, { ms: duration });
   }
 }

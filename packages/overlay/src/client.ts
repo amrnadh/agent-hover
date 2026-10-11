@@ -1,57 +1,56 @@
 import { createOverlayApp, type OverlayConfig } from './app/context.js';
 import { setupBridgeConnection } from './bridge/connection.js';
-import { setupDockLayout } from './ui/dock-layout.js';
-import { setupSidebar } from './ui/sidebar.js';
-import { setupEditorPreference } from './features/editor-preference.js';
-import { setupMcpModal } from './ui/mcp-modal.js';
-import { setupToast } from './ui/toast.js';
-import { setupInspectMode } from './features/inspect-mode.js';
 import { setupTheme } from './ui/theme.js';
-import { setupSelection } from './ui/selection.js';
-import { setupNotes } from './features/notes.js';
-import { setupPins } from './features/pins.js';
-import { setupSelectionActions } from './features/selection-actions.js';
+import { setupToast } from './ui/toast.js';
+import { setupContextFormat } from './features/context-format.js';
+import { setupSelector } from './features/selector.js';
+import { setupPrompt } from './features/prompt.js';
 import { setupAgentDispatch } from './bridge/dispatch.js';
 import { setupOpenInEditor } from './features/open-in-editor.js';
 import { setupScreenshots } from './features/screenshots.js';
-import { setupMeasure } from './ui/measure.js';
-import { setupTextEditor } from './features/text-editor.js';
-import { setupInspector } from './features/inspector.js';
+import { setupActionPill } from './ui/action-pill.js';
+import { setupComposer } from './ui/composer.js';
+import { setupTasks } from './ui/tasks.js';
+import { setupComments } from './features/comments.js';
+import { setupBatch } from './features/batch.js';
+import { setupSidebar } from './ui/sidebar.js';
+import { setupInspectPanel } from './ui/panels/inspect.js';
+import { setupListPanels } from './ui/panels/lists.js';
+import { setupSettingsPanel } from './ui/panels/settings.js';
+import { setupDock } from './ui/dock.js';
 import { setupKeyboard } from './features/keyboard.js';
-import { setupInspectorPanel } from './ui/inspector-panel.js';
-import { setupContextFormat } from './features/context-format.js';
 import { setupStateSync } from './bridge/sync.js';
 import { setupStartup } from './bridge/startup.js';
 
 export type { OverlayConfig };
 
 /**
- * Mount the overlay. Modules are set up in their original source order so startup side effects
- * (listeners, initial fetches, initial renders) happen in the same sequence as before the split.
+ * Mount the overlay. Order matters only for setup-time calls: core services first (connection, theme,
+ * toast, formatters, selector), then surfaces, then the dock (which renders state from all of them),
+ * then message routing and the initial load.
  */
 export function bootstrapOverlay(config: OverlayConfig) {
   const app = createOverlayApp(config);
   setupBridgeConnection(app);
-  setupDockLayout(app);
-  setupSidebar(app);
-  setupEditorPreference(app);
-  setupMcpModal(app);
-  setupToast(app);
-  setupInspectMode(app);
   setupTheme(app);
-  setupSelection(app);
-  setupNotes(app);
-  setupPins(app);
-  setupSelectionActions(app);
+  setupToast(app);
+  setupContextFormat(app);
+  setupSelector(app);
+  setupPrompt(app);
   setupAgentDispatch(app);
   setupOpenInEditor(app);
   setupScreenshots(app);
-  setupMeasure(app);
-  setupTextEditor(app);
-  setupInspector(app);
+  setupActionPill(app);
+  setupComposer(app);
+  setupTasks(app);
+  setupComments(app);
+  setupBatch(app);
+  setupSidebar(app);
+  setupInspectPanel(app);
+  setupListPanels(app);
+  setupSettingsPanel(app);
+  setupDock(app);
   setupKeyboard(app);
-  setupInspectorPanel(app);
-  setupContextFormat(app);
   setupStateSync(app);
   setupStartup(app);
 }
