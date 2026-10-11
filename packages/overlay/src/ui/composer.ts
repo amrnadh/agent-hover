@@ -54,6 +54,9 @@ export function setupComposer(app: OverlayApp) {
   function openComposer() {
     if (!state.selectedTarget) return;
     api.closePillMenu?.();
+    // One card at a time: the composer replaces an open comment or task card.
+    api.closeCommentCard?.();
+    api.closeTaskCard?.();
     nameEl.textContent = api.labelFor(state.selectedTarget);
     fileEl.textContent = state.selectionSource ? state.selectionSource.file.split('/').pop() + ':' + state.selectionSource.line : '';
     input.value = drafts.get(state.selectedTarget) || '';

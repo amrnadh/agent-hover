@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AGENT_SETUPS } from '../lib/agents.js';
 import { MCP_CLIENTS } from '../../../cli/src/clients.js';
-import { previewValue } from '../ui/panels/inspect.js';
+import { previewValue } from '../lib/value-preview.js';
 import { timeAgo, esc } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
 

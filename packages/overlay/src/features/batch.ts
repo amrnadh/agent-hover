@@ -1,4 +1,5 @@
 import { placeBox } from '../lib/ui.js';
+import { formatBatchRequest } from '../lib/prompt-format.js';
 import type { OverlayApp } from '../app/context.js';
 
 export type BatchRole = 'change' | 'reference' | 'keep';
@@ -10,12 +11,6 @@ export interface BatchItem {
   label: string;
   role: BatchRole;
 }
-
-const ROLE_TEXT: Record<BatchRole, string> = {
-  change: 'Change this',
-  reference: 'Reference only: read for context, do not modify',
-  keep: "Don't touch: must not be modified",
-};
 
 /**
  * Batch: collect several elements (B or + Batch), give each a role, and send them as one task with one goal.
@@ -95,29 +90,30 @@ export function setupBatch(app: OverlayApp) {
   }
   api.onLayout(renderMarks);
 
-  /** One prompt: the goal, the list with roles, then each element's context. */
+  /** One prompt: the goal, the elements with roles, each element's context, then sources once per file. */
   async function sendBatch(goal: string, destination: 'agent' | 'copy' = 'agent') {
     const items: BatchItem[] = state.batch;
     if (!items.length) return null;
-    const built: any[] = [];
-    for (const b of items) built.push(await api.buildPrompt(b.stack, b.index, b.role === 'change' ? goal : ''));
-    const list = items.map((b, i) => `${i + 1}. ${b.label}${built[i]?.file ? ` (${built[i].file}${built[i].line ? ':' + built[i].line : ''})` : ''}: ${ROLE_TEXT[b.role]}`).join('\n');
-    const prompt = `# Batch task\n\n**Goal**: ${goal}\n\n## Elements\n${list}\n\n` + items
-      .map((b, i) => `---\n\n## ${i + 1}. ${b.label} · ${ROLE_TEXT[b.role]}\n\n${built[i]?.prompt || ''}`)
-      .join('\n\n');
-    const first = built.find(Boolean);
+    const entries: Array<{ facts: any; role: BatchRole }> = [];
+    for (const b of items) {
+      const built = await api.buildFacts(b.stack, b.index);
+      if (built) entries.push({ facts: built.facts, role: b.role });
+    }
+    if (!entries.length) { api.toast('Those elements are no longer on the page'); return null; }
+    const prompt = formatBatchRequest(goal, entries);
+    const first = entries[0].facts;
     const result = await api.dispatchToAgent(
       prompt,
       {
         type: 'pinned-stack',
         instruction: goal,
         goal,
-        component: first?.component,
-        file: first?.file,
-        line: first?.line,
-        selector: first?.selector,
+        component: first.component?.name,
+        file: first.component?.file,
+        line: first.component?.startLine,
+        selector: first.element.selector,
         label: `${items.length} elements`,
-        pins: items.map((b, i) => ({ component: built[i]?.component || b.label, file: built[i]?.file || '', role: b.role === 'change' ? 'TARGET' : b.role === 'reference' ? 'REFERENCE' : 'FROZEN' })),
+        pins: entries.map((e) => ({ component: e.facts.component?.name || e.facts.element.label, file: e.facts.component?.file || '', role: e.role === 'change' ? 'TARGET' : e.role === 'reference' ? 'REFERENCE' : 'FROZEN' })),
       },
       { quiet: true, destination },
     );

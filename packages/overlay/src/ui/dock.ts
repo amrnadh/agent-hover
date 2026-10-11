@@ -251,11 +251,18 @@ export function setupDock(app: OverlayApp) {
   }
 
   // ---------- minimize ----------
+  function placeMinButton(left: number, top: number) {
+    minBtn.style.left = Math.round(Math.max(12, Math.min(left, window.innerWidth - 52))) + 'px';
+    minBtn.style.top = Math.round(Math.max(12, Math.min(top, window.innerHeight - 52))) + 'px';
+  }
+
   function setDockMinimized(min: boolean) {
+    // Already in that state: nothing to do. (A second "Minimize" used to measure the hidden dock as 0,0.)
+    if (min === dock.hidden && min === !minBtn.hidden) return;
     if (min) {
       const r = dock.getBoundingClientRect();
-      minBtn.style.left = Math.round(r.left + r.width / 2 - 20) + 'px';
-      minBtn.style.top = Math.round(r.top + r.height / 2 - 20) + 'px';
+      if (r.width && r.height) placeMinButton(r.left + r.width / 2 - 20, r.top + r.height / 2 - 20);
+      else placeMinButton(window.innerWidth / 2 - 20, window.innerHeight - 70);
     }
     dock.hidden = min;
     minBtn.hidden = !min;
@@ -265,7 +272,30 @@ export function setupDock(app: OverlayApp) {
     writePref(MIN_KEY, min ? '1' : '');
     api.requestLayout();
   }
-  minBtn.onclick = () => setDockMinimized(false);
+  // The round button can be dragged too; a click (under 4px of movement) restores the dock.
+  let minDrag: { x: number; y: number; left: number; top: number; moved: boolean } | null = null;
+  minBtn.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const r = minBtn.getBoundingClientRect();
+    minDrag = { x: e.clientX, y: e.clientY, left: r.left, top: r.top, moved: false };
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!minDrag) return;
+    const dx = e.clientX - minDrag.x, dy = e.clientY - minDrag.y;
+    if (!minDrag.moved && Math.hypot(dx, dy) < 4) return;
+    minDrag.moved = true;
+    placeMinButton(minDrag.left + dx, minDrag.top + dy);
+  });
+  window.addEventListener('mouseup', () => {
+    if (!minDrag) return;
+    const wasClick = !minDrag.moved;
+    minDrag = null;
+    if (wasClick) setDockMinimized(false);
+  });
+  window.addEventListener('resize', () => {
+    if (!minBtn.hidden) placeMinButton(parseFloat(minBtn.style.left) || 0, parseFloat(minBtn.style.top) || 0);
+  });
   window.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyX') {
       e.preventDefault();

@@ -11,6 +11,7 @@ import { setupScreenshots } from './features/screenshots.js';
 import { setupActionPill } from './ui/action-pill.js';
 import { setupComposer } from './ui/composer.js';
 import { setupTasks } from './ui/tasks.js';
+import { setupVerify } from './ui/verify.js';
 import { setupComments } from './features/comments.js';
 import { setupBatch } from './features/batch.js';
 import { setupSidebar } from './ui/sidebar.js';
@@ -43,6 +44,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
   setupActionPill(app);
   setupComposer(app);
   setupTasks(app);
+  setupVerify(app);
   setupComments(app);
   setupBatch(app);
   setupSidebar(app);

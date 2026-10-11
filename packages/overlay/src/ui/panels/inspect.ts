@@ -1,27 +1,13 @@
 import { esc } from '../../lib/ui.js';
 import { icon } from '../../lib/icon.js';
 import { formatColorToHex } from '../../lib/computed-styles.js';
+import { previewValue } from '../../lib/value-preview.js';
 import type { OverlayApp } from '../../app/context.js';
 
-const SECRET = /token|secret|password|auth|cookie|api[-_]?key|session/i;
+export { previewValue };
+
 const CHEV = icon('chev-right', 14).replace('class="ah-i"', 'class="ah-i chev"');
 const LEVELS: Array<[string, string]> = [['minimal', 'Compact'], ['standard', 'Standard'], ['full', 'Deep']];
-
-/** Short, safe preview of a runtime value: depth-limited, secrets redacted, functions named. */
-export function previewValue(value: unknown, key = '', depth = 0): string {
-  if (key && SECRET.test(key)) return '"[redacted]"';
-  if (value === null) return 'null';
-  if (value === undefined) return 'undefined';
-  if (typeof value === 'function') return `[Function ${(value as Function).name || 'anonymous'}]`;
-  if (typeof value === 'string') return JSON.stringify(value.length > 80 ? value.slice(0, 80) + '…' : value);
-  if (typeof value !== 'object') return String(value);
-  if ((value as any).$$typeof) return '<JSX />';
-  if (typeof Element !== 'undefined' && value instanceof Element) return `<${value.tagName.toLowerCase()}>`;
-  if (Array.isArray(value)) return depth > 1 ? `Array(${value.length})` : `[${value.slice(0, 4).map((v) => previewValue(v, '', depth + 1)).join(', ')}${value.length > 4 ? ', …' : ''}]`;
-  const keys = Object.keys(value as object);
-  if (depth > 1) return `{…${keys.length}}`;
-  return `{ ${keys.slice(0, 4).map((k) => `${k}: ${previewValue((value as any)[k], k, depth + 1)}`).join(', ')}${keys.length > 4 ? ', …' : ''} }`;
-}
 
 /** Inspect tab: everything about the current selection. No action buttons besides Copy (D-08). */
 export function setupInspectPanel(app: OverlayApp) {

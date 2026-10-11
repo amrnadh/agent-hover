@@ -13,7 +13,7 @@ const MARKER_TTL_MS = 30 * 60 * 1000;
  */
 export function setupTasks(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
-  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status) });
+  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status) });
 
   const markersLayer = shadow.getElementById('ah-layer-markers') as HTMLElement;
   const card = shadow.getElementById('ah-task-card') as HTMLElement;
@@ -53,7 +53,10 @@ export function setupTasks(app: OverlayApp) {
   }
 
   function trackTask(task: any, el?: Element | null) {
-    if (el) elements.set(task.id, el);
+    if (el) {
+      elements.set(task.id, el);
+      api.captureBefore?.(task.id, el);
+    }
     state.tasks.set(task.id, task);
     changed();
   }
@@ -64,6 +67,7 @@ export function setupTasks(app: OverlayApp) {
     const prev = state.tasks.get(task.id);
     state.tasks.set(task.id, task);
     if (prev && prev.status !== task.status && (task.status === 'done' || task.status === 'failed')) {
+      api.onTaskFinished?.(task);
       const files = task.result?.filesChanged?.length || 0;
       const text = task.status === 'done'
         ? `Done · ${taskLabel(task)}${files ? ` · ${files} file${files === 1 ? '' : 's'}` : ''}`
@@ -140,6 +144,8 @@ export function setupTasks(app: OverlayApp) {
   // ---------- task card ----------
   function openTaskCard(id: string) {
     openId = id;
+    api.closeComposer?.();
+    api.closeCommentCard?.();
     renderCard();
   }
 
@@ -156,7 +162,7 @@ export function setupTasks(app: OverlayApp) {
     const reached = t.status === 'queued' ? 0 : t.status === 'delivered' ? 1 : t.status === 'in_progress' ? 2 : t.status === 'done' ? 3 : -1;
     const tone = view.tone === 'success' ? 'ok' : view.tone === 'error' ? 'bad' : view.tone === 'working' ? 'warn pulse' : '';
     const files: string[] = t.result?.filesChanged || [];
-    const active = ACTIVE.has(t.status);
+    const cancellable = t.status === 'queued' || t.status === 'delivered';
     const el = elementForTask(t);
     card.innerHTML = `
       <div class="head"><span class="ah-dot ${tone}"></span><b>${esc(taskLabel(t))}</b><span class="ah-muted" style="font-size:12px;white-space:nowrap">${esc(t.claimedBy ? prettyAgentName(t.claimedBy) : view.text)}</span><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
@@ -164,9 +170,10 @@ export function setupTasks(app: OverlayApp) {
       ${reached >= 0 ? `<div class="ah-timeline">${steps.map((s, i) => `<span class="${i <= reached ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 12))}</div>` : `<div class="ah-timeline"><span class="on">${esc(view.text)}</span></div>`}
       ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
       ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}" title="Open in editor">${icon('file', 14)}${esc(f)}</button>`).join('')}</div>` : ''}
+      ${api.renderTaskVerifyPanel ? api.renderTaskVerifyPanel(t) : ''}
       <div class="ah-actions">
         ${api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : ''}
-        ${active ? '<button class="ah-tbtn outline" data-act="cancel">Cancel task</button>' : ''}
+        ${cancellable ? '<button class="ah-tbtn outline" data-act="cancel">Cancel task</button>' : ''}
         ${!el ? '' : '<button class="ah-tbtn" data-act="show">Show on page</button>'}
         <button class="ah-tbtn" data-act="tasks">View in Tasks</button>
       </div>

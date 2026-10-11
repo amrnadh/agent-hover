@@ -1,5 +1,6 @@
 import { anchorTo, buildCSSSelector, esc, timeAgo } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
+import { formatCommentsRequest } from '../lib/prompt-format.js';
 import type { OverlayApp } from '../app/context.js';
 
 interface Comment {
@@ -95,6 +96,7 @@ export function setupComments(app: OverlayApp) {
     };
     openId = 'draft';
     api.closeTaskCard?.();
+    api.closeComposer?.();
     renderCard();
     api.requestLayout();
   }
@@ -151,6 +153,7 @@ export function setupComments(app: OverlayApp) {
     if (draft && id !== 'draft') draft = null;
     openId = id;
     api.closeTaskCard?.();
+    api.closeComposer?.();
     renderCard();
     api.requestLayout();
   }
@@ -230,25 +233,24 @@ export function setupComments(app: OverlayApp) {
   async function sendComments(list: Comment[]) {
     const items = list.filter((c) => !c.draft);
     if (!items.length) return;
-    const parts: string[] = [];
-    let first: { built: any; el: Element } | null = null;
-    for (const [i, c] of items.entries()) {
+    const entries: Array<{ facts: any; text: string; fallback?: string }> = [];
+    let first: { facts: any; el: Element } | null = null;
+    for (const c of items) {
       const el = commentElement(c);
-      if (!el) {
-        parts.push(`### Comment ${i + 1}${c.component ? ` on <${c.component} />` : ''}\n> ${c.text}\n(Element not found on the current page${c.file ? `; source: ${c.file}:${c.line}` : ''}.)`);
-        continue;
-      }
-      const stack = api.stackFor(el);
-      const built = await api.buildPrompt(stack, 0, c.text);
-      if (!built) continue;
-      if (!first) first = { built, el };
-      parts.push(items.length > 1 ? `## Comment ${i + 1} of ${items.length}\n\n${built.prompt}` : built.prompt);
+      const built = el ? await api.buildFacts(api.stackFor(el), 0) : null;
+      if (built && el && !first) first = { facts: built.facts, el };
+      entries.push({
+        facts: built?.facts || null,
+        text: c.text,
+        fallback: `${c.component ? `<${c.component} />` : 'an element'} not on this page${c.file ? ` (${c.file}${c.line ? ':' + c.line : ''})` : ''}`,
+      });
     }
-    const prompt = parts.join('\n\n---\n\n');
+    const prompt = formatCommentsRequest(entries);
+    const f = first?.facts;
     const instruction = items.length === 1 ? items[0].text : `Address ${items.length} comments left on the page`;
     const result = await api.dispatchToAgent(
       prompt,
-      { type: 'note', instruction, component: first?.built.component, file: first?.built.file, line: first?.built.line, selector: first?.built.selector, hierarchy: first?.built.hierarchy, label: items.length === 1 ? first?.built.label : `${items.length} comments` },
+      { type: 'note', instruction, component: f?.component?.name, file: f?.component?.file, line: f?.component?.startLine, selector: f?.element.selector, hierarchy: f?.hierarchy, label: items.length === 1 ? f?.element.label : `${items.length} comments` },
       { quiet: true },
     );
     if (result.task) {

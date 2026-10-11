@@ -38,7 +38,7 @@ export function setupListPanels(app: OverlayApp) {
             <div class="ah-actions">
               ${api.elementForTask(t) ? '<button class="ah-tbtn outline" data-act="show">Show on page</button>' : ''}
               ${api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : ''}
-              ${api.isTaskActive(t) ? '<button class="ah-tbtn outline" data-act="cancel">Cancel</button>' : ''}
+              ${t.status === 'queued' || t.status === 'delivered' ? '<button class="ah-tbtn outline" data-act="cancel">Cancel</button>' : ''}
             </div></div>` : ''}
         </div>`;
       };
