@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Comments**: Comment mode drops numbered pins exactly where you click; resolve, delete, send one or all to your agent.
   - **Batch**: collect several elements with roles (Change, Reference, Don't touch) and send them as one task.
   - **Settings**: agent setup for Claude Code, Cursor, Codex, Windsurf, Antigravity and Claude Desktop; Send behaviour (send if connected, else copy / always copy); context detail; theme; dock orientation; editor (Cursor, VS Code, Windsurf, Zed, WebStorm, Antigravity); keyboard shortcuts.
+- **Compare and Undo (P3-01)**: when the agent claims a task, the bridge takes a git checkpoint (HEAD, uncommitted tracked state via `git stash create`, untracked files as blobs; nothing in your working tree, index or HEAD changes). The task card shows a before/after slider of the element and **Undo**, which lists the files to restore (with +/− counts and a warning for files the agent did not report) and restores them one by one. Never uses `reset --hard`, `clean` or `checkout .`. Disabled with an explanation outside git. Endpoints `GET /api/agent/tasks/:id/changes`, `POST /api/agent/tasks/:id/undo`; `filesChanged` is filled from git when the agent omits it.
+- **Better prompts**: every prompt (Ask, Copy, comments, batch) now leads with what to do, then where (file, the line that renders the element, and a warning when it comes from a shared component such as `<Button>`), how the element looks now, the component's props and current values, notes left on that element, constraints (stay scoped, follow the file's styling, locked components), and the source. Long components send only the 90 lines around the element at Standard detail (Deep sends everything).
 - **Listen mode**: MCP tool `wait_for_agent_task` waits for the next task sent from the browser, claims it, and returns its prompt, so the agent can loop without the user prompting each task. Backed by a long-poll bridge endpoint `GET /api/agent/tasks/next`.
 - **`agent-hover` CLI package** (`npx agent-hover`): read-only setup check plus MCP config per agent (`mcp <agent>`) and the agent rules snippet (`rules`).
 - Comments store an optional pin position (`offsetX`, `offsetY`); older comments still load.
@@ -36,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The 0.1 selection chip, Stage 1 popover, MCP setup modal (now Settings › Agents) and their styles (`overlay.css` 2,064 → 664 lines).
 
 ### Fixed
+- Opening a comment while the composer was open (or the other way round) stacked both cards; only one card is open at a time now.
+- Pressing “Minimize dock” twice moved the round dock button to the top-left corner with no way back; minimizing is now idempotent, the button stays on screen and can be dragged.
+- Prompts headed “Component Task: <Hero />” when you selected one button inside Hero, included notes from unrelated elements in the same file, and ended with a token-budget line; the MCP `compact` format returned only the title and `deep` ignored the overlay's prompt.
 - Tasks never reached the `delivered` state, so the browser could not show "Seen by {agent}". `list_agent_tasks` now marks returned queued tasks delivered.
 - Agent presence used a generic `mcp-agent` name and was listed twice; the MCP server now reports the client's real name (e.g. `claude-code`) once. The overlay also fetched presence from a non-existent endpoint on load.
 - Element labels showed the whole class list (double-escaped regex left over from the template-literal overlay); a stray literal `\n` in a generated stylesheet.

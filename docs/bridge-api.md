@@ -236,6 +236,28 @@ Authorization: Bearer <token>
 ```
 Response: `200 OK` (Only allowed if status is `queued` or `delivered`).
 
+### Changes Since Claim (Compare / Undo)
+```http
+GET /api/agent/tasks/:id/changes
+Authorization: Bearer <token>
+```
+When a task is claimed, the bridge records a git checkpoint in `.agent-hover/checkpoints/<id>.json`: `HEAD`, the tracked working-tree state (`git stash create`, which does not touch the working tree or index) and untracked files as blobs. This returns the files changed since then:
+```json
+{ "available": true, "files": [ { "path": "app/src/Hero.tsx", "display": "src/Hero.tsx", "status": "modified", "additions": 3, "deletions": 1, "reported": true } ] }
+```
+`reported: false` means the agent's `filesChanged` did not list the file (you, or another tool, may have edited it). Without git, or without a checkpoint, `available` is `false` with a `reason`.
+
+```http
+POST /api/agent/tasks/:id/undo
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "files": ["app/src/Hero.tsx"] }
+```
+Restores each listed file (all changed files when `files` is omitted) to its checkpoint content, deletes files created since, and restores deleted ones. Per file only: never `reset --hard`, `clean` or `checkout .`, and never touches HEAD or the index. Returns `{ restored, removed, errors }` and broadcasts `task.undone`. Refused with `409` while the task is `in_progress`.
+
+When `complete_agent_task` is called without `filesChanged`, the bridge fills it from the checkpoint diff.
+
 ### Component Source Slice
 ```http
 POST /api/source
