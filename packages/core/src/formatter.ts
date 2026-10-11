@@ -226,10 +226,10 @@ export function formatTaskMarkdown(
   task: AgentTask,
   format: 'compact' | 'standard' | 'deep' = 'standard'
 ): string {
-  if (task.payload?.prompt && format === 'compact') {
-    return task.payload.prompt.split('\n\n')[0] || task.payload.prompt;
-  }
-  if (task.payload?.prompt && format === 'standard') {
+  // The overlay sends a complete prompt (request, location, element, constraints, source).
+  // Compact drops the source sections; standard and deep return it whole.
+  if (task.payload?.prompt) {
+    if (format === 'compact') return task.payload.prompt.split(/\n## Source/)[0].trimEnd() + '\n';
     return task.payload.prompt;
   }
 

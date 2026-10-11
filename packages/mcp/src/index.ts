@@ -465,7 +465,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             filesChanged: {
               type: "array",
               items: { type: "string" },
-              description: "List of files that were modified",
+              description: "Files you modified, relative to the project root. Optional: when omitted, Agent Hover lists the files git saw change since you claimed the task.",
             },
             error: {
               type: "string",

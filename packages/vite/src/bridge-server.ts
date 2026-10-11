@@ -5,6 +5,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
 import { TaskStore } from './task-store.js';
+import { CheckpointStore } from './checkpoints.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync, unlinkSync } from 'fs';
@@ -66,6 +67,7 @@ export class BridgeServer {
   private token: string;
   private startedAt: string = '';
   private taskStore: TaskStore;
+  private checkpoints: CheckpointStore;
   private agentPresence: Map<string, { client: string; version?: string; lastSeen: number }> = new Map();
   private cleanupExitHandler?: () => void;
   private lastMcpHello = 0;
@@ -91,6 +93,7 @@ export class BridgeServer {
     this.initialPort = port;
     this.token = options?.token || generateSessionToken();
     this.taskStore = new TaskStore(projectRoot);
+    this.checkpoints = new CheckpointStore(projectRoot);
     this.app = express();
 
     this.contextBuilder = new ContextBuilder(projectRoot);
@@ -1062,7 +1065,13 @@ export class BridgeServer {
     this.app.post('/api/agent/tasks/:id/claim', async (req, res) => {
       try {
         const client = req.body?.client || 'agent';
-        const task = await this.taskStore.claimTask(req.params.id, { client });
+        let task = await this.taskStore.claimTask(req.params.id, { client });
+        // Checkpoint before the agent edits anything, so the change can be undone (P3-01).
+        const cp = await this.checkpoints.create(task.id).catch((err) => {
+          console.warn('[agent-hover] Could not create checkpoint:', err?.message || err);
+          return null;
+        });
+        if (cp) task = (await this.taskStore.annotate(task.id, { checkpointId: cp.taskId })) || task;
         res.json({ task });
       } catch (err: any) {
         res.status(409).json({ error: err.message });
@@ -1073,15 +1082,57 @@ export class BridgeServer {
     this.app.post('/api/agent/tasks/:id/complete', async (req, res) => {
       try {
         const { status = 'done', summary, filesChanged, error } = req.body || {};
-        const task = await this.taskStore.completeTask(req.params.id, {
+        let task = await this.taskStore.completeTask(req.params.id, {
           status,
           summary,
           filesChanged,
           error,
         });
+        // When the agent did not list its files, report what git saw change since the checkpoint.
+        if (task.checkpointId && !(filesChanged && filesChanged.length)) {
+          const changes = await this.checkpoints.changes(task.id).catch(() => null);
+          if (changes?.available && changes.files.length) {
+            task = (await this.taskStore.annotate(task.id, { filesChanged: changes.files.map((f) => f.display) })) || task;
+          }
+        }
         res.json({ task });
       } catch (err: any) {
         res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Files changed since the task's checkpoint (GET /api/agent/tasks/:id/changes)
+    this.app.get('/api/agent/tasks/:id/changes', async (req, res) => {
+      const task = this.taskStore.getTask(req.params.id);
+      if (!task) {
+        res.status(404).json({ error: `Task '${req.params.id}' not found` });
+        return;
+      }
+      try {
+        res.json(await this.checkpoints.changes(task.id, task.result?.filesChanged || []));
+      } catch (err: any) {
+        res.status(500).json({ error: err.message || 'Could not read changes' });
+      }
+    });
+
+    // Undo a task's changes (POST /api/agent/tasks/:id/undo { files?: string[] })
+    this.app.post('/api/agent/tasks/:id/undo', async (req, res) => {
+      const task = this.taskStore.getTask(req.params.id);
+      if (!task) {
+        res.status(404).json({ error: `Task '${req.params.id}' not found` });
+        return;
+      }
+      if (task.status === 'in_progress') {
+        res.status(409).json({ error: 'The agent is still working on this task' });
+        return;
+      }
+      try {
+        const files = Array.isArray(req.body?.files) ? req.body.files.filter((f: unknown) => typeof f === 'string') : undefined;
+        const result = await this.checkpoints.undo(task.id, files);
+        this.broadcast({ type: 'task.undone', data: { id: task.id, ...result } });
+        res.json(result);
+      } catch (err: any) {
+        res.status(409).json({ error: err.message || 'Undo failed' });
       }
     });
 
