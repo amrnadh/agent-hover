@@ -93,6 +93,14 @@ describe('CheckpointStore (Undo, P3-01)', () => {
     expect(changes.files.map((f) => f.path)).toEqual(['app/src/Hero.tsx']);
   });
 
+  it('waits for another git process to release index.lock', async () => {
+    const lock = path.join(repo, '.git', 'index.lock');
+    fs.writeFileSync(lock, '');
+    setTimeout(() => fs.rmSync(lock, { force: true }), 200);
+    const cp = await new CheckpointStore(project).create('task_lock');
+    expect(cp?.base).not.toBe(cp?.head); // uncommitted work was captured
+  });
+
   it('reports Undo as unavailable outside git or without a checkpoint', async () => {
     const plain = fs.mkdtempSync(path.join(os.tmpdir(), 'ah-nogit-'));
     try {

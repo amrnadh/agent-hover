@@ -6,6 +6,7 @@ import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
 import { TaskStore } from './task-store.js';
 import { CheckpointStore } from './checkpoints.js';
+import { checkForUpdate, packageVersion, type UpdateInfo } from './update-check.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync, unlinkSync } from 'fs';
@@ -83,8 +84,8 @@ export class BridgeServer {
   private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
   private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
   private readonly MAX_SCREENSHOT_ENTRIES = 20;
-  private readonly CURRENT_VERSION = '0.1.1';
-  private updateInfo: { current: string; latest: string } | null = null;
+  private readonly CURRENT_VERSION = packageVersion();
+  private updateInfo: UpdateInfo | null = null;
   private clients: Set<WebSocket> = new Set();
 
   constructor(projectRoot: string, port: number = 9850, options?: { token?: string }) {
@@ -255,6 +256,7 @@ export class BridgeServer {
         status: 'ok',
         version: this.CURRENT_VERSION,
         port: this.port,
+        updateAvailable: this.updateInfo,
       });
     });
 
@@ -952,12 +954,7 @@ export class BridgeServer {
     });
 
     this.app.get('/api/agent/presence', (_req, res) => {
-      this.prunePresence();
-      const agents = Array.from(this.agentPresence.values()).map((a) => ({
-        client: a.client,
-        version: a.version,
-        lastSeen: new Date(a.lastSeen).toISOString(),
-      }));
+      const agents = this.presenceList();
       res.json({ agents, connected: agents.length > 0 });
     });
 
@@ -1622,7 +1619,7 @@ export class BridgeServer {
                 frozenEntries: this.frozenEntries,
                 comments: this.comments,
                 screenshotCount: this.screenshotStore.size,
-                updateAvailable: null,
+                updateAvailable: this.updateInfo,
               },
             })
           );
@@ -1636,6 +1633,12 @@ export class BridgeServer {
         );
 
         resolve(this.port);
+        checkForUpdate(this.CURRENT_VERSION).then((info) => {
+          if (!info) return;
+          this.updateInfo = info;
+          console.log(`[agent-hover] Update available: ${info.current} → ${info.latest} (npm i -D @agent-hover/vite@latest)`);
+          this.broadcastState();
+        });
       };
 
       server.once('error', errorHandler);
@@ -1687,13 +1690,16 @@ export class BridgeServer {
     }
   }
 
-  private broadcastPresence() {
+  /** Connected agents, most recently active first (the overlay sends to the first one by default). */
+  private presenceList() {
     this.prunePresence();
-    const agents = Array.from(this.agentPresence.values()).map((a) => ({
-      client: a.client,
-      version: a.version,
-      lastSeen: new Date(a.lastSeen).toISOString(),
-    }));
+    return Array.from(this.agentPresence.values())
+      .sort((a, b) => b.lastSeen - a.lastSeen)
+      .map((a) => ({ client: a.client, version: a.version, lastSeen: new Date(a.lastSeen).toISOString() }));
+  }
+
+  private broadcastPresence() {
+    const agents = this.presenceList();
     this.broadcast({
       type: 'presence.updated',
       data: { agents, connected: agents.length > 0 },

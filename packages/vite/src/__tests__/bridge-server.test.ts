@@ -418,6 +418,18 @@ describe('BridgeServer Integration Tests', () => {
     expect(presenceList.connected).toBe(true);
     expect(presenceList.agents.length).toBe(1);
     expect(presenceList.agents[0].client).toBe('claude-code');
+
+    // Most recently active first: the overlay's default destination is the agent you used last.
+    const hello = (client: string) => fetch(`http://localhost:${activePort}/api/agent/presence`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ client }),
+    });
+    await hello('cursor');
+    await new Promise((r) => setTimeout(r, 5));
+    await hello('claude-code');
+    const ordered = await fetch(`http://localhost:${activePort}/api/agent/presence`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
+    expect(ordered.agents.map((a: any) => a.client)).toEqual(['claude-code', 'cursor']);
   });
   it('marks listed queued tasks delivered only when an agent asks (?deliver=1)', async () => {
     const testPort = 45000 + Math.floor(Math.random() * 2000);

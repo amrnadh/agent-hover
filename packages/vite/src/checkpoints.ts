@@ -106,7 +106,18 @@ export class CheckpointStore {
     if (!root) return null;
     const head = (await this.git(['rev-parse', 'HEAD'], root).catch(() => '')).trim();
     if (!head) return null; // repository without commits
-    const stash = (await this.git(['stash', 'create'], root)).trim();
+    // stash create refreshes the index, so it fails while another git process (an editor polling
+    // `git status`) holds index.lock. Retry briefly before giving up.
+    let stash = '';
+    for (let attempt = 0; ; attempt++) {
+      try {
+        stash = (await this.git(['stash', 'create'], root)).trim();
+        break;
+      } catch (err) {
+        if (attempt >= 4) throw err;
+        await new Promise((r) => setTimeout(r, 120 * (attempt + 1)));
+      }
+    }
     const untracked: Record<string, string> = {};
     const files = (await this.untrackedFiles(root)).slice(0, 2000);
     if (files.length) {
