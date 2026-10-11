@@ -252,7 +252,7 @@ Create `packages/overlay` (TypeScript, bundled with Vite/Rollup to a single IIFE
 - Float/dock toggle retained.
 
 **P2-09 Keyboard, focus, accessibility (F-13, F-14, F-16).**
-- Shortcut map in §7.11. Escape handler is a **stack**: close lightbox → close note popover → close HUD/clear selection → close sidebar.
+- Shortcut map in §7.11. Escape handler is a **stack**: lightbox → menus → comment/task card → composer → selection → sidebar → mode (0.2).
 - Focus trap in the sidebar and modals; return focus to the previous element on close.
 - Standard `:focus-visible` ring on all interactive elements.
 - ARIA: `role="toolbar"` on the dock, `role="dialog"` + labelled for popover/modals, `aria-live="polite"` region for toasts/status, `aria-pressed` on toggles, accessible names on all icon-only buttons.

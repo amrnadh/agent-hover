@@ -62,10 +62,12 @@ Response:
 {
   "ok": true,
   "status": "ok",
-  "version": "0.1.1",
-  "port": 9850
+  "version": "0.2.0",
+  "port": 9850,
+  "updateAvailable": null
 }
 ```
+`version` comes from the installed `@agent-hover/vite` package. `updateAvailable` is `{ "current", "latest" }` once the daily registry check finds a newer stable release (off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1`); it is also sent in `state-update` WebSocket messages.
 
 ### Agent Presence Heartbeat
 ```http

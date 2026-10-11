@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Listen mode**: MCP tool `wait_for_agent_task` waits for the next task sent from the browser, claims it, and returns its prompt, so the agent can loop without the user prompting each task. Backed by a long-poll bridge endpoint `GET /api/agent/tasks/next`.
 - **`agent-hover` CLI package** (`npx agent-hover`): read-only setup check plus MCP config per agent (`mcp <agent>`) and the agent rules snippet (`rules`).
 - Comments store an optional pin position (`offsetX`, `offsetY`); older comments still load.
+- **Update notice**: the bridge checks npm for a newer `@agent-hover/vite` at most once a day (no project data sent; off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1`). The overlay shows one toast per new version, a line in the dock's connection popover, and the update command in Settings › About. Also reported by `GET /api/health`.
 
 ### Changed
 - **Overlay split into modules**: the 4,948-line `client.ts` closure became focused modules under `app/`, `bridge/`, `features/`, `ui/`, `lib/`.
@@ -31,13 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Source resolution skips library wrappers (motion components, providers) and uses the nearest component in your project.
 - Letter shortcuts only work while Agent Hover is in use, so they never take over the host app's own shortcuts.
 - The overlay bundle is re-read when rebuilt, so the dev server picks it up on reload.
+- **Screenshots**: each shot (element, visible area, full page) is copied to the clipboard and saved to `.agent-hover/screenshots/`; a toast confirms it and View opens a lightbox in the new style (copy image, download, show in folder). Escape closes the lightbox first.
+- Version numbers come from each package's `package.json` (bridge `/api/health`, MCP server, overlay About) instead of hard-coded strings.
 
 ### Removed
 - Inline text editing (double-click to edit source) and the in-sidebar source editor.
 - The spacing-bands toggle (the box model is in Inspect › Layout; hold ⌘/Ctrl for distances).
-- The 0.1 selection chip, Stage 1 popover, MCP setup modal (now Settings › Agents) and their styles (`overlay.css` 2,064 → 664 lines).
+- The 0.1 selection chip, Stage 1 popover, MCP setup modal (now Settings › Agents), screenshot mode dropdown and preview card, and all 0.1 styles: `overlay.css` and the legacy token file are gone; the overlay ships one stylesheet (`ui.css`).
 
 ### Fixed
+- The default destination is now the most recently active agent; before, an agent that reconnected kept the place it had when it first connected.
+- Taking the Undo checkpoint no longer fails when your editor is running git at the same moment (it waits for `index.lock`).
 - Opening a comment while the composer was open (or the other way round) stacked both cards; only one card is open at a time now.
 - Pressing “Minimize dock” twice moved the round dock button to the top-left corner with no way back; minimizing is now idempotent, the button stays on screen and can be dragged.
 - Prompts headed “Component Task: <Hero />” when you selected one button inside Hero, included notes from unrelated elements in the same file, and ended with a token-budget line; the MCP `compact` format returned only the title and `deep` ignored the overlay's prompt.

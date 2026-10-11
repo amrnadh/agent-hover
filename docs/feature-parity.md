@@ -11,7 +11,7 @@
 | Send to agent | Pill Ask → composer → Send | `v02-main-flow` |
 | Live task status | Element marker, task card, Tasks tab, dock dot, toasts | `v02-main-flow` |
 | Open in IDE | Pill file chip, ⋯ › Open in editor, `O`, Inspect file link, task files | unit (`editor-launcher`), manual |
-| Screenshot (component / viewport / full page) | ⋯ › Screenshot element; dock ⋯ › visible area / full page; preview + lightbox unchanged | manual |
+| Screenshot (component / viewport / full page) | ⋯ › Screenshot element; dock ⋯ › visible area / full page; copied + saved, toast → View opens the lightbox (copy, download, show in folder) | e2e `v02-screenshots-update` |
 | Notes / comments | Comment mode (dock, `C`), pill Comment, pins anywhere, Comments tab, send to agent | `v02-comments-batch` |
 | Pin stack (TARGET / REFERENCE / FROZEN) | Batch (`B`, + Batch): roles Change / Reference / Don't touch, one goal | `v02-comments-batch` |
 | Freeze component (Ctrl-click) | ⋯ › “Don't let agents change this” (red outline + “Locked” label) | manual |
@@ -25,7 +25,7 @@
 | Sidebar float / dock | Sidebar header float button | `v02-dock-sidebar` |
 | Preferred editor | Settings › Open files in (6 editors) | manual |
 | MCP setup modal | Settings › Agents (6 tools, copy button) | unit (`agents` table in sync with CLI) |
-| Update notice | Settings › About | manual |
+| Update notice | Daily registry check by the bridge; one toast per version, dock connection popover, Settings › About with the update command | e2e `v02-screenshots-update`, unit `update-check` |
 | Isolation (shadow DOM, modal dialogs, hostile CSS) | unchanged | `e2e/p2-02-isolation.spec.ts` |
 | Shift passthrough, wheel forwarding | unchanged | `e2e/p2-03-capture-layer.spec.ts` |
 
