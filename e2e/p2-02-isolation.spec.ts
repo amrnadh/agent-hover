@@ -22,7 +22,7 @@ test.describe('P2-02 Isolation, Popover Mounting & Modal Dialog Inert Fallback',
     // Verify shadow DOM elements are unaffected by hostile text-transform or extreme letter-spacing
     const dockBrandCase = await page.evaluate(() => {
       const root = document.querySelector('#agent-hover-root');
-      const textEl = root?.shadowRoot?.querySelector('#cp-callout-text');
+      const textEl = root?.shadowRoot?.querySelector('#ah-pill-name');
       if (!textEl) return null;
       const cs = window.getComputedStyle(textEl);
       return {
@@ -46,7 +46,7 @@ test.describe('P2-02 Isolation, Popover Mounting & Modal Dialog Inert Fallback',
       document.body.appendChild(blocker);
     });
 
-    const dockToggle = page.locator('#cp-dock-toggle');
+    const dockToggle = page.locator('#ah-d-inspect');
     await expect(dockToggle).toBeVisible();
 
     // 3. Native <dialog>.showModal() Inertness & Fallback Test
@@ -75,8 +75,8 @@ test.describe('P2-02 Isolation, Popover Mounting & Modal Dialog Inert Fallback',
     await dockToggle.click();
     const isActive = await page.evaluate(() => {
       const root = document.querySelector('#agent-hover-root');
-      const toggle = root?.shadowRoot?.querySelector('#cp-dock-toggle');
-      return toggle?.classList.contains('active') ?? false;
+      const toggle = root?.shadowRoot?.querySelector('#ah-d-inspect');
+      return toggle?.getAttribute('aria-pressed') === 'true';
     });
     expect(isActive).toBe(true);
 

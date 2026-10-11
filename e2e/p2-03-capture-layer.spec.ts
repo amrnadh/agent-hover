@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pointClearOfPopover } from './helpers/bridge';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -70,7 +71,7 @@ test.describe('P2-03 Capture Layer & Wheel Forwarding', () => {
     await expect(inputEl).toHaveValue('Hello Host');
 
     // 3. Turn inspect mode ON:
-    const dockToggle = page.locator('#cp-dock-toggle');
+    const dockToggle = page.locator('#ah-d-inspect');
     await dockToggle.click();
 
     // Verify #ah-capture-layer is active
@@ -88,9 +89,8 @@ test.describe('P2-03 Capture Layer & Wheel Forwarding', () => {
     clicks = await page.evaluate(() => (window as any).__testClicks);
     expect(clicks).toBe(1);
 
-    // Verify Inspector Flyout opens for the selected element
-    const flyout = page.locator('#cp-flyout');
-    await expect(flyout).toBeVisible();
+    // Verify the selection's action pill appears
+    await expect(page.locator('#ah-pill')).toBeVisible();
 
     // Save screenshot of active inspection mode
     const screenshotsDir = path.resolve(process.cwd(), 'docs/screenshots/P2-03');
@@ -127,7 +127,9 @@ test.describe('P2-03 Capture Layer & Wheel Forwarding', () => {
     });
     expect(isPassthroughReleased).toBe(false);
 
-    // 5. Test Wheel Forwarding while inspecting:
+    // 5. Test Wheel Forwarding while inspecting (close the selection so its popover doesn't cover the small scroll box):
+    await page.locator('#ah-pill-close').click();
+    await expect(page.locator('#ah-pill')).toBeHidden();
     const initialScrollTop = await scrollBox.evaluate((el) => el.scrollTop);
     expect(initialScrollTop).toBe(0);
 
@@ -135,7 +137,8 @@ test.describe('P2-03 Capture Layer & Wheel Forwarding', () => {
     expect(boxBounding).toBeTruthy();
 
     if (boxBounding) {
-      await page.mouse.move(boxBounding.x + boxBounding.width / 2, boxBounding.y + boxBounding.height / 2);
+      const pt = await pointClearOfPopover(page, boxBounding);
+      await page.mouse.move(pt.x, pt.y);
       await page.mouse.wheel(0, 80);
       await page.waitForTimeout(200);
 
