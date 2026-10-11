@@ -5,7 +5,7 @@ import path from 'path';
 /** Bridge session written by the demo dev server (port + token). */
 export function readDemoSession(): { port: number; token: string } | null {
   try {
-    const sessionFile = path.resolve('demo/.agent-hover/session.json');
+    const sessionFile = path.resolve(process.env.AH_DEMO_DIR || 'demo', '.agent-hover/session.json');
     if (fs.existsSync(sessionFile)) {
       return JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
     }

@@ -142,4 +142,17 @@ test.describe('0.2 main flow', () => {
     await expect(ta).toBeVisible();
     await expect(ta).toHaveValue('');
   });
+
+  test('only one card is open at a time (Ask then Comment)', async ({ page }) => {
+    await openDemo(page);
+    await selectHost(page, '#hero-primary-cta');
+    await page.locator('#ah-pill-ask').click();
+    await expect(page.locator('#ah-composer')).toBeVisible();
+    await page.locator('#ah-pill-comment').click();
+    await expect(page.locator('#ah-comment-card')).toBeVisible();
+    await expect(page.locator('#ah-composer')).toBeHidden();
+    await page.locator('#ah-pill-ask').click();
+    await expect(page.locator('#ah-composer')).toBeVisible();
+    await expect(page.locator('#ah-comment-card')).toBeHidden();
+  });
 });

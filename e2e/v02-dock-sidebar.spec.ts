@@ -65,6 +65,26 @@ test.describe('0.2 dock', () => {
     await expect(page.locator('#ah-dock')).toBeVisible();
   });
 
+  test('pressing Minimize twice in Settings keeps the round button where the dock was', async ({ page }) => {
+    await openDemo(page);
+    const dock = (await page.locator('#ah-dock').boundingBox())!;
+    await page.locator('#ah-d-more').click();
+    await page.locator('#ah-dock-menu [data-act=settings]').click();
+    const btn = page.locator('#ah-side [data-act=minimize]');
+    await btn.dblclick();
+    const min = (await page.locator('#ah-dock-min').boundingBox())!;
+    expect(Math.abs(min.x + min.width / 2 - (dock.x + dock.width / 2))).toBeLessThan(4);
+    // The round button can be dragged, then restores on click.
+    await page.mouse.move(min.x + 20, min.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(min.x - 200, min.y - 200, { steps: 6 });
+    await page.mouse.up();
+    const moved = (await page.locator('#ah-dock-min').boundingBox())!;
+    expect(moved.x).toBeLessThan(min.x - 150);
+    await page.locator('#ah-dock-min').click();
+    await expect(page.locator('#ah-dock')).toBeVisible();
+  });
+
   test('vertical orientation from Settings', async ({ page }) => {
     await openDemo(page);
     await page.locator('#ah-d-more').click();
