@@ -32,16 +32,20 @@ Target: **first successful task in under 2 minutes from `npm install`**, measure
 
 Side paths, polished after the golden path: multi-pin stack, notes, screenshots, measure.
 
-## 3. Surface responsibilities
+## 3. Surface responsibilities (approved 0.2 design)
+
+The clickable prototype at [design/prototype.html](design/prototype.html) is the visual and behavioural source of truth. Approved by the owner on 2026-10-11.
 
 | Surface | Job | Must not |
 |---------|-----|----------|
-| **Dock** | Presence (status dot), inspect toggle, pins count, entry to the sidebar | Hold forms or long text |
-| **Reticle + badge** | Show exactly what will be selected: component, file:line, size | Animate on idle; cover the element |
-| **Selection popover** | The one place to instruct and send for a selected element; shows that element's task status | Duplicate sidebar content |
-| **Sidebar** | Deep context (props, hooks, source), Tasks, Pins stack, Notes, Settings | Duplicate the popover's Send/Copy (except the Pins stack send) |
-| **Notes** | Leave a comment on an element for later or for the agent | Become a second task system; a note can be *sent* as a task |
-| **Toasts** | Short confirmations ("Copied") and connection changes | Carry task status (that lives in the popover and Tasks list) |
+| **Dock** | Presence (status mark), Inspect, Comment, Tasks, Batch, ⋯ menu | Hold forms or long text |
+| **Selector** | Show exactly what will be selected: blue outline, `<Name />` or `tag.class`, size | Animate on idle; cover the element |
+| **Action pill** | Actions for the selection: Ask, Comment, + Batch, Copy, ⋯ | Grow into a card |
+| **Composer** | Write the instruction and pick the destination | Stay open after sending |
+| **Task marker + card** | Live status of a sent task, summary, files, (later) compare and undo | Carry unrelated actions |
+| **Sidebar** | Deep context (Inspect), Tasks, Comments, Batch, Settings | Duplicate pill actions |
+| **Comments** | Notes pinned where you clicked; can be sent as a task | Become a second task system |
+| **Toasts** | Short confirmations with an optional View | Carry long-lived status |
 
 ## 4. The agent loop (the biggest flow gap)
 
@@ -54,8 +58,8 @@ Delivery is pull-based: the agent only sees a task when it calls an MCP tool. Cl
 
 ## 5. Visual direction
 
-- **Accent:** one accent across themes. *Decision pending:* the current blue (`#0090ff`) blends into most host apps, which are usually blue too, so the reticle loses contrast exactly where it matters. Candidates under review: laser lime, signal orange, ultra magenta, ion teal.
-- **Status colors:** move off default Tailwind values (emerald/rose/amber/violet) to a tuned set derived from the accent, so the UI does not look stock.
+- **Accent:** none. Blue (#0D99FF) is reserved for the on-page selector; the rest of the UI is neutral graphite (dark) and white (light) with ink buttons. Decided 2026-10-11.
+- **Status colors:** green (done/connected), amber (working/no agent), red (failed/locked), tuned per theme in `styles/ui.css`.
 - **Type:** system sans for UI, mono for code facts (file paths, sizes, token counts). No web fonts in the free version (spec §0.9).
 - **Shape:** squircle radii (`--ah-radius-*`), 1px hairlines, restrained glass on the dock only.
 - [BRAND.md](../BRAND.md) predates this document. Where they conflict (neon cyan accent, heavy glassmorphism everywhere), this document wins.

@@ -66,10 +66,10 @@
 | D-04 | The bridge is **authenticated** (random per-session token), bound to `127.0.0.1`, with strict Origin and Host validation. |
 | D-05 | **Structured payload** (JSON) is the source of truth. The prompt string is rendered from it (by core formatters) at the requested detail level. The overlay still renders a local prompt for clipboard copy. |
 | D-06 | **Clipboard rule:** "Copy" always copies. "Send to Agent" writes to the clipboard **only if no agent is connected or the bridge is unreachable** (setting: `copyOnSend: 'auto' \| 'always' \| 'never'`, default `auto`). |
-| D-07 | **Dock = primary interface**: a compact horizontal pill, bottom-center. **Sidebar = secondary slide-out drawer** (tabs, 360px default, resizable 320–520px). |
-| D-08 | One primary action surface per selected element (the popover HUD). The sidebar must not duplicate Send/Copy/IDE buttons except inside the Pins tab for the stack. |
+| D-07 | **Dock = primary interface**: a compact horizontal pill, bottom-center (vertical option in Settings). **Sidebar = secondary slide-out drawer** (tabs Inspect · Tasks · Comments · Batch + Settings, 380px default, resizable 320–520px). *Amended 2026-10-11 to the approved 0.2 design (docs/design/prototype.html).* |
+| D-08 | Click shows the **action pill**; the **composer** opens only on Ask/Enter and closes after sending; task progress lives on an **element marker**, the dock and the Tasks tab. The sidebar never duplicates pill actions (its only action is Copy in Inspect, plus Send in Batch). *Amended 2026-10-11.* |
 | D-09 | Overlay is extracted from the template literal into a **compiled package** (`@agent-hover/overlay`, bundled to an IIFE) *before* the visual overhaul. |
-| D-10 | Single accent color across themes (blue family), real contrast compliance (WCAG AA minimum for all text; aim for AAA on small mono text where feasible). |
+| D-10 | Blue (#0D99FF) only for the on-page selector; all other UI neutral ink (graphite dark, white light). Real contrast compliance (WCAG AA minimum). *Amended 2026-10-11.* |
 | D-11 | `npx <pkg> init` configures everything (Vite plugin, MCP config, .gitignore). `doctor` diagnoses problems. |
 | D-12 | **Brand strings centralized.** One module (`packages/core/src/brand.ts`) exports `BRAND = { name, npmScope, mcpServerName, cliName, dataDir, envPrefix }`. All user-facing strings, config snippets, and the data directory derive from it so a rename is a one-file change. Default `dataDir` stays `.agent-hover`. |
 | D-13 | Because delivery is pull-based (agent must call an MCP tool), `init` can also **write a short rules snippet** (for CLAUDE.md / .cursorrules / etc.) telling the agent how to handle tasks. Optional, asks first. |
