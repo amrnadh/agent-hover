@@ -1,35 +1,80 @@
-<img src="https://raw.githubusercontent.com/Arc-coder07/agent-hover/main/docs/brand/logo/mark-ink.svg" width="56" height="56" alt="Agent Hover">
+**Set up and check Agent Hover in one command.**
 
-# agent-hover
-
-[![npm](https://img.shields.io/npm/v/agent-hover)](https://www.npmjs.com/package/agent-hover)
-
-Set up and check [Agent Hover](https://github.com/Arc-coder07/agent-hover): click any element in your running React app and send precise context to Claude Code, Cursor, Codex and other agents.
+Agent Hover lets you click any element in your running React app, say what should change, and send precise context (file, line, current look, props, rules) to Claude Code, Cursor, Codex, Antigravity or any MCP agent, or copy it into any AI chat. The plugin itself is [`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite); this CLI sets it up and checks it.
 
 ```bash
 npx agent-hover init
 ```
 
+No dependencies, so `npx` starts instantly.
+
+## Commands
+
 | Command | What it does |
 |---------|--------------|
-| `npx agent-hover init` | Installs `@agent-hover/vite`, adds it to your Vite config, connects your agents (MCP config + a rules note), and adds `.agent-hover` data to `.gitignore`. Shows every change and asks first. |
-| `npx agent-hover doctor` | Checks Node, the plugin, the running dev server, the session token, the agent connection, MCP registration and git. |
-| `npx agent-hover` | The setup steps that are left in this project. |
-| `npx agent-hover mcp [agent]` | MCP config for `claude`, `cursor`, `codex`, `windsurf`, `antigravity`, `claude-desktop`. |
-| `npx agent-hover rules` | The rules snippet for CLAUDE.md / AGENTS.md so agents pick up browser tasks. |
+| `npx agent-hover init` | Installs `@agent-hover/vite`, adds it to your Vite config, connects your agents, and keeps local data out of git |
+| `npx agent-hover doctor` | Checks the setup, the running dev server and the agent connection, and says how to fix each problem |
+| `npx agent-hover` | Lists the setup steps still missing in this project |
+| `npx agent-hover mcp [agent]` | Prints the MCP command and config for `claude`, `cursor`, `codex`, `windsurf`, `antigravity` or `claude-desktop` |
+| `npx agent-hover rules` | Prints the rules note that teaches agents to pick up tasks (for CLAUDE.md, AGENTS.md or Cursor rules) |
+| `npx agent-hover --version` | The CLI version |
+| `npx agent-hover help` | All commands |
 
-### init options
+## init
+
+```bash
+npx agent-hover init                       # asks which agents you use, shows the plan, asks before writing
+npx agent-hover init --dry-run             # only show what would change
+npx agent-hover init --agent claude,cursor --yes
+```
 
 | Flag | |
 |------|--|
-| `--agent claude,cursor` | Agents to connect. Default: the ones this project already uses (CLAUDE.md, .cursor, AGENTS.md…), else Claude Code. |
-| `--dry-run` | Show the changes without making them. |
-| `--yes` | Apply without asking (needed when there is no terminal, e.g. in scripts). |
-| `--no-install` | Skip installing the package. |
+| `--agent claude,cursor` | Agents to connect. Default: the ones the project already uses (`CLAUDE.md`, `.cursor/`, `AGENTS.md`…), otherwise Claude Code |
+| `--dry-run` | Show the changes without making them |
+| `--yes` | Apply without asking (needed in scripts, where there is no terminal to ask) |
+| `--no-install` | Skip installing the package |
 
-`init` only writes project files: `vite.config.*`, `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/agent-hover.mdc`, `.gitignore`. It merges into existing files (JSON configs keep a `.bak`), never removes anything, and running it again changes nothing. Agents that only have a global config (Windsurf, Antigravity, Claude Desktop) get the exact snippet printed instead. If your Vite config is unusual, it prints the two lines to add rather than guessing.
+What it changes, all inside your project:
 
-No dependencies, so `npx` starts instantly.
+| File | Change |
+|------|--------|
+| `package.json` | Adds `@agent-hover/vite` (with your package manager: npm, pnpm, yarn or bun) |
+| `vite.config.*` | Imports `agentHover` and adds `agentHover()` to `plugins` |
+| `.mcp.json` | Registers the MCP server for Claude Code |
+| `.cursor/mcp.json` | Registers it for Cursor |
+| `.codex/config.toml` | Registers it for Codex |
+| `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/agent-hover.mdc` | Adds the short note on picking up tasks |
+| `.gitignore` | Adds `.agent-hover/session.json`, `tasks.json`, `checkpoints/`, `screenshots/` |
+
+It merges into files that exist (JSON configs keep a `.bak` copy), never removes anything, and running it again changes nothing. If your Vite config isn't a plain `plugins: [...]` list, it prints the two lines to add instead of guessing. Windsurf, Antigravity and Claude Desktop only have a global config, so `init` prints their command or snippet for you to add.
+
+After `init`:
+
+1. Start your dev server and open the app. Press **Alt** (or the pointer in the dock) and click anything.
+2. Restart your agent so it loads the MCP server (Claude Code asks you to approve `.mcp.json` once).
+3. Tell it once: **"Listen for agent-hover tasks."** Then select an element, press **Ask**, and send.
+
+## doctor
+
+```bash
+npx agent-hover doctor
+```
+
+Checks, in order: Node version, Vite config, React, `@agent-hover/vite` installed and in the config, the dev server (running, reachable, same version as installed), the session token, connected agents, MCP registration (project and global configs, read only), the rules note, `.gitignore`, and git (needed for Undo). Exits with code 1 when something needs fixing. Run it with the dev server running to check the agent connection too.
+
+## Updating
+
+```bash
+npm install -D @agent-hover/vite@latest   # the plugin, overlay and engine
+npx agent-hover@latest doctor             # the newest CLI, and a check that everything matches
+```
+
+Restart your dev server after updating, and restart your agent to pick up the latest MCP server.
+
+## Requirements
+
+Node 20 or newer, a Vite 5+ project with React 18 or 19.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "@agent-hover/vite",
   "version": "0.2.0",
-  "description": "Point at your UI. Your agent understands it. Vite dev plugin + local bridge server.",
+  "description": "Point at your UI, your agent understands it. Dev-only Vite plugin for React: click any element and send precise context to Claude Code, Cursor, Codex or any MCP agent.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -55,15 +55,6 @@
   "license": "MIT",
   "engines": {
     "node": ">=20"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
-    "directory": "packages/vite"
-  },
-  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
-  "bugs": {
-    "url": "https://github.com/Arc-coder07/agent-hover/issues"
   },
   "sideEffects": true
 }

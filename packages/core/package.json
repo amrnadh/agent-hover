@@ -1,7 +1,7 @@
 {
   "name": "@agent-hover/core",
   "version": "0.2.0",
-  "description": "Context intelligence engine for Agent Hover (AST parsing, component relationships, token estimation).",
+  "description": "Shared engine for Agent Hover: source parsing, prompt formatting and session discovery.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,15 +49,6 @@
   "license": "MIT",
   "engines": {
     "node": ">=20"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
-    "directory": "packages/core"
-  },
-  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
-  "bugs": {
-    "url": "https://github.com/Arc-coder07/agent-hover/issues"
   },
   "sideEffects": false
 }
