@@ -97,19 +97,19 @@ Make this button larger with a subtle arrow icon
 
 ## Where
 - Element: `button#hero-primary-cta` with text “Book a demo”
-- Rendered by: `<Hero />` in `src/components/Hero.tsx`, lines 8–139
-- In the source, the element is around line 82
-- It is rendered through `<Button>` (line 81), a shared component: change this usage
+- Rendered by: `<Hero />` in `src/components/Hero.tsx`, lines 13–75
+- In the source, the element is around line 50
+- It is rendered through `<Button>` (line 49), a shared component: change this usage
   (className or props) rather than `<Button>` itself, unless the request is about every Button.
 
 ## The element now
-- Rendered: 135×40px · font 14px/500 · color #ffffff on #252b31 · padding 20px 24px · radius full
+- Rendered: 135×44px · font 14px/500 · color #ffffff on #17181a · padding 0px 24px · radius full · flex row, gap 8px
 
 ## Constraints
 - Change this element only; keep the rest of <Hero /> as it is.
 - Follow the existing styling approach (Tailwind utility classes in this file).
 
-## Source: src/components/Hero.tsx (lines 8–139)
+## Source: src/components/Hero.tsx (lines 13–75)
 …
 ```
 
