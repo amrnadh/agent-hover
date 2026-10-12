@@ -1,14 +1,12 @@
 import type { Plugin } from 'vite';
 import { BridgeServer } from './bridge-server.js';
-import { readFileSync } from 'fs';
-import { createRequire } from 'module';
 import { MODERN_SCREENSHOT_CODE } from './vendor/modern-screenshot.js';
 import { getOverlayBundle } from '@agent-hover/overlay';
 
 export interface ComponentPointerOptions {
   /** Port for the bridge server. Default: 9850 */
   port?: number;
-  /** Whether to automatically open in editor on Alt+Shift+Click. Default: true */
+  /** @deprecated Has no effect since 0.2 (use Open in editor in the overlay). */
   openInEditor?: boolean;
   /** Editor to open files in. Default: 'auto' */
   editor?: 'auto' | 'vscode' | 'cursor' | 'webstorm' | 'zed' | 'windsurf' | 'antigravity';
@@ -89,23 +87,6 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
         });
       }
 
-      // Fallback: Inline dom-to-image-more library if present
-      const req = createRequire(import.meta.url);
-      let domToImageSource = '';
-      try {
-        const domToImagePath = req.resolve('dom-to-image-more/dist/dom-to-image-more.min.js');
-        domToImageSource = readFileSync(domToImagePath, 'utf-8');
-      } catch (e) {
-        // Fallback gracefully
-      }
-
-      if (domToImageSource) {
-        tags.push({
-          tag: 'script',
-          children: domToImageSource,
-          injectTo: 'body' as const,
-        });
-      }
       const actualPort = bridgeServer ? bridgeServer.getPort() : port;
       const actualToken = bridgeServer ? bridgeServer.getToken() : '';
       tags.push({

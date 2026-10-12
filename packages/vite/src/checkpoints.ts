@@ -108,10 +108,13 @@ export class CheckpointStore {
     if (!head) return null; // repository without commits
     // stash create refreshes the index, so it fails while another git process (an editor polling
     // `git status`) holds index.lock. Retry briefly before giving up.
+    // stash create writes a commit object, which needs an identity; machines without one still get Undo.
+    const hasIdentity = !!(await this.git(['config', 'user.email'], root).catch(() => '')).trim();
+    const identity = hasIdentity ? [] : ['-c', 'user.name=Agent Hover', '-c', 'user.email=agent-hover@localhost'];
     let stash = '';
     for (let attempt = 0; ; attempt++) {
       try {
-        stash = (await this.git(['stash', 'create'], root)).trim();
+        stash = (await this.git([...identity, 'stash', 'create'], root)).trim();
         break;
       } catch (err) {
         if (attempt >= 4) throw err;

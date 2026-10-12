@@ -36,7 +36,7 @@ describe('BridgeServer Integration Tests', () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.status).toBe('ok');
-    expect(data.version).toBe('0.1.1');
+    expect(data.version).toBe(JSON.parse(await fs.readFile(path.resolve(__dirname, '../../package.json'), 'utf8')).version);
   });
 
   it('manages pins via POST, GET, and DELETE /api/pins', async () => {

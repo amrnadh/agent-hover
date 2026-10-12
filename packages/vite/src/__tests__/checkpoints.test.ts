@@ -101,6 +101,28 @@ describe('CheckpointStore (Undo, P3-01)', () => {
     expect(cp?.base).not.toBe(cp?.head); // uncommitted work was captured
   });
 
+  it('works on a machine without a git identity', async () => {
+    git(repo, 'config', '--unset', 'user.email');
+    git(repo, 'config', '--unset', 'user.name');
+    const saved = { g: process.env.GIT_CONFIG_GLOBAL, s: process.env.GIT_CONFIG_NOSYSTEM };
+    const emptyGlobal = path.join(repo, '..', `ah-empty-gitconfig-${Date.now()}`);
+    fs.writeFileSync(emptyGlobal, '');
+    process.env.GIT_CONFIG_GLOBAL = emptyGlobal;
+    process.env.GIT_CONFIG_NOSYSTEM = '1';
+    try {
+      const cp = await new CheckpointStore(project).create('task_noid');
+      expect(cp?.base).not.toBe(cp?.head);
+      write(repo, 'app/src/Hero.tsx', 'agent\n');
+      await new CheckpointStore(project).undo('task_noid');
+      expect(read(repo, 'app/src/Hero.tsx')).toContain('v2 (mine, uncommitted)');
+    } finally {
+      for (const [k, v] of [['GIT_CONFIG_GLOBAL', saved.g], ['GIT_CONFIG_NOSYSTEM', saved.s]] as const) {
+        if (v === undefined) delete process.env[k]; else process.env[k] = v;
+      }
+      fs.rmSync(emptyGlobal, { force: true });
+    }
+  });
+
   it('reports Undo as unavailable outside git or without a checkpoint', async () => {
     const plain = fs.mkdtempSync(path.join(os.tmpdir(), 'ah-nogit-'));
     try {

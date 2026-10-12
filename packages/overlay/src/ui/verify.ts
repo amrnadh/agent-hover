@@ -2,11 +2,14 @@ import { esc, timeAgo } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
 import type { OverlayApp } from '../app/context.js';
 
-interface Shots { before?: string; after?: string }
+interface Size { w: number; h: number }
+interface Shots { before?: string; after?: string; beforeSize?: Size; afterSize?: Size }
 interface FileChange { path: string; display: string; status: 'modified' | 'added' | 'deleted'; additions?: number; deletions?: number; reported: boolean }
 interface Changes { available: boolean; reason?: string; files: FileChange[]; undoneAt?: string }
 
 const SETTLE_MS = 1500;
+/** Width available for the comparison inside the card (440px card minus padding). */
+const COMPARE_WIDTH = 410;
 const STORE_KEY = 'agent-hover-shots:';
 
 /**
@@ -45,9 +48,10 @@ export function setupVerify(app: OverlayApp) {
   async function capture(id: string, el: Element | null | undefined, which: 'before' | 'after', allowScroll: boolean) {
     if (!el || !el.isConnected || (!allowScroll && !inViewport(el))) return false;
     try {
+      const r = el.getBoundingClientRect();
       const url = await api.captureElement(el);
       if (!url) return false;
-      save(id, { ...load(id), [which]: url });
+      save(id, { ...load(id), [which]: url, [which + 'Size']: { w: Math.round(r.width), h: Math.round(r.height) } });
       return true;
     } catch {
       return false;
@@ -100,9 +104,21 @@ export function setupVerify(app: OverlayApp) {
       if (!s.after) {
         return `<div class="ah-compare-empty">No “after” image yet.<button class="ah-tbtn outline" data-act="capture-after">Capture now</button></div>`;
       }
-      return `<div class="ah-compare" style="--pos:50%">
-          <img src="${s.before}" alt="Before">
-          <div class="after"><img src="${s.after}" alt="After"></div>
+      // Both images at one scale, top-left aligned, so unchanged parts line up and size changes show.
+      const b = s.beforeSize;
+      const a = s.afterSize;
+      let box = '';
+      let bw = '';
+      let aw = '';
+      if (b && a && b.w && a.w) {
+        const k = Math.min(2, COMPARE_WIDTH / Math.max(b.w, a.w));
+        box = `;width:${Math.round(Math.max(b.w, a.w) * k)}px;height:${Math.round(Math.max(b.h, a.h) * k)}px`;
+        bw = ` style="width:${Math.round(b.w * k)}px"`;
+        aw = ` style="width:${Math.round(a.w * k)}px"`;
+      }
+      return `<div class="ah-compare${box ? ' sized' : ''}" style="--pos:50%${box}">
+          <img src="${s.before}" alt="Before"${bw}>
+          <div class="after"><img src="${s.after}" alt="After"${aw}></div>
           <span class="tag before">Before</span><span class="tag after">After</span>
           <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" data-compare-range>
         </div>`;
