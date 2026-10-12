@@ -46,8 +46,9 @@ What it changes, all inside your project:
 | `.codex/config.toml` | Registers it for Codex |
 | `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/agent-hover.mdc` | Adds the short note on picking up tasks |
 | `.gitignore` | Adds `.agent-hover/session.json`, `tasks.json`, `checkpoints/`, `screenshots/` |
+| Antigravity, Windsurf, Claude Desktop | Nothing is written: these agents only read a global config in your home folder, so `init` prints the command to run (for Antigravity: `agy mcp add agent-hover -- npx -y @agent-hover/mcp`) or the snippet to paste |
 
-It merges into files that exist (JSON configs keep a `.bak` copy), never removes anything, and running it again changes nothing. If your Vite config isn't a plain `plugins: [...]` list, it prints the two lines to add instead of guessing. Windsurf, Antigravity and Claude Desktop only have a global config, so `init` prints their command or snippet for you to add.
+It merges into files that exist (JSON configs keep a `.bak` copy), never removes anything, and running it again changes nothing. If your Vite config isn't a plain `plugins: [...]` list, it prints the two lines to add instead of guessing.
 
 After `init`:
 
