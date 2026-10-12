@@ -53,3 +53,28 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  e2e-browsers:
+    name: E2E · Firefox, WebKit
+    runs-on: ubuntu-latest
+    env:
+      AGENT_HOVER_NO_UPDATE_CHECK: '1'
+      AH_BROWSERS: all
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npm run test:e2e:isolated -- --project=firefox --project=webkit
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-browsers
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

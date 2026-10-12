@@ -1,4 +1,4 @@
-import { icon, GRIP } from '../lib/icon.js';
+import { icon, markIcon, GRIP } from '../lib/icon.js';
 import uiCss from '../styles/ui.css?inline';
 
 /**
@@ -61,7 +61,7 @@ ${uiCss}
         <div id="ah-comment-card" class="ah-card ah-surface" hidden role="dialog" aria-label="Comment"></div>
 
         <div id="ah-dock" class="ah-surface" role="toolbar" aria-label="Agent Hover">
-          <button class="ah-ibtn mark" id="ah-d-mark" data-tip="Agent Hover" aria-label="Connection status">${icon('mark')}<span class="ah-dot" id="ah-d-mark-dot"></span></button>
+          <button class="ah-ibtn mark" id="ah-d-mark" data-tip="Agent Hover" aria-label="Connection status">${markIcon(20)}<span class="ah-dot" id="ah-d-mark-dot"></span></button>
           <span class="ah-sep"></span>
           <button class="ah-ibtn" id="ah-d-inspect" data-tip="Inspect" data-key="Alt" aria-pressed="false" aria-label="Inspect">${icon('pointer')}</button>
           <button class="ah-ibtn" id="ah-d-comment" data-tip="Comment" data-key="C" aria-pressed="false" aria-label="Comment mode">${icon('comment')}</button>
@@ -71,7 +71,7 @@ ${uiCss}
           <button class="ah-ibtn" id="ah-d-more" data-tip="More" aria-label="More" aria-haspopup="menu">${icon('more')}</button>
           <span class="grip" id="ah-d-grip" title="Drag to move" aria-hidden="true">${GRIP}</span>
         </div>
-        <button id="ah-dock-min" class="ah-surface" hidden aria-label="Show Agent Hover dock" title="Show dock (⌘⇧X)">${icon('mark', 18)}<span class="ah-dot" id="ah-dock-min-dot"></span></button>
+        <button id="ah-dock-min" class="ah-surface" hidden aria-label="Show Agent Hover dock" title="Show dock (⌘⇧X)">${markIcon(22)}<span class="ah-dot" id="ah-dock-min-dot"></span></button>
         <div id="ah-dock-tip" class="ah-tip" hidden></div>
         <div id="ah-dock-menu" class="ah-menu ah-surface" hidden role="menu">
           <button data-act="sidebar" role="menuitem">${icon('panel')}Open sidebar</button>

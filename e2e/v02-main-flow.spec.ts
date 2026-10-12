@@ -97,8 +97,10 @@ test.describe('0.2 main flow', () => {
     await expect(page.locator('.ah-marker.done')).toHaveCount(1);
   });
 
-  test('choosing Copy prompt copies a self-contained prompt instead of queueing', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('choosing Copy prompt copies a self-contained prompt instead of queueing', async ({ page, context, browserName }) => {
+    // Only Chromium lets a test grant clipboard permissions; elsewhere the copy runs as it would for a user.
+    const canRead = browserName === 'chromium';
+    if (canRead) await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openDemo(page);
     await selectHost(page, '#hero-primary-cta');
     await page.locator('#ah-pill-ask').click();
@@ -108,6 +110,7 @@ test.describe('0.2 main flow', () => {
     await page.locator('#ah-comp-input').fill('Tighten the spacing');
     await page.keyboard.press('ControlOrMeta+Enter');
     await expect(page.locator('#ah-toast')).toContainText('Prompt copied');
+    if (!canRead) return;
     const clip = await page.evaluate(() => navigator.clipboard.readText());
     expect(clip).toContain('Tighten the spacing');
     expect(clip).toContain('Hero');

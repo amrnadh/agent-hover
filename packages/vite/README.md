@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/Arc-coder07/agent-hover/main/docs/brand/logo/mark-ink.svg" width="56" height="56" alt="Agent Hover">
+
 # @agent-hover/vite
 
 [![npm](https://img.shields.io/npm/v/@agent-hover/vite)](https://www.npmjs.com/package/@agent-hover/vite)

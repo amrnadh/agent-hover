@@ -39,7 +39,7 @@ npm run test:e2e:isolated    # e2e (Playwright) against a throwaway git copy of 
 npm run pack:check           # what each package would publish
 ```
 
-Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not collide with a dev server you have running. The first time, install the browser with `npx playwright install chromium`. CI runs all four on every pull request.
+Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not collide with a dev server you have running. The first time, install the browser with `npx playwright install chromium`. The suite includes the full agent loop through the real MCP server, an accessibility scan (axe) and a performance budget. `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit` runs the user flows in Firefox and WebKit too (`npx playwright install firefox webkit`). CI runs all of it on every pull request.
 
 ## Guidelines
 
@@ -53,10 +53,7 @@ Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not 
 
 ## Releasing (maintainers)
 
-1. Bump every package with the same version (`packages/*/package.json`, the internal `^x.y.z` dependencies, root `package.json`) and move the changelog entries under the new version.
-2. `npm run build && npm run pack:check`.
-3. Publish in dependency order: `core`, `overlay`, `vite`, `mcp`, then `agent-hover` (`npm publish --workspace=<name>`).
-4. Tag `vX.Y.Z` and create the GitHub release from the changelog.
+Follow [docs/release-checklist.md](docs/release-checklist.md): automated checks, a manual run with real agents, then publishing in dependency order (`core`, `overlay`, `vite`, `mcp`, `agent-hover`). For a new version, first bump every package to the same version (including the internal `^x.y.z` dependencies and the root `package.json`).
 
 ## Security issues
 

@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo/mark-light.svg">
+    <img src="docs/brand/logo/mark-ink.svg" width="88" height="88" alt="">
+  </picture>
+</p>
+
 # Agent Hover
 
 [![npm](https://img.shields.io/npm/v/@agent-hover/vite?label=%40agent-hover%2Fvite)](https://www.npmjs.com/package/@agent-hover/vite)
@@ -139,7 +146,8 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 
 ## Requirements
 
-- Node 20 or newer, Vite 5 or newer, React 18 or 19.
+- Node 20 or newer, Vite 5 or newer (tested up to Vite 8), React 18 or 19.
+- Chrome, Edge, Firefox and Safari.
 - Dev only: the plugin runs with `vite dev` and adds nothing to production builds.
 - Compare and Undo need a git repository; everything else works without one.
 - Next.js support is next on the roadmap.

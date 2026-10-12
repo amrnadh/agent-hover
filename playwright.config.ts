@@ -35,5 +35,13 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // AH_BROWSERS=all also runs the user flows in Firefox and WebKit (Safari's engine).
+    ...(process.env.AH_BROWSERS === 'all'
+      ? (['firefox', 'webkit'] as const).map((name) => ({
+          name,
+          use: { ...devices[name === 'firefox' ? 'Desktop Firefox' : 'Desktop Safari'] },
+          testMatch: /v02-(main-flow|dock-sidebar|comments-batch|verify|mcp-agent)\.spec\.ts/,
+        }))
+      : []),
   ],
 });

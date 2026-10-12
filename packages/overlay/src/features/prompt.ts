@@ -2,7 +2,7 @@ import { buildHierarchyStack } from '../lib/fiber.js';
 import { formatColorToHex } from '../lib/computed-styles.js';
 import { buildCSSSelector } from '../lib/ui.js';
 import { previewValue } from '../lib/value-preview.js';
-import { formatChangeRequest, type ComponentFacts, type ElementFacts, type PromptFacts } from '../lib/prompt-format.js';
+import { findElementLine, formatChangeRequest, type ComponentFacts, type ElementFacts, type PromptFacts } from '../lib/prompt-format.js';
 import type { OverlayApp } from '../app/context.js';
 
 export interface BuiltPrompt {
@@ -71,6 +71,48 @@ export function setupPrompt(app: OverlayApp) {
     };
   }
 
+  /** Load a component's source and interface from the bridge. */
+  async function loadComponent(src: { file: string; line: number; component: string }) {
+    let component: ComponentFacts = { name: src.component, file: src.file, startLine: src.line };
+    let tokens: number | undefined;
+    let ctx: any = null;
+    try {
+      ctx = await fetchContext(src.file, src.line);
+      component = {
+        name: ctx.component?.name || src.component,
+        file: ctx.source?.file || src.file,
+        startLine: ctx.source?.startLine ?? src.line,
+        endLine: ctx.source?.endLine,
+        code: ctx.source?.code,
+        props: ctx.interface?.props,
+        hooks: ctx.interface?.hooks,
+      };
+      tokens = ctx.tokens?.current;
+    } catch (err) {
+      console.warn('[agent-hover] Could not load component context', err);
+    }
+    return { src, component, tokens, ctx };
+  }
+
+  const locate = (c: ComponentFacts, el: ElementFacts) =>
+    findElementLine(c.code, c.startLine || 1, { selector: el.selector, text: el.text, classes: el.classes, tag: el.tag, id: el.selector.match(/#([\w-]+)$/)?.[1] });
+
+  /**
+   * Sources of the components that wrote this element's JSX (React's owner chain), nearest first. An element
+   * passed as children (<Card><button/></Card>) is written in the owner (App), not in the parent it renders in.
+   */
+  async function ownerSources(stack: any[], index: number) {
+    const found: Array<{ file: string; line: number; component: string }> = [];
+    let owner = stack[index]?.fiber?._debugOwner;
+    for (let n = 0; owner && n < 5; n++, owner = owner._debugOwner) {
+      const j = stack.findIndex((s: any, k: number) => k > index && !s.isDomElement && s.fiber && (s.fiber === owner || s.fiber === owner.alternate || s.fiber.alternate === owner));
+      if (j < 0) continue;
+      const ref = await api.sourceFor(stack, j);
+      if (ref && !found.some((f) => f.file === ref.file && f.line === ref.line)) found.push(ref);
+    }
+    return found;
+  }
+
   /** Everything an agent needs to find and change `stack[index]`. */
   async function buildFacts(stack: any[], index: number): Promise<{ facts: PromptFacts; tokens?: number } | null> {
     const item = stack[index];
@@ -80,27 +122,22 @@ export function setupPrompt(app: OverlayApp) {
     let component: ComponentFacts | undefined;
     let tokens: number | undefined;
     if (src) {
-      component = { name: src.component, file: src.file, startLine: src.line };
-      try {
-        const ctx = await fetchContext(src.file, src.line);
-        component = {
-          name: ctx.component?.name || src.component,
-          file: ctx.source?.file || src.file,
-          startLine: ctx.source?.startLine ?? src.line,
-          endLine: ctx.source?.endLine,
-          code: ctx.source?.code,
-          props: ctx.interface?.props,
-          hooks: ctx.interface?.hooks,
-        };
-        tokens = ctx.tokens?.current;
-        if (stack === state.currentStack && item === state.selectedTarget) {
-          state.lastCopiedContext = ctx;
-          state.lastResolved = { file: src.file, line: src.line };
+      let loaded = await loadComponent(src);
+      // The nearest component does not contain the element's JSX: use the component that wrote it.
+      if (item.isDomElement && loaded.component.code && locate(loaded.component, element) === undefined) {
+        for (const alt of await ownerSources(stack, index)) {
+          if (alt.file === src.file && alt.line === src.line) continue;
+          const other = await loadComponent(alt);
+          if (other.component.code && locate(other.component, element) !== undefined) { loaded = other; break; }
         }
-      } catch (err) {
-        console.warn('[agent-hover] Could not load component context', err);
       }
-      const owner = stack.find((s: any) => !s.isDomElement && s.name === src.component);
+      component = loaded.component;
+      tokens = loaded.tokens;
+      if (loaded.ctx && stack === state.currentStack && item === state.selectedTarget) {
+        state.lastCopiedContext = loaded.ctx;
+        state.lastResolved = { file: loaded.src.file, line: loaded.src.line };
+      }
+      const owner = stack.find((s: any) => !s.isDomElement && s.name === loaded.src.component);
       const props = owner?.fiber?.memoizedProps;
       if (props && typeof props === 'object') {
         component.propValues = Object.keys(props)
