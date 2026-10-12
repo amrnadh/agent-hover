@@ -25,7 +25,7 @@ export const Integrations: React.FC = () => {
   const [items, setItems] = useState<IntegrationItem[]>([
     {
       id: "mercury",
-      name: "Mercury",
+      name: "Harbor",
       category: "Banking & Capital",
       description: "Bi-directional wire & ACH reconciliation with real-time treasury sweeps.",
       connected: true,
@@ -33,7 +33,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "aws",
-      name: "AWS Billing & CloudWatch",
+      name: "Cloud Billing & Metrics",
       category: "Cloud & Infrastructure",
       description: "Automated cost anomaly monitoring and monthly infrastructure invoice audit.",
       connected: true,
@@ -41,7 +41,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "stripe",
-      name: "Stripe",
+      name: "Payflow",
       category: "Banking & Capital",
       description: "Payout tracking, fee reconciliation, and disputes auto-handling.",
       connected: true,
@@ -49,7 +49,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "ramp",
-      name: "Ramp",
+      name: "Spendly",
       category: "Banking & Capital",
       description: "Corporate card receipt matching, spend limits enforcement, and travel approvals.",
       connected: false,
@@ -57,7 +57,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "linear",
-      name: "Linear",
+      name: "Trackline",
       category: "DevOps",
       description: "Bi-directional issue triaging, cycle budget allocation, and release logs.",
       connected: true,
@@ -65,7 +65,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "slack",
-      name: "Slack",
+      name: "Teamchat",
       category: "Productivity & ERP",
       description: "Interactive dual-key signoff buttons and executive escalation alerts.",
       connected: true,
@@ -73,7 +73,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "quickbooks",
-      name: "QuickBooks Online",
+      name: "Ledgerly",
       category: "Productivity & ERP",
       description: "Zero-touch general ledger posting with automated tax categorization.",
       connected: false,
@@ -81,7 +81,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "github",
-      name: "GitHub",
+      name: "Gitforge",
       category: "DevOps",
       description: "Repository secret rotation, automated PR patching, and CI/CD cost checks.",
       connected: false,
@@ -89,7 +89,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "salesforce",
-      name: "Salesforce CRM",
+      name: "Pipeline CRM",
       category: "Productivity & ERP",
       description: "Closed-won contract invoice generation and ARR expansion sync.",
       connected: false,
@@ -97,7 +97,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "gusto",
-      name: "Gusto",
+      name: "Paystream",
       category: "Productivity & ERP",
       description: "Payroll ledger validation and benefits deduction cross-referencing.",
       connected: true,
@@ -105,7 +105,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "datadog",
-      name: "Datadog",
+      name: "Watchtower",
       category: "Cloud & Infrastructure",
       description: "Telemetry ingestion for real-time agent execution health and trace spans.",
       connected: false,
@@ -113,7 +113,7 @@ export const Integrations: React.FC = () => {
     },
     {
       id: "brex",
-      name: "Brex",
+      name: "Cardinal",
       category: "Banking & Capital",
       description: "Global credit line balancing and multi-currency treasury deposits.",
       connected: false,
@@ -185,7 +185,7 @@ export const Integrations: React.FC = () => {
               Native integration with <span className="italic">every</span> tool in your financial stack.
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Connect in under 60 seconds with pre-configured API connectors, SOC2-verified scopes, and webhook listeners.
+              Connect in under 60 seconds with pre-configured API connectors, least-privilege scopes, and webhook listeners.
             </p>
           </div>
 

@@ -9,14 +9,14 @@ import {
 
 export const SocialProof: React.FC = () => {
   const logos = [
-    { name: "Mercury", mark: "MERCURY" },
-    { name: "Ramp", mark: "RAMP" },
-    { name: "Linear", mark: "LINEAR" },
-    { name: "Vercel", mark: "▲ VERCEL" },
-    { name: "Supabase", mark: "SUPABASE" },
-    { name: "Retool", mark: "RETOOL" },
-    { name: "Brex", mark: "BREX" },
-    { name: "Stripe", mark: "STRIPE" },
+    { name: "Harbor", mark: "HARBOR" },
+    { name: "Spendly", mark: "SPENDLY" },
+    { name: "Trackline", mark: "TRACKLINE" },
+    { name: "Skyline", mark: "◆ SKYLINE" },
+    { name: "Basewell", mark: "BASEWELL" },
+    { name: "Toolhouse", mark: "TOOLHOUSE" },
+    { name: "Cardinal", mark: "CARDINAL" },
+    { name: "Payflow", mark: "PAYFLOW" },
   ];
 
   const metrics = [
@@ -61,7 +61,7 @@ export const SocialProof: React.FC = () => {
           className="text-center space-y-1.5"
         >
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Trusted by engineering & finance leaders at top tech companies
+            Teams that run their back office on Nexora
           </p>
         </motion.div>
 

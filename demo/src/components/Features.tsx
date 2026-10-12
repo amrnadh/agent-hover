@@ -29,13 +29,13 @@ export const Features: React.FC = () => {
       highlights: [
         "Dynamic planning with recursive error-correction",
         "Deterministic sandboxing for all API state changes",
-        "Native GPT-5 reasoning engine with prompt grounding",
+        "Built-in reasoning engine with policy grounding",
       ],
       previewSnippet: `// Nexora Agent Runtime
 const workflow = await nexora.plan({
-  intent: "Reconcile Q3 AWS infrastructure invoice",
+  intent: "Reconcile Q3 Nimbus infrastructure invoice",
   guardrails: { maxVariance: "$50.00", requireSignoff: true },
-  tools: [MercuryAPI, AWSBilling, StripeInvoicing]
+  tools: [HarborAPI, NimbusBilling, PayflowInvoicing]
 });
 await workflow.executeSafely(); // Verified 100%`,
     },
@@ -49,10 +49,10 @@ await workflow.executeSafely(); // Verified 100%`,
       highlights: [
         "Cryptographic proof generated for every ledger touch",
         "Configurable financial threshold triggers ($5k, $50k+)",
-        "Slack & Microsoft Teams instant one-click approvals",
+        "One-click approvals from your team chat",
       ],
       previewSnippet: `[GUARDRAIL ENFORCED]
-Operation: Move $15,000.00 to AWS Cloud Corp
+Operation: Move $15,000.00 to Nimbus Cloud Corp
 Risk Score: 0.04 (Low)
 Threshold Check: Exceeds $10,000 dual-key policy
 Status: Awaiting sign-off from Chief Financial Officer
@@ -71,10 +71,10 @@ Token Signature: sha256:7f83b1657ff1...`,
         "Automated pull-request generation for developer review",
       ],
       previewSnippet: `[ALERT RECOVERED]
-API Drift: Stripe API v2026-03 deprecated 'customer_balance'
+API Drift: Payflow API v2026-03 deprecated 'customer_balance'
 Agent Action: Remapped to 'customer.financial_account.balance'
 Impact: 0 missed transactions across 1,420 customers
-Pull Request created: #892 "Auto-patch Stripe SDK"`,
+Pull Request created: #892 "Auto-patch Payflow SDK"`,
     },
     {
       id: "telemetry",
@@ -85,13 +85,13 @@ Pull Request created: #892 "Auto-patch Stripe SDK"`,
         "Inspect every token, reasoning tree, API parameter, and timestamp. Export instant compliance bundles ready for Big 4 auditors.",
       highlights: [
         "Complete step-by-step decision replay",
-        "SOC2 Type II, ISO 27001, and GDPR compliance ready",
+        "Exportable audit trail for every action",
         "Exportable PDF/JSON evidence trails",
       ],
       previewSnippet: `[AUDIT REPLAY: TX-90214]
-02:27:10.012 -> Received webhook event (AWS Invoice Available)
+02:27:10.012 -> Received webhook event (Nimbus Invoice Available)
 02:27:10.144 -> Extracted statement balance ($5,200.00)
-02:27:10.201 -> Cross-referenced Mercury Checking balance ($8.45M)
+02:27:10.201 -> Cross-referenced Harbor Checking balance ($8.45M)
 02:27:10.320 -> Verified PO-991 matched approved purchase order
 02:27:10.450 -> Status: Scheduled for batch settlement`,
     },

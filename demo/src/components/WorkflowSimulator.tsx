@@ -21,16 +21,16 @@ export const WorkflowSimulator: React.FC = () => {
   const { addToast, openDemoModal } = useApp();
   const [activeTab, setActiveTab] = useState<"sandbox" | "roi">("roi");
   const [selectedPrompt, setSelectedPrompt] = useState(
-    "Reconcile $5,200 AWS variance against Mercury Treasury balance"
+    "Reconcile $5,200 Nimbus variance against Harbor Treasury balance"
   );
   const [isRunning, setIsRunning] = useState(false);
   const [step, setStep] = useState<number>(0);
   const [completed, setCompleted] = useState(false);
 
   const predefinedPrompts = [
-    "Reconcile $5,200 AWS variance against Mercury Treasury balance",
-    "Audit Ramp cards for duplicate SaaS renewals over $1,000",
-    "Generate Net-30 enterprise invoice from closed Salesforce deal",
+    "Reconcile $5,200 Nimbus variance against Harbor Treasury balance",
+    "Audit Spendly cards for duplicate SaaS renewals over $1,000",
+    "Generate Net-30 enterprise invoice from closed CRM deal",
   ];
 
   const executionSteps = [
@@ -42,12 +42,12 @@ export const WorkflowSimulator: React.FC = () => {
     {
       title: "2. Real-time Multi-Rail Verification",
       detail:
-        "Agent queries AWS CloudWatch Billing API, matches PO-991 in ERP ledger, and verifies available liquidity across Mercury checking accounts.",
+        "Agent queries cloud billing API, matches PO-991 in ERP ledger, and verifies available liquidity across Harbor checking accounts.",
     },
     {
       title: "3. Cryptographic Settlement & Audit Receipt",
       detail:
-        "Dual-entry ledger line generated, cryptographic SHA-256 hash created, and confirmation notification pushed to Slack finance channel.",
+        "Dual-entry ledger line generated, cryptographic SHA-256 hash created, and confirmation notification pushed to the finance chat channel.",
     },
   ];
 

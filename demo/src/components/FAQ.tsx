@@ -19,19 +19,19 @@ export const FAQ: React.FC = () => {
     },
     {
       q: "What prevents an autonomous agent from issuing an erroneous wire or invoice?",
-      a: "Every workflow operates inside a deterministic policy sandbox. You define dual-key signoff thresholds (e.g. any disbursement > $10,000 or any transaction with high anomaly score requires one-click approval via Slack or mobile from a verified human controller). All operations generate an immutable cryptographic audit proof.",
+      a: "Every workflow operates inside a deterministic policy sandbox. You define dual-key signoff thresholds (e.g. any disbursement > $10,000 or any transaction with high anomaly score requires one-click approval via team chat or mobile from a verified human controller). All operations generate an immutable cryptographic audit proof.",
     },
     {
       q: "Is our proprietary financial data or customer PII used to train models?",
-      a: "Never. Nexora operates with enterprise Zero Data Retention (ZDR) agreements. Your data is processed in ephemeral, isolated memory environments and encrypted with customer-managed keys (AES-256 at rest, TLS 1.3 in transit). We are SOC2 Type II, ISO 27001, and GDPR compliant.",
+      a: "Never. Nexora operates with enterprise Zero Data Retention (ZDR) agreements. Your data is processed in ephemeral, isolated memory environments and encrypted with customer-managed keys (AES-256 at rest, TLS 1.3 in transit). Every access is logged and exportable for your auditors.",
     },
     {
       q: "How long does implementation take?",
-      a: "Most teams connect their primary banking rails (Mercury, Brex, Stripe) and ERP (QuickBooks, NetSuite) within 15 minutes using native OAuth. Pre-built workflows (e.g. AWS monthly reconciliation, payroll sweeps) activate instantly. Custom multi-agent pipelines typically deploy within 48 to 72 hours.",
+      a: "Most teams connect their primary banking rails (Harbor, Cardinal, Payflow) and ERP (Ledgerly, Northbook) within 15 minutes using native OAuth. Pre-built workflows (e.g. Nimbus monthly reconciliation, payroll sweeps) activate instantly. Custom multi-agent pipelines typically deploy within 48 to 72 hours.",
     },
     {
       q: "Can Nexora run entirely inside our own private cloud VPC?",
-      a: "Yes. Enterprise tier customers can deploy Nexora agent containers directly into their private AWS, Google Cloud, or Azure Kubernetes environments, ensuring zero external data egress beyond your chosen banking and internal APIs.",
+      a: "Yes. Enterprise tier customers can deploy Nexora agent containers directly into their own Kubernetes environments, ensuring zero external data egress beyond your chosen banking and internal APIs.",
     },
   ];
 

@@ -69,7 +69,7 @@ export const CommandMenu: React.FC = () => {
     {
       icon: Layers,
       title: "Browse Integrations Ecosystem",
-      description: "Mercury, AWS, Stripe, Linear, QuickBooks",
+      description: "Harbor, Nimbus, Payflow, Trackline, Ledgerly",
       action: () => {
         closeCommandMenu();
         const el = document.getElementById("integrations");
@@ -88,13 +88,13 @@ export const CommandMenu: React.FC = () => {
     },
     {
       icon: ShieldCheck,
-      title: "Export Security Whitepaper (SOC2 Type II)",
+      title: "Export Security Overview",
       description: "Download encryption and compliance audit",
       action: () => {
         closeCommandMenu();
         addToast({
           title: "Security Whitepaper generated",
-          description: "SOC2 Type II compliance pack downloaded.",
+          description: "Security overview downloaded.",
           type: "success",
         });
       },
