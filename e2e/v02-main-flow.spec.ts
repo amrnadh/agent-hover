@@ -79,6 +79,14 @@ test.describe('0.2 main flow', () => {
     await api.post(`/agent/tasks/${taskId}/claim`, { client: 'claude-code' });
     await expect(marker.locator('.spin')).toBeVisible();
 
+    // Moving onto the marker clears the page's hover outline, like the dock and cards. Approach it from
+    // outside the selected button, so the outline left behind would belong to another element.
+    const m = (await marker.boundingBox())!;
+    await page.mouse.move(m.x + m.width + 8, m.y + m.height + 8);
+    await expect(page.locator('#ah-hover')).toBeVisible();
+    await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2);
+    await expect(page.locator('#ah-hover')).toBeHidden();
+
     await marker.click();
     const card = page.locator('#ah-task-card');
     await expect(card).toContainText(instruction);
