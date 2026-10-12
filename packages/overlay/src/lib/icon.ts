@@ -1,3 +1,4 @@
+import MARK_SVG from '../brand/mark.svg?raw';
 /**
  * One icon set for the whole overlay (Lucide-style, 24px grid, 1.6 stroke), rendered as inline SVG strings.
  * Inline markup instead of <use href> because symbol references inside shadow roots are unreliable in Safari.
@@ -41,3 +42,8 @@ export function icon(name: string, size = 16): string {
 }
 
 export const GRIP = '<svg class="ah-i" width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></g></svg>';
+
+/** The Agent Hover mark from src/brand/mark.svg (swap that file to try another logo). */
+export function markIcon(size = 18): string {
+  return MARK_SVG.replace('<svg ', `<svg class="ah-i" width="${size}" height="${size}" aria-hidden="true" `);
+}

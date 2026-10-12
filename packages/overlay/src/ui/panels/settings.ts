@@ -35,8 +35,8 @@ export function setupSettingsPanel(app: OverlayApp) {
             : `<p>${state.isBridgeConnected ? 'No agent is connected right now.' : 'The dev server is offline.'} Ask and Comment still work by copying prompts.</p>`}
           <p>Works with any MCP coding agent. Add the server once, then tell your agent <b>“Listen for agent-hover tasks”</b>.</p>
           <div class="ah-chips" data-agents>${AGENT_SETUPS.map((a) => `<button data-agent="${a.id}" aria-pressed="${a.id === setup.id}">${esc(a.title)}</button>`).join('')}</div>
-          ${setup.command ? `<pre class="ah-snippet">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
-          <pre class="ah-snippet">${esc(setup.snippet)}</pre>
+          ${setup.command ? `<pre class="ah-snippet" tabindex="0">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
+          <pre class="ah-snippet" tabindex="0">${esc(setup.snippet)}</pre>
           <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-setup">${icon('copy', 14)}Copy</button><span class="ah-muted" style="font-size:12px">Or run <span class="ah-mono">npx agent-hover mcp</span> in your project.</span></div>
           <p>Using ChatGPT, Claude.ai, v0, Lovable or Bolt? Use Copy: every prompt is self-contained.</p>
         </section>
@@ -70,7 +70,7 @@ export function setupSettingsPanel(app: OverlayApp) {
         <section class="ah-set" id="ah-set-about" style="border:0"><h4>About</h4>
           <p>Agent Hover${version ? ' ' + esc(version) : ''} · bridge on port ${port} · MIT</p>
           ${state.updateAvailable ? `<p><b>${esc(state.updateAvailable.latest)}</b> is available (you have ${esc(state.updateAvailable.current)}). Update, then restart the dev server:</p>
-            <pre class="ah-snippet">${esc(UPDATE_CMD)}</pre>
+            <pre class="ah-snippet" tabindex="0">${esc(UPDATE_CMD)}</pre>
             <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-update">${icon('copy', 14)}Copy</button></div>` : ''}
         </section>`;
 

@@ -122,6 +122,9 @@ describe('helpers', () => {
     const code = ['return (', '  <Button', '    id="cta"', '    className="px-6"', '  >Go</Button>', ');'].join('\n');
     expect(jsxTagAt(code, 10, 12)).toEqual({ tag: 'Button', line: 11 });
     expect(jsxTagAt(CODE, 8, 12)).toBeUndefined(); // plain <button>
+    // A native element written inside a component's children is not rendered through that component.
+    expect(jsxTagAt('<Card title="Hi"><button id="cta">Go</button></Card>', 7, 7, 'button')).toBeUndefined();
+    expect(jsxTagAt('<Card title="Hi"><button id="cta">Go</button></Card>', 7, 7)).toEqual({ tag: 'Card', line: 7 });
     const p = formatChangeRequest(facts({ component: { ...facts().component!, code, startLine: 10, endLine: 15 }, element: { ...facts().element, selector: 'button#cta', label: 'button#cta', text: 'Go' } }), 'Bigger');
     expect(p).toContain('rendered through `<Button>` (line 11), a shared component');
   });

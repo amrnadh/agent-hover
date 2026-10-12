@@ -79,9 +79,11 @@ export function findElementLine(code: string | undefined, startLine: number, el:
  * The JSX tag that renders the element, read from the source just above `line`: e.g. `Button` when the
  * element comes from a shared <Button> component. Undefined when the nearest tag is a plain HTML tag.
  */
-export function jsxTagAt(code: string | undefined, startLine: number, line: number | undefined): { tag: string; line: number } | undefined {
+export function jsxTagAt(code: string | undefined, startLine: number, line: number | undefined, nativeTag?: string): { tag: string; line: number } | undefined {
   if (!code || !line) return undefined;
   const lines = code.split('\n');
+  // The element's own tag is written on its line (<Card><button>Go</button></Card>): it is not rendered through Card.
+  if (nativeTag && new RegExp(`<${nativeTag}[\\s>/]`).test(lines[line - startLine] || '')) return undefined;
   for (let i = line - startLine; i >= Math.max(0, line - startLine - 6); i--) {
     const m = (lines[i] || '').match(/<([A-Za-z][\w.]*)/);
     if (m) return /^[A-Z]/.test(m[1]) ? { tag: m[1], line: startLine + i } : undefined;
@@ -135,7 +137,7 @@ export function formatElementSections(f: PromptFacts, h = 2): string {
     const line = elementLine(f);
     if (line && !el.isComponent) {
       where.push(`- In the source, the element is around line ${line}`);
-      const jsx = jsxTagAt(c.code, c.startLine || 1, line);
+      const jsx = jsxTagAt(c.code, c.startLine || 1, line, el.tag);
       if (jsx && jsx.tag !== c.name) {
         where.push(`- It is rendered through ${code(`<${jsx.tag}>`)} (line ${jsx.line}), a shared component: change this usage (className or props) rather than ${code(`<${jsx.tag}>`)} itself, unless the request is about every ${jsx.tag}.`);
       }
