@@ -22,6 +22,8 @@ function check(s: Style, done: boolean, label: string): string {
 export function renderOverview(p: ProjectInfo, s: Style): string {
   const out: string[] = [];
   out.push('', `  ${s.bold(DISPLAY_NAME)} ${s.dim('· point at your UI, your agent understands it')}`, '');
+  const ready = p.pluginInstalled && p.pluginConfigured && p.mcpConfigured.length > 0;
+  if (p.viteConfig && !ready) out.push(`  ${s.bold(`npx ${BRAND.cliName} init`)} sets all of this up for you.`, '');
 
   if (p.hasPackageJson) {
     out.push(s.dim('  This project'));
@@ -62,7 +64,8 @@ export function renderOverview(p: ProjectInfo, s: Style): string {
   out.push(indent('Type what to change and press Send. Tell your agent once:'));
   out.push(indent(s.dim('"Listen for agent-hover tasks."')));
   out.push(indent('It picks up each task you send, does it, and waits for the next.'), '');
-  out.push(s.dim(`  ${BRAND.cliName} rules   print a snippet for CLAUDE.md / .cursorrules so agents pick up tasks`));
+  out.push(s.dim(`  ${BRAND.cliName} doctor  check the setup and the agent connection`));
+  out.push(s.dim(`  ${BRAND.cliName} rules   print a snippet for CLAUDE.md / AGENTS.md so agents pick up tasks`));
   out.push(s.dim(`  ${BRAND.cliName} help    all commands`), '');
   return out.join('\n');
 }
@@ -92,11 +95,17 @@ export function renderHelp(version: string, s: Style): string {
     `  ${s.bold(DISPLAY_NAME)} ${s.dim('v' + version)}`,
     '',
     `  ${BRAND.cliName}               setup steps, checked against this project`,
+    `  ${BRAND.cliName} init          set it up: install, Vite config, agent MCP config, .gitignore`,
+    `      --agent claude,cursor   which agents to connect (default: detected, else Claude Code)`,
+    `      --dry-run               show the changes without making them`,
+    `      --yes                   apply without asking`,
+    `      --no-install            skip installing the package`,
+    `  ${BRAND.cliName} doctor        check the setup, the dev server and the agent connection`,
     `  ${BRAND.cliName} mcp [agent]   MCP config for Claude Code, Cursor, Codex, and more`,
     `  ${BRAND.cliName} rules         agent rules snippet so agents pick up browser tasks`,
     `  ${BRAND.cliName} --version`,
     '',
-    s.dim('  Nothing here writes files. An `init` command that sets everything up is coming.'),
+    s.dim('  Only init writes files, and it shows every change and asks first.'),
     '',
   ].join('\n');
 }

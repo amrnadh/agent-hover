@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { findClient, MCP_CLIENTS } from './clients.js';
+import { defaultDoctorIO, renderChecks, runChecks, type DoctorIO } from './doctor.js';
+import { runInit, type InitIO } from './init.js';
 import { inspectProject } from './project.js';
 import { COLOR, PLAIN, renderClient, renderClientList, renderHelp, renderOverview, renderRules, type Style } from './render.js';
 
@@ -17,7 +21,23 @@ export interface RunResult {
   stderr: string;
 }
 
-export function run(argv: string[], cwd: string, style: Style): RunResult {
+export interface RunIO {
+  init?: InitIO;
+  doctor?: DoctorIO;
+}
+
+function flags(args: string[]) {
+  const has = (f: string) => args.includes(f);
+  const value = (f: string) => {
+    const inline = args.find((a) => a.startsWith(f + '='));
+    if (inline) return inline.slice(f.length + 1);
+    const i = args.indexOf(f);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
+  return { has, value };
+}
+
+export async function run(argv: string[], cwd: string, style: Style, io: RunIO = {}): Promise<RunResult> {
   const [cmd, arg] = argv;
   const ok = (stdout: string): RunResult => ({ code: 0, stdout, stderr: '' });
 
@@ -35,7 +55,41 @@ export function run(argv: string[], cwd: string, style: Style): RunResult {
       stderr: `Unknown agent "${arg}". Try one of: ${MCP_CLIENTS.map((c) => c.id).join(', ')}\n`,
     };
   }
+  if (cmd === 'init') {
+    const f = flags(argv.slice(1));
+    const agent = f.value('--agent');
+    let stdout = '';
+    const initIO: InitIO = io.init ?? terminalIO();
+    const out = initIO.out;
+    const code = await runInit(cwd, {
+      agents: agent ? agent.split(',').map((a) => a.trim()).filter(Boolean) : undefined,
+      yes: f.has('--yes') || f.has('-y'),
+      dryRun: f.has('--dry-run'),
+      install: !f.has('--no-install'),
+    }, { ...initIO, out: (t) => { if (io.init) stdout += t; else out(t); } }, style);
+    return { code, stdout, stderr: '' };
+  }
+  if (cmd === 'doctor') {
+    const checks = await runChecks(cwd, io.doctor ?? defaultDoctorIO());
+    return { code: checks.some((c) => c.state === 'fail') ? 1 : 0, stdout: renderChecks(checks, style), stderr: '' };
+  }
   return { code: 1, stdout: renderHelp(version(), style), stderr: `Unknown command "${cmd}".\n` };
+}
+
+/** Real terminal: prompts on stdin, installs with the project's package manager, prints as it goes. */
+function terminalIO(): InitIO {
+  return {
+    interactive: !!process.stdin.isTTY && !!process.stdout.isTTY,
+    async ask(question) {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      try { return await rl.question(question); } finally { rl.close(); }
+    },
+    exec(cmd, args, cwd) {
+      const r = spawnSync(cmd, args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
+      return r.status ?? 1;
+    },
+    out: (t) => process.stdout.write(t),
+  };
 }
 
 function isMainModule(): boolean {
@@ -51,8 +105,9 @@ function isMainModule(): boolean {
 const isMain = isMainModule();
 if (isMain) {
   const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
-  const result = run(process.argv.slice(2), process.cwd(), useColor ? COLOR : PLAIN);
-  if (result.stdout) process.stdout.write(result.stdout.endsWith('\n') ? result.stdout : result.stdout + '\n');
-  if (result.stderr) process.stderr.write(result.stderr);
-  process.exitCode = result.code;
+  run(process.argv.slice(2), process.cwd(), useColor ? COLOR : PLAIN).then((result) => {
+    if (result.stdout) process.stdout.write(result.stdout.endsWith('\n') ? result.stdout : result.stdout + '\n');
+    if (result.stderr) process.stderr.write(result.stderr);
+    process.exitCode = result.code;
+  });
 }

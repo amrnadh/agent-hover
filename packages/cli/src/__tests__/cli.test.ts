@@ -19,19 +19,19 @@ function fixture(files: Record<string, string>): string {
 }
 
 describe('agent-hover CLI', () => {
-  it('keeps brand strings in sync with core (D-12)', () => {
+  it('keeps brand strings in sync with core (D-12)', async () => {
     expect(BRAND).toEqual(CORE_BRAND);
   });
 
-  it('prints setup steps outside a project without inspecting anything', () => {
-    const r = run([], fixture({}), PLAIN);
+  it('prints setup steps outside a project without inspecting anything', async () => {
+    const r = await run([], fixture({}), PLAIN);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('npm install -D @agent-hover/vite');
     expect(r.stdout).toContain('claude mcp add agent-hover -- npx -y @agent-hover/mcp');
     expect(r.stdout).not.toContain('This project');
   });
 
-  it('reports project status for a configured Vite + React app', () => {
+  it('reports project status for a configured Vite + React app', async () => {
     const dir = fixture({
       'package.json': JSON.stringify({ dependencies: { react: '^19.0.0' }, devDependencies: { '@agent-hover/vite': '^0.1.1' } }),
       'pnpm-lock.yaml': '',
@@ -40,51 +40,51 @@ describe('agent-hover CLI', () => {
     });
     const info = inspectProject(dir);
     expect(info).toMatchObject({ packageManager: 'pnpm', viteConfig: 'vite.config.ts', pluginInstalled: true, pluginConfigured: true, usesReact: true, mcpConfigured: ['.mcp.json'] });
-    const r = run([], dir, PLAIN);
+    const r = await run([], dir, PLAIN);
     expect(r.stdout).toContain('1. Install the Vite plugin ✓ done');
     expect(r.stdout).not.toContain('add -D @agent-hover/vite');
     expect(r.stdout).toContain('✓ MCP server registered (.mcp.json)');
   });
 
-  it('flags missing pieces in an unconfigured project', () => {
-    const r = run([], fixture({ 'package.json': '{}' }), PLAIN);
+  it('flags missing pieces in an unconfigured project', async () => {
+    const r = await run([], fixture({ 'package.json': '{}' }), PLAIN);
     expect(r.stdout).toContain('○ No Vite config found');
     expect(r.stdout).toContain('○ MCP server not registered');
     expect(r.stdout).toContain('npm install -D @agent-hover/vite');
   });
 
-  it('uses the detected package manager in install steps', () => {
-    const r = run([], fixture({ 'package.json': '{}', 'pnpm-lock.yaml': '' }), PLAIN);
+  it('uses the detected package manager in install steps', async () => {
+    const r = await run([], fixture({ 'package.json': '{}', 'pnpm-lock.yaml': '' }), PLAIN);
     expect(r.stdout).toContain('pnpm add -D @agent-hover/vite');
   });
 
-  it('survives a malformed package.json', () => {
+  it('survives a malformed package.json', async () => {
     expect(inspectProject(fixture({ 'package.json': '{ nope' })).hasPackageJson).toBe(true);
   });
 
-  it('prints config for every MCP client by id', () => {
+  it('prints config for every MCP client by id', async () => {
     for (const c of MCP_CLIENTS) {
-      const r = run(['mcp', c.id], process.cwd(), PLAIN);
+      const r = await run(['mcp', c.id], process.cwd(), PLAIN);
       expect(r.code).toBe(0);
       for (const line of c.snippet.split('\n')) expect(r.stdout).toContain(line);
     }
-    expect(run(['mcp', 'CODEX'], process.cwd(), PLAIN).stdout).toContain('[mcp_servers.agent-hover]');
+    expect((await run(['mcp', 'CODEX'], process.cwd(), PLAIN)).stdout).toContain('[mcp_servers.agent-hover]');
   });
 
-  it('rejects unknown agents and commands with exit code 1', () => {
-    expect(run(['mcp', 'nope'], process.cwd(), PLAIN)).toMatchObject({ code: 1 });
-    const r = run(['frobnicate'], process.cwd(), PLAIN);
+  it('rejects unknown agents and commands with exit code 1', async () => {
+    expect(await run(['mcp', 'nope'], process.cwd(), PLAIN)).toMatchObject({ code: 1 });
+    const r = await run(['frobnicate'], process.cwd(), PLAIN);
     expect(r.code).toBe(1);
     expect(r.stderr).toContain('Unknown command');
   });
 
-  it('prints the rules snippet and version', () => {
-    expect(run(['rules'], process.cwd(), PLAIN).stdout).toContain('claim_agent_task');
-    expect(run(['rules'], process.cwd(), PLAIN).stdout).toContain('wait_for_agent_task');
-    expect(run(['--version'], process.cwd(), PLAIN).stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
+  it('prints the rules snippet and version', async () => {
+    expect((await run(['rules'], process.cwd(), PLAIN)).stdout).toContain('claim_agent_task');
+    expect((await run(['rules'], process.cwd(), PLAIN)).stdout).toContain('wait_for_agent_task');
+    expect((await run(['--version'], process.cwd(), PLAIN)).stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 
-  it('uses the right install command per package manager', () => {
+  it('uses the right install command per package manager', async () => {
     expect(installCommand('yarn', 'x')).toBe('yarn add -D x');
     expect(installCommand('bun', 'x')).toBe('bun add -d x');
   });

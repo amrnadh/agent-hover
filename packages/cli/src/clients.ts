@@ -8,6 +8,10 @@ export interface McpClient {
   /** Where the config snippet goes. */
   configPath: string;
   snippet: string;
+  /** Project-level MCP config `init` can write. Agents without one only have a global config (printed, never written). */
+  projectConfig?: { file: string; format: 'json' | 'toml' };
+  /** Rules file `init` adds the task instructions to. */
+  rulesFile?: { file: string; kind: 'markdown' | 'cursor-rule' };
 }
 
 const serverArgs = ['-y', MCP_PACKAGE];
@@ -26,7 +30,7 @@ const tomlSnippet = [
 
 const addArgs = `${BRAND.mcpServerName} -- npx ${serverArgs.join(' ')}`;
 
-// Keep in sync with the MCP setup modal in packages/overlay/src/ui/mcp-modal.ts.
+// Mirrored in packages/overlay/src/lib/agents.ts (Settings › Agents); a test fails if they drift apart.
 export const MCP_CLIENTS: McpClient[] = [
   {
     id: 'claude',
@@ -34,12 +38,16 @@ export const MCP_CLIENTS: McpClient[] = [
     command: `claude mcp add ${addArgs}`,
     configPath: '.mcp.json (project) or ~/.claude.json (global)',
     snippet: jsonSnippet,
+    projectConfig: { file: '.mcp.json', format: 'json' },
+    rulesFile: { file: 'CLAUDE.md', kind: 'markdown' },
   },
   {
     id: 'cursor',
     title: 'Cursor',
     configPath: '.cursor/mcp.json (project) or ~/.cursor/mcp.json (global)',
     snippet: jsonSnippet,
+    projectConfig: { file: '.cursor/mcp.json', format: 'json' },
+    rulesFile: { file: '.cursor/rules/agent-hover.mdc', kind: 'cursor-rule' },
   },
   {
     id: 'codex',
@@ -47,6 +55,8 @@ export const MCP_CLIENTS: McpClient[] = [
     command: `codex mcp add ${addArgs}`,
     configPath: '~/.codex/config.toml (global) or .codex/config.toml (project)',
     snippet: tomlSnippet,
+    projectConfig: { file: '.codex/config.toml', format: 'toml' },
+    rulesFile: { file: 'AGENTS.md', kind: 'markdown' },
   },
   {
     id: 'windsurf',
@@ -79,7 +89,7 @@ export const RULES_SNIPPET = `## ${BRAND.name} tasks
 When I say I sent a task from the browser (or mention ${BRAND.name}):
 1. Call \`list_agent_tasks\` and pick the relevant queued task.
 2. Call \`claim_agent_task\` for it and follow its instructions and scope exactly.
-3. Make the change. Respect FROZEN components; do not modify them.
+3. Make the change. Never modify components the task lists as locked.
 4. Call \`complete_agent_task\` with a one-paragraph summary and the files you changed.
 
 When I say "listen for ${BRAND.name} tasks", loop: call \`wait_for_agent_task\` (it claims the task for you),
