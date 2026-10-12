@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compare and Undo (P3-01)**: when the agent claims a task, the bridge takes a git checkpoint (HEAD, uncommitted tracked state via `git stash create`, untracked files as blobs; nothing in your working tree, index or HEAD changes). The task card shows a before/after slider of the element and **Undo**, which lists the files to restore (with +/− counts and a warning for files the agent did not report) and restores them one by one. Never uses `reset --hard`, `clean` or `checkout .`. Disabled with an explanation outside git. Endpoints `GET /api/agent/tasks/:id/changes`, `POST /api/agent/tasks/:id/undo`; `filesChanged` is filled from git when the agent omits it.
 - **Better prompts**: every prompt (Ask, Copy, comments, batch) now leads with what to do, then where (file, the line that renders the element, and a warning when it comes from a shared component such as `<Button>`), how the element looks now, the component's props and current values, notes left on that element, constraints (stay scoped, follow the file's styling, locked components), and the source. Long components send only the 90 lines around the element at Standard detail (Deep sends everything).
 - **Listen mode**: MCP tool `wait_for_agent_task` waits for the next task sent from the browser, claims it, and returns its prompt, so the agent can loop without the user prompting each task. Backed by a long-poll bridge endpoint `GET /api/agent/tasks/next`.
-- **`agent-hover` CLI package** (`npx agent-hover`): read-only setup check plus MCP config per agent (`mcp <agent>`) and the agent rules snippet (`rules`).
+- **`npx agent-hover init`**: installs `@agent-hover/vite`, adds `agentHover()` to the Vite config (only when the config is a plain `plugins: [...]` array; otherwise prints the two lines to add), registers the MCP server in project config for Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`) and Codex (`.codex/config.toml`), adds the task rules to `CLAUDE.md` / `.cursor/rules/agent-hover.mdc` / `AGENTS.md`, and adds the local data files to `.gitignore`. Agents are detected from the project or chosen with `--agent`; `--dry-run`, `--yes`, `--no-install`. Shows every change and asks first, merges instead of overwriting (JSON configs keep a `.bak`), and a second run changes nothing.
+- **`npx agent-hover doctor`**: checks Node, the plugin (installed and in the config), the running dev server and its version, the session token, connected agents, MCP registration (project and global configs, read only), rules, `.gitignore` and git.
+- **`agent-hover` CLI package** (`npx agent-hover`): setup steps checked against the project, MCP config per agent (`mcp <agent>`) and the agent rules snippet (`rules`). No dependencies.
 - Comments store an optional pin position (`offsetX`, `offsetY`); older comments still load.
 - **Update notice**: the bridge checks npm for a newer `@agent-hover/vite` at most once a day (no project data sent; off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1`). The overlay shows one toast per new version, a line in the dock's connection popover, and the update command in Settings › About. Also reported by `GET /api/health`.
 
@@ -33,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Letter shortcuts only work while Agent Hover is in use, so they never take over the host app's own shortcuts.
 - The overlay bundle is re-read when rebuilt, so the dev server picks it up on reload.
 - **Screenshots**: each shot (element, visible area, full page) is copied to the clipboard and saved to `.agent-hover/screenshots/`; a toast confirms it and View opens a lightbox in the new style (copy image, download, show in folder). Escape closes the lightbox first.
+- All packages are 0.2.0 with `exports`, `engines` (Node 20+), and no source maps or tests in the published files; `npm run pack:check` verifies what each package would publish.
+- README, package READMEs and CONTRIBUTING rewritten for 0.2, with a recorded demo (`npm run record:demo` regenerates it).
+- CI (GitHub Actions): build, typecheck, unit tests and pack check on Ubuntu and macOS with Node 20 and 22, plus the e2e suite.
+- `npm run test:e2e:isolated` runs the e2e suite on a throwaway git copy of the demo, so it never edits `demo/` or collides with a running dev server.
+- The demo app uses fictional company names and no compliance or AI-model claims.
 - Version numbers come from each package's `package.json` (bridge `/api/health`, MCP server, overlay About) instead of hard-coded strings.
 
 ### Removed
@@ -41,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The 0.1 selection chip, Stage 1 popover, MCP setup modal (now Settings › Agents), screenshot mode dropdown and preview card, and all 0.1 styles: `overlay.css` and the legacy token file are gone; the overlay ships one stylesheet (`ui.css`).
 
 ### Fixed
+- Compare drew the before and after images at different scales when the element changed size; both now use one scale, aligned top-left.
+- The hover outline no longer stays on the page while the pointer is over the pill, a card, the dock or the sidebar.
+- The Undo checkpoint works on machines without a git identity (`user.email`).
+- The plugin no longer injects the unused dom-to-image library into every page.
 - The default destination is now the most recently active agent; before, an agent that reconnected kept the place it had when it first connected.
 - Taking the Undo checkpoint no longer fails when your editor is running git at the same moment (it waits for `index.lock`).
 - Opening a comment while the composer was open (or the other way round) stacked both cards; only one card is open at a time now.
