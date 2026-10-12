@@ -45,8 +45,6 @@ test('record the README demo', async ({ page, request }) => {
   await showCursor(page);
   await openDemo(page);
   await api.post('/agent/presence', { client: 'claude-code' });
-  // A still background keeps the GIF small (every changed pixel costs bytes).
-  await page.evaluate(() => document.querySelectorAll('video').forEach((v) => { v.pause(); v.currentTime = 1; }));
   await page.mouse.move(900, 500);
   await page.waitForTimeout(800);
 
@@ -55,7 +53,7 @@ test('record the README demo', async ({ page, request }) => {
   await glide(page, inspect.x, inspect.y, 30);
   await page.mouse.click(inspect.x, inspect.y);
   await page.waitForTimeout(400);
-  for (const sel of ['#hero-badge', 'h1', '#hero-play-button']) {
+  for (const sel of ['#hero-badge', 'h1', '#hero-secondary-cta']) {
     const p = await center(page, sel);
     await glide(page, p.x, p.y, 20);
     await page.waitForTimeout(650);
@@ -95,10 +93,10 @@ test('record the README demo', async ({ page, request }) => {
   await api.post(`/agent/tasks/${id}/claim`, { client: 'claude-code' });
   await page.waitForTimeout(1800);
   fs.writeFileSync(heroFile, original
-    .replace('rounded-full px-6 py-5 text-sm font-medium', 'rounded-full px-8 py-6 text-base font-semibold')
+    .replace('h-11 rounded-full px-6 text-sm font-medium', 'h-12 rounded-full px-8 text-base font-semibold')
     .replace('            Book a demo\n', '            Book a demo →\n'));
   await expect(page.locator('#hero-primary-cta')).toContainText('→', { timeout: 15000 });
-  await api.post(`/agent/tasks/${id}/complete`, { summary: 'Made the hero CTA larger (px-8 py-6, text-base, semibold) and added an arrow. Only this usage of <Button> changed.' });
+  await api.post(`/agent/tasks/${id}/complete`, { summary: 'Made the hero CTA larger (h-12 px-8, text-base, semibold) and added an arrow. Only this usage of <Button> changed.' });
   await expect(page.locator('.ah-marker.done')).toHaveCount(1);
   await page.waitForTimeout(2200); // the "after" image is taken once HMR settles
 
