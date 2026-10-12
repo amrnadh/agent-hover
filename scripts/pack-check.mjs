@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Release gate: what each package would publish. Fails on missing entry points, stray sources or tests,
-// version drift between packages, or internal dependencies that point at another version.
+// version drift between packages, internal dependencies that point at another version, or published code
+// that imports a package it does not declare (it would only work where something else happens to install it).
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import path from 'node:path';
 
 const PACKAGES = ['core', 'overlay', 'vite', 'mcp', 'cli'];
@@ -27,6 +29,16 @@ for (const dir of PACKAGES) {
   const stray = files.filter((f) => /(^|\/)(src|__tests__)\/|\.test\.|\.map$/.test(f));
   if (stray.length) fail(`ships ${stray.slice(0, 3).join(', ')}${stray.length > 3 ? ' …' : ''}`);
   if (!pkg.engines?.node) fail('no engines.node');
+  const declared = new Set(Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies }));
+  for (const file of files.filter((f) => f.endsWith('.js'))) {
+    const code = readFileSync(path.join(cwd, file), 'utf8');
+    for (const [, spec] of code.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"./][^'"]*)['"]/g)) {
+      const name = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
+      if (spec.includes('${') || spec.startsWith('node:') || builtinModules.includes(name) || name === pkg.name || declared.has(name)) continue;
+      fail(`${file} imports ${name}, which is not in dependencies`);
+      declared.add(name); // report each missing package once
+    }
+  }
   console.log(`${pkg.name.padEnd(22)} ${pkg.version}  ${String(files.length).padStart(3)} files  ${(info.size / 1024).toFixed(0).padStart(4)} kB`);
 }
 
