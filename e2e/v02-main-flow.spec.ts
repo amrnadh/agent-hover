@@ -27,6 +27,14 @@ test.describe('0.2 main flow', () => {
     const pill = (await page.locator('#ah-pill').boundingBox())!;
     expect(overlaps(pill, target)).toBe(false);
     await page.screenshot({ path: path.join(shots, '01-pill.png') });
+
+    // Moving onto Agent Hover's own UI clears the hover outline (no stale outline behind the dock or cards).
+    const h1 = (await page.locator('h1').boundingBox())!;
+    await page.mouse.move(h1.x + 20, h1.y + 20);
+    await expect(page.locator('#ah-hover')).toBeVisible();
+    const dock = (await page.locator('#ah-d-comment').boundingBox())!;
+    await page.mouse.move(dock.x + dock.width / 2, dock.y + dock.height / 2, { steps: 4 });
+    await expect(page.locator('#ah-hover')).toBeHidden();
   });
 
   test('Ask opens the composer next to the selection, focused, without covering it', async ({ page }) => {
