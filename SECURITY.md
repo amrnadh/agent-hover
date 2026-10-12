@@ -15,13 +15,13 @@ Because the bridge server runs on your local machine with access to your project
 During an active development session, the Agent Hover bridge server has permission to:
 - Read source code and component context within the active project root.
 - Launch your configured code editor (VS Code, Cursor, Windsurf, Antigravity, etc.) to a specific file and line.
-- Apply targeted source edits or undo previous edits within the project workspace.
+- Apply targeted source edits within the project workspace, and restore files from a per-task git checkpoint when you press Undo (read-only git plumbing plus per-file writes; never `reset`, `clean` or `checkout`).
 - Capture, store, and serve component screenshots in the local `.agent-hover/screenshots/` directory.
 - Relay inspection tasks and component context between the browser overlay and connected AI agents.
 
 The bridge server does **not**:
 - Execute arbitrary shell commands.
-- Send telemetry or communicate with external cloud services or third-party servers.
+- Send telemetry, or send anything about your project anywhere. The only outbound request is an update check: one `GET https://registry.npmjs.org/@agent-hover%2Fvite/latest` at most once a day (cached in the OS temp folder). It carries no project data and is skipped in CI or when `AGENT_HOVER_NO_UPDATE_CHECK=1` is set.
 - Read or modify files outside the project root directory.
 
 ---

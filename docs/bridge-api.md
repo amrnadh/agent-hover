@@ -62,10 +62,12 @@ Response:
 {
   "ok": true,
   "status": "ok",
-  "version": "0.1.1",
-  "port": 9850
+  "version": "0.2.0",
+  "port": 9850,
+  "updateAvailable": null
 }
 ```
+`version` comes from the installed `@agent-hover/vite` package. `updateAvailable` is `{ "current", "latest" }` once the daily registry check finds a newer stable release (off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1`); it is also sent in `state-update` WebSocket messages.
 
 ### Agent Presence Heartbeat
 ```http
@@ -141,7 +143,7 @@ Response: `201 Created`
 
 ### List Tasks
 ```http
-GET /api/agent/tasks?status=queued,delivered&limit=50
+GET /api/agent/tasks?status=queued,delivered&limit=50[&deliver=1]
 Authorization: Bearer <token>
 ```
 Response: `200 OK`
@@ -149,6 +151,23 @@ Response: `200 OK`
 {
   "tasks": [ ... ]
 }
+```
+With `deliver=1` (sent by the MCP `list_agent_tasks` tool), returned `queued` tasks move to `delivered` so the overlay can show "Seen by {agent}". Without it the call never changes task state, which is what the overlay uses.
+
+### Wait for Next Task (listen mode)
+```http
+GET /api/agent/tasks/next?wait=25
+Authorization: Bearer <token>
+```
+Long-poll used by the MCP `wait_for_agent_task` tool. Returns the **oldest** `queued` task at once if there is one; otherwise holds the request until a task is created or `wait` seconds pass (0–30, default 0). The returned task is marked `delivered`, so each task is handed out once. If the client disconnects while waiting, nothing is delivered.
+
+Response: `200 OK`
+```json
+{ "task": { ... }, "timedOut": false }
+```
+or, when nothing arrived in time:
+```json
+{ "task": null, "timedOut": true }
 ```
 
 ### Get Task & Formatted Prompt
@@ -218,6 +237,28 @@ POST /api/agent/tasks/:id/cancel
 Authorization: Bearer <token>
 ```
 Response: `200 OK` (Only allowed if status is `queued` or `delivered`).
+
+### Changes Since Claim (Compare / Undo)
+```http
+GET /api/agent/tasks/:id/changes
+Authorization: Bearer <token>
+```
+When a task is claimed, the bridge records a git checkpoint in `.agent-hover/checkpoints/<id>.json`: `HEAD`, the tracked working-tree state (`git stash create`, which does not touch the working tree or index) and untracked files as blobs. This returns the files changed since then:
+```json
+{ "available": true, "files": [ { "path": "app/src/Hero.tsx", "display": "src/Hero.tsx", "status": "modified", "additions": 3, "deletions": 1, "reported": true } ] }
+```
+`reported: false` means the agent's `filesChanged` did not list the file (you, or another tool, may have edited it). Without git, or without a checkpoint, `available` is `false` with a `reason`.
+
+```http
+POST /api/agent/tasks/:id/undo
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "files": ["app/src/Hero.tsx"] }
+```
+Restores each listed file (all changed files when `files` is omitted) to its checkpoint content, deletes files created since, and restores deleted ones. Per file only: never `reset --hard`, `clean` or `checkout .`, and never touches HEAD or the index. Returns `{ restored, removed, errors }` and broadcasts `task.undone`. Refused with `409` while the task is `in_progress`.
+
+When `complete_agent_task` is called without `filesChanged`, the bridge fills it from the checkpoint diff.
 
 ### Component Source Slice
 ```http

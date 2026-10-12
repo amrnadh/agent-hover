@@ -1,6 +1,6 @@
 {
   "name": "agent-hover",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Point at your UI. Your agent understands it.",
   "workspaces": [
@@ -10,16 +10,21 @@
   "scripts": {
     "dev": "npm run dev --workspace=demo",
     "dev:demo": "npm run dev --workspace=demo -- --force",
-    "build": "npm run build:core && npm run build:overlay && npm run build:vite && npm run build:mcp",
+    "build": "npm run build:core && npm run build:overlay && npm run build:vite && npm run build:mcp && npm run build:cli",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:overlay": "npm run build --workspace=@agent-hover/overlay",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
+    "build:cli": "npm run build --workspace=agent-hover",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "sync:license": "cp LICENSE packages/core/ && cp LICENSE packages/vite/ && cp LICENSE packages/mcp/",
-    "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache"
+    "sync:license": "for d in core overlay vite mcp cli; do cp LICENSE packages/$d/; done",
+    "clean": "rm -rf packages/*/dist demo/dist node_modules/.cache",
+    "typecheck": "for d in core overlay vite mcp cli; do tsc --noEmit -p packages/$d/tsconfig.json || exit 1; done",
+    "pack:check": "node scripts/pack-check.mjs",
+    "test:e2e:isolated": "node scripts/e2e-isolated.mjs",
+    "record:demo": "node scripts/record-demo.mjs"
   },
   "keywords": [
     "agent-hover",
@@ -35,5 +40,8 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

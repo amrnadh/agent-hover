@@ -35,14 +35,14 @@ export const DashboardPreview: React.FC = () => {
     {
       id: "1",
       date: "Today",
-      desc: "AWS Cloud Infrastructure",
+      desc: "Nimbus Cloud Infrastructure",
       amount: "-$5,200.00",
       status: "Pending",
     },
     {
       id: "2",
       date: "Yesterday",
-      desc: "Client Payment (Stripe Inc.)",
+      desc: "Client Payment (Payflow)",
       amount: "+$125,000.00",
       status: "Completed",
       isPositive: true,
@@ -50,7 +50,7 @@ export const DashboardPreview: React.FC = () => {
     {
       id: "3",
       date: "Sep 19",
-      desc: "Payroll (Gusto)",
+      desc: "Payroll (Paystream)",
       amount: "-$85,450.00",
       status: "Completed",
     },
@@ -78,7 +78,7 @@ export const DashboardPreview: React.FC = () => {
       ]);
       addToast({
         title: "Vendor Settlement Processed",
-        description: "Sent $15,000.00 via Mercury Wire Network.",
+        description: "Sent $15,000.00 via Harbor Wire Network.",
         type: "success",
       });
     } else if (actionName === "Create Invoice") {
@@ -304,7 +304,7 @@ export const DashboardPreview: React.FC = () => {
               <div className="flex-1 basis-0 rounded-lg bg-background p-3.5 border border-border shadow-2xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                    <span>Mercury Balance</span>
+                    <span>Harbor Balance</span>
                     <span className="h-3 w-3 rounded-full bg-accent/15 text-accent flex items-center justify-center">
                       <Check className="h-2 w-2 stroke-[3]" />
                     </span>

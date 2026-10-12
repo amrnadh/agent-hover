@@ -13,7 +13,7 @@ export const Testimonials: React.FC = () => {
         "Nexora replaced what used to be a grueling 4-day monthly close process with a continuous, real-time reconciliation engine. We haven't had a single financial variance in 6 quarters.",
       name: "Marcus Vance",
       role: "VP of Finance & Operations",
-      company: "Ramp Infrastructure",
+      company: "Spendly Infrastructure",
       metric: "98% reduction in month-end close time",
       avatarBg: "bg-indigo-100 text-indigo-700",
       initials: "MV",
@@ -30,10 +30,10 @@ export const Testimonials: React.FC = () => {
     },
     {
       quote:
-        "When our AWS billing schemas drifted after a major provider update, Nexora's self-healing agent caught it and dynamically patched the payload. Zero alerts in the middle of the night.",
+        "When our Nimbus billing schemas drifted after a major provider update, Nexora's self-healing agent caught it and dynamically patched the payload. Zero alerts in the middle of the night.",
       name: "Devon Chen",
       role: "Head of Infrastructure Engineering",
-      company: "Linear Scale",
+      company: "Trackline Scale",
       metric: "100% uptime through 4 API migrations",
       avatarBg: "bg-amber-100 text-amber-800",
       initials: "DC",

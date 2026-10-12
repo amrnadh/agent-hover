@@ -242,6 +242,20 @@ export class TaskStore extends EventEmitter {
     return task;
   }
 
+  /** Attach a checkpoint (taken at claim) and, when the agent did not list files, the files git saw change. */
+  public async annotate(id: string, data: { checkpointId?: string; filesChanged?: string[] }): Promise<AgentTask | undefined> {
+    const task = this.tasks.get(id);
+    if (!task) return undefined;
+    if (data.checkpointId) task.checkpointId = data.checkpointId;
+    if (data.filesChanged && task.result && !(task.result.filesChanged && task.result.filesChanged.length)) {
+      task.result.filesChanged = data.filesChanged;
+    }
+    task.updatedAt = new Date().toISOString();
+    await this.saveToDisk();
+    this.emit('task:updated', task);
+    return task;
+  }
+
   public async cancelTask(id: string): Promise<AgentTask> {
     this.expireOldTasks();
     const task = this.tasks.get(id);

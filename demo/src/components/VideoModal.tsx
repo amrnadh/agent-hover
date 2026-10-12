@@ -14,7 +14,7 @@ export const VideoModal: React.FC = () => {
   const chapters = [
     { title: "Autonomous Agent Orchestration", time: "0:00" },
     { title: "Dual-Key Financial Safeguards", time: "0:45" },
-    { title: "Real-time Mercury & AWS Reconciliation", time: "1:30" },
+    { title: "Real-time Harbor & Nimbus Reconciliation", time: "1:30" },
   ];
 
   const togglePlay = () => {

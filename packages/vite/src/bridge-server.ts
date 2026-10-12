@@ -5,6 +5,8 @@ import { createServer, Server as HttpServer } from 'http';
 import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
 import { TaskStore } from './task-store.js';
+import { CheckpointStore } from './checkpoints.js';
+import { checkForUpdate, packageVersion, type UpdateInfo } from './update-check.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync, unlinkSync } from 'fs';
@@ -66,6 +68,7 @@ export class BridgeServer {
   private token: string;
   private startedAt: string = '';
   private taskStore: TaskStore;
+  private checkpoints: CheckpointStore;
   private agentPresence: Map<string, { client: string; version?: string; lastSeen: number }> = new Map();
   private cleanupExitHandler?: () => void;
   private lastMcpHello = 0;
@@ -81,8 +84,8 @@ export class BridgeServer {
   private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
   private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
   private readonly MAX_SCREENSHOT_ENTRIES = 20;
-  private readonly CURRENT_VERSION = '0.1.1';
-  private updateInfo: { current: string; latest: string } | null = null;
+  private readonly CURRENT_VERSION = packageVersion();
+  private updateInfo: UpdateInfo | null = null;
   private clients: Set<WebSocket> = new Set();
 
   constructor(projectRoot: string, port: number = 9850, options?: { token?: string }) {
@@ -91,6 +94,7 @@ export class BridgeServer {
     this.initialPort = port;
     this.token = options?.token || generateSessionToken();
     this.taskStore = new TaskStore(projectRoot);
+    this.checkpoints = new CheckpointStore(projectRoot);
     this.app = express();
 
     this.contextBuilder = new ContextBuilder(projectRoot);
@@ -252,6 +256,7 @@ export class BridgeServer {
         status: 'ok',
         version: this.CURRENT_VERSION,
         port: this.port,
+        updateAvailable: this.updateInfo,
       });
     });
 
@@ -556,6 +561,13 @@ export class BridgeServer {
             createdAt: commentObj.createdAt || new Date().toISOString(),
             resolved: false,
           };
+          const clampFraction = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : undefined);
+          const offsetX = clampFraction(commentObj.offsetX);
+          const offsetY = clampFraction(commentObj.offsetY);
+          if (offsetX !== undefined && offsetY !== undefined) {
+            newComment.offsetX = offsetX;
+            newComment.offsetY = offsetY;
+          }
           this.comments.push(newComment);
           await this.saveComments();
           this.broadcastState();
@@ -942,12 +954,7 @@ export class BridgeServer {
     });
 
     this.app.get('/api/agent/presence', (_req, res) => {
-      this.prunePresence();
-      const agents = Array.from(this.agentPresence.values()).map((a) => ({
-        client: a.client,
-        version: a.version,
-        lastSeen: new Date(a.lastSeen).toISOString(),
-      }));
+      const agents = this.presenceList();
       res.json({ agents, connected: agents.length > 0 });
     });
 
@@ -978,15 +985,65 @@ export class BridgeServer {
       }
     });
 
-    // List tasks (GET /api/agent/tasks)
-    this.app.get('/api/agent/tasks', (req, res) => {
+    // List tasks (GET /api/agent/tasks). Agents pass ?deliver=1 so returned queued tasks are marked
+    // delivered ("Seen by …" in the overlay); overlay reads omit it and never change task state.
+    this.app.get('/api/agent/tasks', async (req, res) => {
       const statusParam = req.query.status as string;
       const limitParam = parseInt(req.query.limit as string, 10) || 50;
       const statusFilter = statusParam
         ? (statusParam.split(',').map((s) => s.trim()) as TaskStatus[])
         : undefined;
-      const tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      let tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      if (req.query.deliver === '1') {
+        tasks = await Promise.all(
+          tasks.map((t) => (t.status === 'queued' ? this.taskStore.markDelivered(t.id) : t)),
+        );
+      }
       res.json({ tasks });
+    });
+
+    // Listen mode: long-poll for the oldest queued task (GET /api/agent/tasks/next?wait=<seconds>).
+    // Returns immediately when a task is queued, otherwise holds the request until one arrives or
+    // `wait` (max 30 s) elapses. The returned task is marked delivered.
+    // Registered before /api/agent/tasks/:id so "next" is not treated as an id.
+    this.app.get('/api/agent/tasks/next', async (req, res) => {
+      const waitSeconds = Math.min(Math.max(parseInt(req.query.wait as string, 10) || 0, 0), 30);
+
+      const takeOldestQueued = async () => {
+        const queued = this.taskStore.listTasks({ status: ['queued'] });
+        const oldest = queued[queued.length - 1];
+        return oldest ? this.taskStore.markDelivered(oldest.id) : null;
+      };
+
+      const ready = await takeOldestQueued();
+      if (ready || waitSeconds === 0) {
+        res.json({ task: ready, timedOut: !ready });
+        return;
+      }
+
+      let settled = false;
+      const finish = async (task: AgentTask | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        this.taskStore.off('task:created', onCreated);
+        res.off('close', onClose);
+        if (!res.writableEnded) res.json({ task, timedOut: !task });
+      };
+      const onCreated = () => {
+        takeOldestQueued().then((task) => { if (task) finish(task); }).catch(() => {});
+      };
+      const onClose = () => {
+        // Client went away (e.g. the agent's tool call was cancelled): stop listening, deliver nothing.
+        settled = true;
+        clearTimeout(timer);
+        this.taskStore.off('task:created', onCreated);
+      };
+      const timer = setTimeout(() => finish(null), waitSeconds * 1000);
+      this.taskStore.on('task:created', onCreated);
+      res.on('close', onClose);
+      // Re-check once after subscribing, in case a task was queued while we were setting up.
+      onCreated();
     });
 
     // Get task + rendered prompt (GET /api/agent/tasks/:id)
@@ -1005,7 +1062,13 @@ export class BridgeServer {
     this.app.post('/api/agent/tasks/:id/claim', async (req, res) => {
       try {
         const client = req.body?.client || 'agent';
-        const task = await this.taskStore.claimTask(req.params.id, { client });
+        let task = await this.taskStore.claimTask(req.params.id, { client });
+        // Checkpoint before the agent edits anything, so the change can be undone (P3-01).
+        const cp = await this.checkpoints.create(task.id).catch((err) => {
+          console.warn('[agent-hover] Could not create checkpoint:', err?.message || err);
+          return null;
+        });
+        if (cp) task = (await this.taskStore.annotate(task.id, { checkpointId: cp.taskId })) || task;
         res.json({ task });
       } catch (err: any) {
         res.status(409).json({ error: err.message });
@@ -1016,15 +1079,57 @@ export class BridgeServer {
     this.app.post('/api/agent/tasks/:id/complete', async (req, res) => {
       try {
         const { status = 'done', summary, filesChanged, error } = req.body || {};
-        const task = await this.taskStore.completeTask(req.params.id, {
+        let task = await this.taskStore.completeTask(req.params.id, {
           status,
           summary,
           filesChanged,
           error,
         });
+        // When the agent did not list its files, report what git saw change since the checkpoint.
+        if (task.checkpointId && !(filesChanged && filesChanged.length)) {
+          const changes = await this.checkpoints.changes(task.id).catch(() => null);
+          if (changes?.available && changes.files.length) {
+            task = (await this.taskStore.annotate(task.id, { filesChanged: changes.files.map((f) => f.display) })) || task;
+          }
+        }
         res.json({ task });
       } catch (err: any) {
         res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Files changed since the task's checkpoint (GET /api/agent/tasks/:id/changes)
+    this.app.get('/api/agent/tasks/:id/changes', async (req, res) => {
+      const task = this.taskStore.getTask(req.params.id);
+      if (!task) {
+        res.status(404).json({ error: `Task '${req.params.id}' not found` });
+        return;
+      }
+      try {
+        res.json(await this.checkpoints.changes(task.id, task.result?.filesChanged || []));
+      } catch (err: any) {
+        res.status(500).json({ error: err.message || 'Could not read changes' });
+      }
+    });
+
+    // Undo a task's changes (POST /api/agent/tasks/:id/undo { files?: string[] })
+    this.app.post('/api/agent/tasks/:id/undo', async (req, res) => {
+      const task = this.taskStore.getTask(req.params.id);
+      if (!task) {
+        res.status(404).json({ error: `Task '${req.params.id}' not found` });
+        return;
+      }
+      if (task.status === 'in_progress') {
+        res.status(409).json({ error: 'The agent is still working on this task' });
+        return;
+      }
+      try {
+        const files = Array.isArray(req.body?.files) ? req.body.files.filter((f: unknown) => typeof f === 'string') : undefined;
+        const result = await this.checkpoints.undo(task.id, files);
+        this.broadcast({ type: 'task.undone', data: { id: task.id, ...result } });
+        res.json(result);
+      } catch (err: any) {
+        res.status(409).json({ error: err.message || 'Undo failed' });
       }
     });
 
@@ -1514,7 +1619,7 @@ export class BridgeServer {
                 frozenEntries: this.frozenEntries,
                 comments: this.comments,
                 screenshotCount: this.screenshotStore.size,
-                updateAvailable: null,
+                updateAvailable: this.updateInfo,
               },
             })
           );
@@ -1528,6 +1633,12 @@ export class BridgeServer {
         );
 
         resolve(this.port);
+        checkForUpdate(this.CURRENT_VERSION).then((info) => {
+          if (!info) return;
+          this.updateInfo = info;
+          console.log(`[agent-hover] Update available: ${info.current} → ${info.latest} (npm i -D @agent-hover/vite@latest)`);
+          this.broadcastState();
+        });
       };
 
       server.once('error', errorHandler);
@@ -1579,13 +1690,16 @@ export class BridgeServer {
     }
   }
 
-  private broadcastPresence() {
+  /** Connected agents, most recently active first (the overlay sends to the first one by default). */
+  private presenceList() {
     this.prunePresence();
-    const agents = Array.from(this.agentPresence.values()).map((a) => ({
-      client: a.client,
-      version: a.version,
-      lastSeen: new Date(a.lastSeen).toISOString(),
-    }));
+    return Array.from(this.agentPresence.values())
+      .sort((a, b) => b.lastSeen - a.lastSeen)
+      .map((a) => ({ client: a.client, version: a.version, lastSeen: new Date(a.lastSeen).toISOString() }));
+  }
+
+  private broadcastPresence() {
+    const agents = this.presenceList();
     this.broadcast({
       type: 'presence.updated',
       data: { agents, connected: agents.length > 0 },

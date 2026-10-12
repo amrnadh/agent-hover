@@ -2,107 +2,51 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-/**
- * Calculates WCAG 2.1 relative luminance for an sRGB hex color.
- */
-function getRelativeLuminance(hex: string): number {
-  const cleanHex = hex.replace('#', '');
-  const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
-  const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
-  const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
-
-  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+/** WCAG 2.1 relative luminance of an sRGB hex color. */
+function luminance(hex: string): number {
+  const h = hex.replace('#', '');
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const [r, g, b] = [0, 2, 4].map((i) => lin(parseInt(h.slice(i, i + 2), 16) / 255));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/**
- * Calculates WCAG contrast ratio between two hex colors.
- */
-function getContrastRatio(hex1: string, hex2: string): number {
-  const lum1 = getRelativeLuminance(hex1);
-  const lum2 = getRelativeLuminance(hex2);
-  const lighter = Math.max(lum1, lum2);
-  const darker = Math.min(lum1, lum2);
-  return (lighter + 0.05) / (darker + 0.05);
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
 }
 
-describe('Design Tokens Architecture (P2-04 / §7.10)', () => {
-  const tokensCssPath = path.resolve(__dirname, '../styles/tokens.css');
-  const tokensCss = fs.readFileSync(tokensCssPath, 'utf8');
+const css = fs.readFileSync(path.resolve(__dirname, '../styles/ui.css'), 'utf8');
 
-  it('defines integer-only font sizes without fractional blurriness (F-10)', () => {
-    // Assert all defined font-size tokens (2xs, xs, sm, base, lg) use integer pixel values
-    const fontSizeMatches = tokensCss.match(/--ah-text-(2xs|xs|sm|base|lg):\s*([^;]+);/g) || [];
-    expect(fontSizeMatches.length).toBe(5);
+/** The custom properties declared in the first block matching `selector`. */
+function tokens(selector: string): Record<string, string> {
+  const start = css.indexOf(selector + ' {');
+  const block = css.slice(start, css.indexOf('}', start));
+  return Object.fromEntries(Array.from(block.matchAll(/(--ui-[\w-]+):\s*([^;]+);/g), (m) => [m[1], m[2].trim()]));
+}
 
-    for (const match of fontSizeMatches) {
-      const value = match.split(':')[1].trim().replace(';', '');
-      expect(value).toMatch(/^[0-9]+px$/);
-      const pxNum = parseInt(value, 10);
-      expect(Number.isInteger(pxNum)).toBe(true);
-    }
-  });
+describe('UI tokens (ui.css)', () => {
+  const dark = tokens(':host');
+  const light = { ...dark, ...tokens(':host(.light-mode)') };
 
-  it('enforces tabular numbers for numeric metrics and badges', () => {
-    expect(tokensCss).toContain('font-variant-numeric: tabular-nums');
-    expect(tokensCss).toContain('.ah-tabular-nums');
-  });
-
-  it('includes prefers-reduced-motion media query', () => {
-    expect(tokensCss).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(tokensCss).toContain('animation-duration: 0.01ms !important');
-  });
-
-  describe('WCAG AA Contrast Verification (F-11)', () => {
-    it('satisfies WCAG AA contrast for dark theme tokens (>= 4.5:1 text, >= 3:1 controls)', () => {
-      const surfaceBase = '#111214';
-      const textPrimary = '#f2f4f8';
-      const textSecondary = '#9aa0a6';
-      const textMuted = '#757d8a';
-      const textOnAccent = '#ffffff';
-      const accentPrimary = '#0090ff';
-
-      // Primary body text: expected >= 15:1 (WCAG AAA >= 7:1)
-      const ratioPrimary = getContrastRatio(textPrimary, surfaceBase);
-      expect(ratioPrimary).toBeGreaterThanOrEqual(4.5);
-
-      // Secondary body text: expected >= 7:1 (WCAG AAA >= 7:1)
-      const ratioSecondary = getContrastRatio(textSecondary, surfaceBase);
-      expect(ratioSecondary).toBeGreaterThanOrEqual(4.5);
-
-      // Muted body text: calibrated to meet WCAG AA >= 4.5:1
-      const ratioMuted = getContrastRatio(textMuted, surfaceBase);
-      expect(ratioMuted).toBeGreaterThanOrEqual(4.5);
-
-      // Text on filled accent button / badge (WCAG AA text >= 4.5:1)
-      const textOnAccentDark = '#090a0b';
-      const ratioAccent = getContrastRatio(textOnAccentDark, accentPrimary);
-      expect(ratioAccent).toBeGreaterThanOrEqual(4.5);
+  for (const [name, t] of [['dark', dark], ['light', light]] as const) {
+    it(`${name} theme text meets WCAG AA (4.5:1) on every surface`, () => {
+      for (const bg of ['--ui-bg', '--ui-bg-2']) {
+        for (const fg of ['--ui-fg', '--ui-fg-2', '--ui-fg-3']) {
+          expect(contrast(t[fg], t[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(contrast(t['--ui-on-ink'], t['--ui-ink']), 'primary button text').toBeGreaterThanOrEqual(4.5);
     });
+  }
 
-    it('satisfies WCAG AA contrast for light theme tokens (>= 4.5:1 text, >= 3:1 controls)', () => {
-      const surfaceBase = '#ffffff';
-      const textPrimary = '#111827';
-      const textSecondary = '#4b5563';
-      const textMuted = '#6b7280';
-      const textOnAccent = '#ffffff';
-      const accentPrimary = '#0070f3';
+  it('keeps blue for the on-page selector only', () => {
+    expect(dark['--ui-select'].toLowerCase()).toBe('#0d99ff');
+    const uses = css.split('\n').filter((l) => l.includes('var(--ui-select)'));
+    // On-page layers (hover, selection, batch, comment pins) and focus rings only.
+    expect(uses.every((l) => /#ah-hover|#ah-sel-frame|ah-batch|ah-cpin|focus-visible/.test(l))).toBe(true);
+  });
 
-      // Primary text on white: expected >= 15:1 (WCAG AAA >= 7:1)
-      const ratioPrimary = getContrastRatio(textPrimary, surfaceBase);
-      expect(ratioPrimary).toBeGreaterThanOrEqual(4.5);
-
-      // Secondary text on white: expected >= 7:1 (WCAG AAA >= 7:1)
-      const ratioSecondary = getContrastRatio(textSecondary, surfaceBase);
-      expect(ratioSecondary).toBeGreaterThanOrEqual(4.5);
-
-      // Muted text on white: expected >= 4.5:1 (WCAG AA >= 4.5:1)
-      const ratioMuted = getContrastRatio(textMuted, surfaceBase);
-      expect(ratioMuted).toBeGreaterThanOrEqual(4.5);
-
-      // Text on filled accent button / badge (WCAG AA text >= 4.5:1)
-      const ratioAccent = getContrastRatio(textOnAccent, accentPrimary);
-      expect(ratioAccent).toBeGreaterThanOrEqual(4.5);
-    });
+  it('respects prefers-reduced-motion', () => {
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)');
   });
 });

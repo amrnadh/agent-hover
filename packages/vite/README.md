@@ -1,68 +1,59 @@
 # @agent-hover/vite
 
-[![npm downloads](https://img.shields.io/npm/dw/@agent-hover/vite)](https://www.npmjs.com/package/@agent-hover/vite)
+[![npm](https://img.shields.io/npm/v/@agent-hover/vite)](https://www.npmjs.com/package/@agent-hover/vite)
 
 > Point at your UI. Your agent understands it.
 
-Vite dev-mode plugin and local bridge server for [Agent Hover](https://github.com/Arc-coder07/agent-hover). Turns your running React application into a navigable, token-aware visual map that connects directly to AI agents.
+The Vite plugin for [Agent Hover](https://github.com/Arc-coder07/agent-hover). In `vite dev` it adds a small overlay to your React app (click any element, Ask, track the task, compare, undo) and starts a local bridge that your coding agent talks to through [`@agent-hover/mcp`](https://www.npmjs.com/package/@agent-hover/mcp).
 
-## Installation
+![Agent Hover](https://github.com/Arc-coder07/agent-hover/raw/main/docs/media/agent-hover.gif)
+
+## Setup
+
+The quickest way, in your project:
+
+```bash
+npx agent-hover init
+```
+
+Or by hand:
 
 ```bash
 npm install -D @agent-hover/vite
 ```
 
-## Setup
-
-Add `agentHover` (or `componentPointer`) to your `vite.config.ts`:
-
 ```ts
+// vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import agentHover from '@agent-hover/vite';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    agentHover({
-      port: 9850,       // Default bridge port (auto-retries on collision)
-      editor: 'auto',   // 'auto' | 'cursor' | 'vscode' | 'webstorm' | 'zed' | 'windsurf'
-    }),
-  ],
+  plugins: [react(), agentHover()],
 });
 ```
 
-Start your Vite development server:
+Run `npm run dev`, open the app, press **Alt** and click anything. See the [main README](https://github.com/Arc-coder07/agent-hover#readme) for the full flow and agent setup.
 
-```bash
-npm run dev
-```
-
-> **Note:** The plugin uses `apply: 'serve'` and is **completely excluded** from production builds (`vite build`). Zero bundle overhead in production.
-
-## Features
-
-- **Inspector Mode (`Alt`)**: Hover over any rendered React component to highlight its bounding box, view its source file, line number, and component hierarchy.
-- **Precision Dark/Light Themes**:
-  - **Carbon (Dark · Premium)**: Matte carbon capsule dock, elevated squircle active tiles, and high-contrast precision pointers.
-  - **Opal (Light · Glass)**: Translucent frosted glass capsule dock with crisp solid white tiles.
-- **Live Spacing Overlay**: View continuous, DevTools-grade box model overlays for margins (rose tint) and paddings (emerald tint) without any dashed splits.
-- **Component Pinning (`Alt+Shift+Click`)**: Multi-select components on screen to bundle their source context, props, imports, and auto-detected relationships.
-- **Token-Aware AI Prompts**: Copy optimized AI context prompts sized by token budget (`minimal` ~200 tok, `standard` ~500 tok, `full` ~1500 tok).
-- **Graceful Port Resilience**: Automatically detects occupied ports (`EADDRINUSE`) and binds to the next available port, forwarding it to the in-browser overlay dynamically.
+The plugin only runs in dev (`apply: 'serve'`); production builds are unchanged.
 
 ## Options
 
-| Option | Type | Default | Description |
+| Option | Type | Default | |
 | :--- | :--- | :--- | :--- |
-| `port` | `number` | `9850` | Port for the local bridge server (HTTP + WebSocket). Auto-increments if port is occupied. |
-| `editor` | `'auto' \| 'cursor' \| 'vscode' \| 'webstorm' \| 'zed' \| 'windsurf' \| 'antigravity'` | `'auto'` | Target IDE protocol for source navigation links. |
-| `openInEditor` | `boolean` | `true` | Whether to automatically open the component file on `Alt+Shift+Click`. |
+| `port` | `number` | `9850` | Bridge port (HTTP + WebSocket on 127.0.0.1). Moves to the next free port if taken. |
+| `editor` | `'auto' \| 'cursor' \| 'vscode' \| 'windsurf' \| 'zed' \| 'webstorm' \| 'antigravity'` | `'auto'` | Default editor for "Open in editor". Can be changed in the overlay's Settings. |
 
-## Related Packages
+## What the bridge does
 
-- [`@agent-hover/core`](https://www.npmjs.com/package/@agent-hover/core): Context intelligence engine (AST parsing, relationships, and token budgeting).
-- [`@agent-hover/mcp`](https://www.npmjs.com/package/@agent-hover/mcp): Model Context Protocol server for Claude Desktop, Cursor, and Windsurf.
+- Serves component context (source, props, hooks) to the overlay and to MCP.
+- Keeps the task queue in `.agent-hover/tasks.json` (Sent → Seen → Working → Done).
+- Takes a git checkpoint when an agent claims a task, so the overlay can show the changed files and undo them (`.agent-hover/checkpoints/`).
+- Saves screenshots to `.agent-hover/screenshots/` and comments to `.agent-hover/comments.json`.
+
+It accepts requests from your dev server's origin only, with a per-session token in `.agent-hover/session.json`. Keep `session.json`, `tasks.json`, `checkpoints/` and `screenshots/` out of git (`init` does this). Once a day it checks npm for a newer version (no project data; set `AGENT_HOVER_NO_UPDATE_CHECK=1` to turn it off).
+
+API reference: [docs/bridge-api.md](https://github.com/Arc-coder07/agent-hover/blob/main/docs/bridge-api.md).
 
 ## License
 

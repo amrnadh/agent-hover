@@ -192,5 +192,90 @@ describe('Agent Hover MCP Server', () => {
         await new Promise<void>((resolve) => testServer.close(() => resolve()));
       }
     });
+    it('waits for a browser task in listen mode, claims it, and returns the prompt', async () => {
+      const http = await import('http');
+      const testPort = 36000 + Math.floor(Math.random() * 2000);
+      let polls = 0;
+      let claimedBy = '';
+
+      const testServer = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        if (req.url?.startsWith('/api/agent/tasks/next')) {
+          polls++;
+          // First poll: nothing yet. Second poll: a task arrives.
+          const task = polls >= 2 ? { id: 'task-listen-1', instruction: 'Bigger CTA' } : null;
+          res.end(JSON.stringify({ task, timedOut: !task }));
+        } else if (req.url === '/api/agent/tasks/task-listen-1/claim') {
+          let body = '';
+          req.on('data', (c) => (body += c));
+          req.on('end', () => {
+            claimedBy = JSON.parse(body).client;
+            res.end(JSON.stringify({ task: { id: 'task-listen-1', status: 'in_progress' } }));
+          });
+        } else if (req.url?.startsWith('/api/agent/tasks/task-listen-1?')) {
+          res.end(JSON.stringify({ task: { id: 'task-listen-1' }, prompt: '# Task: Bigger CTA' }));
+        } else {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+        }
+      });
+      await new Promise<void>((resolve) => testServer.listen(testPort, '127.0.0.1', () => resolve()));
+
+      const originalEnv = process.env.COMPONENT_POINTER_PORT;
+      process.env.COMPONENT_POINTER_PORT = String(testPort);
+      try {
+        const call = (server as any)._requestHandlers.get('tools/call');
+        const result = await call({ method: 'tools/call', params: { name: 'wait_for_agent_task', arguments: { timeoutSeconds: 10 } } });
+        expect(result.isError).toBeFalsy();
+        expect(polls).toBe(2);
+        expect(claimedBy).toBe('mcp-agent');
+        expect(result.content[0].text).toContain('Claimed task task-listen-1');
+        expect(result.content[0].text).toContain('# Task: Bigger CTA');
+        expect(result.content[0].text).toContain('call wait_for_agent_task again');
+      } finally {
+        if (originalEnv) process.env.COMPONENT_POINTER_PORT = originalEnv;
+        else delete process.env.COMPONENT_POINTER_PORT;
+        await new Promise<void>((resolve) => testServer.close(() => resolve()));
+      }
+    });
+
+    it('returns a short no-task message when listen mode times out', async () => {
+      const http = await import('http');
+      const testPort = 34000 + Math.floor(Math.random() * 2000);
+      const testServer = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        const wait = Number(new URL(req.url!, 'http://x').searchParams.get('wait') || 0);
+        setTimeout(() => res.end(JSON.stringify({ task: null, timedOut: true })), wait * 1000);
+      });
+      await new Promise<void>((resolve) => testServer.listen(testPort, '127.0.0.1', () => resolve()));
+      const originalEnv = process.env.COMPONENT_POINTER_PORT;
+      process.env.COMPONENT_POINTER_PORT = String(testPort);
+      try {
+        const call = (server as any)._requestHandlers.get('tools/call');
+        const started = Date.now();
+        const result = await call({ method: 'tools/call', params: { name: 'wait_for_agent_task', arguments: { timeoutSeconds: 1 } } });
+        expect(Date.now() - started).toBeLessThan(4000);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toBe('No task yet (listened 1s). Call wait_for_agent_task again to keep listening.');
+      } finally {
+        if (originalEnv) process.env.COMPONENT_POINTER_PORT = originalEnv;
+        else delete process.env.COMPONENT_POINTER_PORT;
+        await new Promise<void>((resolve) => testServer.close(() => resolve()));
+      }
+    });
+
+    it('reports an unreachable bridge after listening', async () => {
+      const originalEnv = process.env.COMPONENT_POINTER_PORT;
+      process.env.COMPONENT_POINTER_PORT = '1'; // nothing listens on port 1
+      try {
+        const call = (server as any)._requestHandlers.get('tools/call');
+        const result = await call({ method: 'tools/call', params: { name: 'wait_for_agent_task', arguments: { timeoutSeconds: 1 } } });
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Could not connect');
+      } finally {
+        if (originalEnv) process.env.COMPONENT_POINTER_PORT = originalEnv;
+        else delete process.env.COMPONENT_POINTER_PORT;
+      }
+    });
   });
 });

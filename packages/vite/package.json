@@ -1,12 +1,13 @@
 {
   "name": "@agent-hover/vite",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Point at your UI. Your agent understands it. Vite dev plugin + local bridge server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/**/*.map",
     "README.md",
     "LICENSE"
   ],
@@ -15,9 +16,11 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "npx tsc",
@@ -25,10 +28,9 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
-    "@agent-hover/core": "^0.1.1",
-    "@agent-hover/overlay": "^0.1.1",
+    "@agent-hover/core": "^0.2.0",
+    "@agent-hover/overlay": "^0.2.0",
     "cors": "^2.8.5",
-    "dom-to-image-more": "^3.10.2",
     "express": "^4.21.0",
     "ws": "^8.18.0"
   },
@@ -50,5 +52,18 @@
     "mcp",
     "devtools"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
+    "directory": "packages/vite"
+  },
+  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
+  "bugs": {
+    "url": "https://github.com/Arc-coder07/agent-hover/issues"
+  },
+  "sideEffects": true
 }

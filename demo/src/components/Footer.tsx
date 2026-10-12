@@ -194,7 +194,7 @@ export const Footer: React.FC = () => {
                 onClick={() => openDemoModal("Cloud Ops")}
                 className="hover:text-foreground transition-colors cursor-pointer text-left"
               >
-                AWS Cloud Reconciliation
+                Nimbus Cloud Reconciliation
               </button>
             </li>
             <li>
@@ -224,7 +224,7 @@ export const Footer: React.FC = () => {
           <ul className="space-y-2 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5">
               <Shield className="h-3 w-3 text-emerald-600" />
-              <span>SOC2 Type II Certified</span>
+              <span>Audit logs on every plan</span>
             </li>
             <li>
               <button
@@ -259,7 +259,7 @@ export const Footer: React.FC = () => {
                 onClick={() =>
                   addToast({
                     title: "Compliance Pack",
-                    description: "GDPR & ISO 27001 statements loaded.",
+                    description: "Data handling statement loaded.",
                     type: "info",
                   })
                 }
@@ -275,7 +275,7 @@ export const Footer: React.FC = () => {
       {/* Bottom Bar */}
       <div className="border-t border-border py-6 px-6 md:px-12 lg:px-20 text-[11px] text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          © {new Date().getFullYear()} Nexora Systems Inc. All rights reserved.
+          Nexora is a fictional product: the demo app for Agent Hover. Names, numbers and quotes are made up.
         </div>
 
         {/* Live operational status pill */}
