@@ -188,8 +188,8 @@
 .ah-cpin.resolved { background: var(--ui-bg-3); color: var(--ui-fg-3); }
 
 /* ---------- dock ---------- */
-#ah-dock { position: fixed; z-index: 65; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); height: 44px; border-radius: 999px; display: flex; align-items: center; gap: 2px; padding: 0 6px; user-select: none; }
-#ah-dock.vertical { flex-direction: column; height: auto; width: 44px; padding: 6px 0; border-radius: 22px; }
+#ah-dock { position: fixed; z-index: 65; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); height: 44px; border-radius: 14px; display: flex; align-items: center; gap: 2px; padding: 0 6px; user-select: none; }
+#ah-dock.vertical { flex-direction: column; height: auto; width: 44px; padding: 6px 0; border-radius: 14px; }
 #ah-dock.vertical .ah-sep { width: 18px; height: 1px; }
 #ah-dock .ah-ibtn { width: 32px; height: 32px; border-radius: 9px; }
 #ah-dock .ah-ibtn[aria-pressed="true"] { background: var(--ui-ink); color: var(--ui-on-ink); }
@@ -199,7 +199,7 @@
 #ah-dock .working { position: absolute; top: 4px; right: 4px; }
 #ah-dock .grip { color: var(--ui-fg-3); cursor: grab; padding: 6px 3px; display: grid; place-items: center; }
 #ah-dock.dragging .grip { cursor: grabbing; }
-#ah-dock-min { position: fixed; z-index: 65; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; padding: 0; }
+#ah-dock-min { position: fixed; z-index: 65; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; padding: 0; }
 #ah-dock-min .ah-dot { position: absolute; right: 7px; bottom: 7px; box-shadow: 0 0 0 2px var(--ui-bg); }
 .ah-tip { position: fixed; z-index: 66; pointer-events: none; font: 12px var(--ui-font); padding: 5px 8px; border-radius: 7px; background: var(--ui-ink); color: var(--ui-on-ink); white-space: nowrap; display: flex; gap: 8px; }
 #ah-conn { width: 280px; padding: 12px; gap: 10px; }
