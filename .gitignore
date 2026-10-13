@@ -8,3 +8,14 @@ dist/
 brag-output/
 test-results/
 playwright-report/
+
+# The root link to demo/.agent-hover (lets an agent started at the repo root find the demo's dev server)
+/.agent-hover
+
+# Personal tooling and notes, not part of the project
+.agents/
+.claude/settings.local.json
+AGENT_HOVER_V2_PLAN.md
+v0.2.0-plan.md
+update_vscode.py
+skills-lock.json
