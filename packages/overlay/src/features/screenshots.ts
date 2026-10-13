@@ -218,6 +218,14 @@ export function setupScreenshots(app: OverlayApp) {
         options.width = opts!.width;
         options.height = opts!.height;
       }
+      // modern-screenshot draws an <svg> (or a shape inside one) blank when it is the root; capture the nearest
+      // HTML box around it and crop. The crop needs the live layout, so no one-line fix-up in this clone.
+      const box = !isViewport && !isFullPage && element instanceof SVGElement ? htmlBoxAround(element) : null;
+      if (box) {
+        const { onCloneEachNode: _keepLayout, ...boxOptions } = options;
+        const png = await lib.domToPng(box, boxOptions);
+        return png ? await crop(png, box.getBoundingClientRect(), element.getBoundingClientRect(), options.scale) : null;
+      }
       try {
         return (await lib.domToPng(element, options)) || null;
       } catch (err) {
@@ -232,6 +240,28 @@ export function setupScreenshots(app: OverlayApp) {
     } finally {
       root.style.visibility = prevVisibility || 'visible';
     }
+  }
+
+  /** The nearest HTML ancestor whose box fully contains `el`. */
+  function htmlBoxAround(el: Element): HTMLElement | null {
+    const r = el.getBoundingClientRect();
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      if (!(p instanceof HTMLElement)) continue;
+      const a = p.getBoundingClientRect();
+      if (a.left <= r.left + 0.5 && a.top <= r.top + 0.5 && a.right >= r.right - 0.5 && a.bottom >= r.bottom - 0.5) return p;
+    }
+    return null;
+  }
+
+  /** The part of a capture of `box` that `part` covers (both in viewport coordinates). */
+  async function crop(png: string, box: DOMRect, part: DOMRect, scale: number): Promise<string> {
+    const img = new Image();
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = png; });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(part.width * scale));
+    canvas.height = Math.max(1, Math.round(part.height * scale));
+    canvas.getContext('2d')!.drawImage(img, (part.left - box.left) * scale, (part.top - box.top) * scale, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
   }
 }
 

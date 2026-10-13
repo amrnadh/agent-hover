@@ -101,7 +101,7 @@ export function setupStateSync(app: OverlayApp) {
                   try {
                     let n = fiber;
                     while (n) {
-                      if (n.stateNode && n.stateNode instanceof HTMLElement) { domNode = n.stateNode; break; }
+                      if (n.stateNode && n.stateNode instanceof Element) { domNode = n.stateNode; break; }
                       n = n.child;
                     }
                   } catch (_) {}
