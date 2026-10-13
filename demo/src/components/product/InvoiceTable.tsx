@@ -17,9 +17,9 @@ export function InvoiceTable() {
   const rows = filter === "all" ? invoices : invoices.filter((invoice) => invoice.status === filter);
 
   return (
-    <div className="rounded-xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 pb-3">
-        <h3 className="text-sm font-medium">Recent invoices</h3>
+    <div id="recent-invoices" className="rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center gap-3 px-4 pt-4 pb-3">
+        <h3 className="mr-auto text-sm font-medium">Recent invoices</h3>
         <div role="tablist" aria-label="Filter invoices" className="flex rounded-lg bg-neutral-soft p-0.5 text-xs">
           {filters.map(({ value, label }) => {
             const count = value === "all" ? invoices.length : invoices.filter((i) => i.status === value).length;
@@ -48,7 +48,7 @@ export function InvoiceTable() {
               <th className="px-4 py-2 font-medium">Client</th>
               <th className="px-4 py-2 font-medium">Issued</th>
               <th className="px-4 py-2 font-medium">Due</th>
-              <th className="px-4 py-2 text-right font-medium">Amount</th>
+              <th className="px-4 py-2 font-medium">Amount</th>
               <th className="px-4 py-2 font-medium">Status</th>
             </tr>
           </thead>

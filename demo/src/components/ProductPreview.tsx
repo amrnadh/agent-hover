@@ -34,11 +34,15 @@ export function ProductPreview() {
         </header>
 
         <div className="space-y-4 p-5">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div id="overview-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="Outstanding" value="$16,150" detail="4 invoices" />
             <StatCard label="Overdue" value="$3,150" detail="2 invoices" tone="negative" />
             <StatCard label="Paid this month" value="$26,880" detail="+12% vs September" tone="positive" />
-            <StatCard label="Average days to pay" value="9.4" detail="Down from 15.2" tone="positive" />
+            <div className="rounded-md bg-surface px-4 py-3">
+              <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Avg. days to pay</p>
+              <p className="mt-1 text-xl font-semibold">9.4 days</p>
+              <p className="text-xs text-brand">Down from 15.2</p>
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">

@@ -17,7 +17,7 @@ export const invoices: Invoice[] = [
   { number: "INV-0146", client: "Copperleaf Films", issued: "Oct 2", due: "Oct 16", amount: 5800, status: "open" },
   { number: "INV-0144", client: "Harbor & Vine", issued: "Sep 23", due: "Oct 7", amount: 2400, status: "overdue" },
   { number: "INV-0143", client: "Lumen Yoga", issued: "Sep 22", due: "Oct 6", amount: 980, status: "paid" },
-  { number: "INV-0141", client: "Northfield Dental", issued: "Sep 15", due: "Sep 29", amount: 750, status: "overdue" },
+  { number: "INV-0141", client: "Northfield Dental", issued: "Sep 15", due: "2026-09-29", amount: 750, status: "overdue" },
   { number: "INV-0149", client: "Studio Kiln", issued: "—", due: "—", amount: 3600, status: "draft" },
 ];
 

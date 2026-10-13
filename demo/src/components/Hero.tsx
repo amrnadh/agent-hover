@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { ProductPreview } from "./ProductPreview";
 import { Button } from "./ui/button";
+import { Squiggle } from "./ui/Squiggle";
 
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -33,7 +34,11 @@ export function Hero() {
           {...rise(0.05)}
           className="mx-auto mt-6 max-w-3xl text-[2.5rem] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-6xl"
         >
-          Invoicing that gets you paid on time
+          Invoicing that gets you paid{" "}
+          <span className="relative whitespace-nowrap">
+            on time
+            <Squiggle />
+          </span>
         </motion.h1>
 
         <motion.p
