@@ -39,4 +39,5 @@ Also try Copy with no agent connected: paste the prompt into ChatGPT or Claude.a
 3. Move the `## [Unreleased]` entries in `CHANGELOG.md` under `## [0.2.0] - <date>`.
 4. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`; create the GitHub release from the changelog.
 5. GitHub › Settings › General › Social preview: upload `docs/brand/logo/social.png`.
+   If the UI changed, re-record the demo first (`npm run record:demo`, see `docs/media/VIDEOS.md`). For an inline player, drag `docs/media/agent-hover-demo.mp4` into the README editor on github.com.
 6. Check `npx agent-hover@latest --version` prints 0.2.0 and a fresh `npx agent-hover init` installs 0.2.0.
