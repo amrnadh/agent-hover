@@ -1,4 +1,4 @@
-import fg from 'fast-glob';
+import { glob } from 'tinyglobby';
 import fs from 'fs/promises';
 import path from 'path';
 import { parse } from '@babel/parser';
@@ -92,7 +92,7 @@ export class RelationshipResolver {
   constructor(private projectRoot: string) {}
 
   async buildImportGraph(): Promise<Map<string, string[]>> {
-    const files = await fg('**/*.{ts,tsx,js,jsx}', {
+    const files = await glob('**/*.{ts,tsx,js,jsx}', {
       cwd: this.projectRoot,
       ignore: ['node_modules/**', 'dist/**'],
     });

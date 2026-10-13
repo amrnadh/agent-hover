@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { openDemo, selectHost } from './helpers/overlay';
+import { clickHost, openDemo, selectHost, startInspect } from './helpers/overlay';
 
 test.describe('0.2 screenshots and update notice', () => {
   const shots = path.resolve('docs/screenshots/v0.2');
@@ -28,6 +28,35 @@ test.describe('0.2 screenshots and update notice', () => {
     await expect(box).toBeHidden();
     // Escape closed only the lightbox: the selection is still there.
     await expect(page.locator('#ah-pill')).toBeVisible();
+  });
+
+  test('Screenshot element draws an SVG component (the hero underline), not a blank image', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openDemo(page);
+    await startInspect(page);
+    await clickHost(page, '#hero-headline svg', { fx: 0.5, fy: 0.2 });
+    await expect(page.locator('#ah-pill-name')).toHaveText('<Squiggle />');
+    await page.locator('#ah-pill-more').click();
+    await page.locator('#ah-pill-menu [data-act=shot]').click();
+    const toast = page.locator('#ah-toast');
+    await expect(toast).toContainText('saved to .agent-hover/screenshots', { timeout: 15000 });
+    await toast.getByRole('button', { name: 'View' }).click();
+    const img = page.locator('#ah-lightbox img');
+    await expect(img).toBeVisible();
+    // The underline is the brand green; count its pixels.
+    const green = await img.evaluate(async (el: HTMLImageElement) => {
+      await el.decode();
+      const c = document.createElement('canvas');
+      c.width = el.naturalWidth;
+      c.height = el.naturalHeight;
+      const ctx = c.getContext('2d')!;
+      ctx.drawImage(el, 0, 0);
+      const d = ctx.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 1] > d[i] + 30 && d[i + 1] > d[i + 2] + 10) n++;
+      return n;
+    });
+    expect(green).toBeGreaterThan(200);
   });
 
   test('Screenshot visible area from the dock menu', async ({ page, context }) => {

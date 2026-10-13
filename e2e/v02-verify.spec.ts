@@ -51,6 +51,9 @@ test.describe('0.2 compare and undo', () => {
     const captureNow = card.locator('[data-act=capture-after]');
     if (await captureNow.isVisible().catch(() => false)) await captureNow.click();
     await expect(card.locator('.ah-compare img')).toHaveCount(2, { timeout: 10000 });
+    // The "After" label is a small tag in the corner, not a dark layer over the after image.
+    const afterTag = (await card.locator('.ah-compare .tag.after').boundingBox())!;
+    expect(afterTag.width).toBeLessThan(80);
     await page.screenshot({ path: path.join(shots, '06-compare.png') });
 
     await card.locator('[data-act=undo]').click();

@@ -104,7 +104,7 @@ function collectFiberDomNodes(fiber) {
   const nodes = [];
   function walkFiber(f) {
     if (!f) return;
-    if (f.stateNode && f.stateNode instanceof HTMLElement && f.stateNode !== document.body) {
+    if (f.stateNode && f.stateNode instanceof Element && f.stateNode !== document.body) {
       nodes.push(f.stateNode);
     } else {
       let child = f.child;
@@ -119,7 +119,7 @@ function collectFiberDomNodes(fiber) {
     walkFiber(child);
     child = child.sibling;
   }
-  if (fiber.stateNode && fiber.stateNode instanceof HTMLElement && fiber.stateNode !== document.body) {
+  if (fiber.stateNode && fiber.stateNode instanceof Element && fiber.stateNode !== document.body) {
     nodes.push(fiber.stateNode);
   }
   return nodes;

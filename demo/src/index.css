@@ -1,70 +1,94 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap');
 @import "tailwindcss";
-
-:root {
-  --background: 0 0% 100%;
-  --foreground: 210 14% 17%;
-  --primary: 210 14% 17%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 9%;
-  --muted: 0 0% 96%;
-  --muted-foreground: 184 5% 55%;
-  --accent: 239 84% 67%;
-  --accent-foreground: 0 0% 100%;
-  --border: 0 0% 90%;
-  --ring: 239 84% 67%;
-  --radius: 0.5rem;
-  --font-display: 'Instrument Serif', serif;
-  --font-body: 'Inter', sans-serif;
-  --shadow-dashboard: 0 25px 80px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --dashboard-glass: rgba(255, 255, 255, 0.45);
-  --dashboard-glass-border: rgba(255, 255, 255, 0.5);
-}
-
-.dark {
-  --background: 224 25% 6%;
-  --foreground: 210 20% 98%;
-  --primary: 0 0% 100%;
-  --primary-foreground: 224 25% 6%;
-  --secondary: 224 20% 12%;
-  --secondary-foreground: 210 20% 98%;
-  --muted: 224 20% 14%;
-  --muted-foreground: 215 16% 68%;
-  --accent: 239 84% 70%;
-  --accent-foreground: 0 0% 100%;
-  --border: 224 16% 22%;
-  --ring: 239 84% 70%;
-  --shadow-dashboard: 0 25px 80px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.12);
-  --dashboard-glass: rgba(20, 24, 33, 0.7);
-  --dashboard-glass-border: rgba(255, 255, 255, 0.12);
-}
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+/* Sorrel: warm neutrals, ink buttons, one green for money in. No blue, so Agent Hover's selector stands out. */
+:root {
+  --background: #ffffff;
+  --surface: #f7f7f4;
+  --card: #ffffff;
+  --foreground: #17181a;
+  --muted-foreground: #63645d;
+  --border: #e6e6e1;
+  --input: #dcdcd6;
+  --primary: #17181a;
+  --primary-foreground: #ffffff;
+  --brand: #1d6b47;
+  --brand-strong: #155237;
+  --brand-soft: #e6f1ea;
+  --brand-foreground: #ffffff;
+  --chart-muted: #b9dcc6;
+  --warning: #8a5300;
+  --warning-soft: #fcf0d9;
+  --danger: #b0301c;
+  --danger-soft: #fbe8e4;
+  --neutral-soft: #efefeb;
+  --ring: #1d6b47;
+  --shadow-window: 0 1px 2px rgba(23, 24, 26, 0.04), 0 24px 64px -24px rgba(23, 24, 26, 0.22);
+}
 
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-border: hsl(var(--border));
-  --color-ring: hsl(var(--ring));
+.dark {
+  --background: #0f1011;
+  --surface: #141517;
+  --card: #17181a;
+  --foreground: #ededea;
+  --muted-foreground: #9c9d96;
+  --border: #26282b;
+  --input: #34363a;
+  --primary: #ededea;
+  --primary-foreground: #0f1011;
+  --brand: #4fbf86;
+  --brand-strong: #6fd09e;
+  --brand-soft: #16271e;
+  --brand-foreground: #0b140f;
+  --chart-muted: #24533a;
+  --warning: #e3a63b;
+  --warning-soft: #2a2213;
+  --danger: #f07a66;
+  --danger-soft: #2c1814;
+  --neutral-soft: #222326;
+  --ring: #4fbf86;
+  --shadow-window: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 24px 64px -24px rgba(0, 0, 0, 0.7);
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-chart-muted: var(--chart-muted);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-ring: var(--ring);
+  --shadow-window: var(--shadow-window);
 }
 
 @layer base {
+  html {
+    scroll-padding-top: 5rem;
+  }
   body {
-    font-family: var(--font-body);
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--brand-soft);
   }
 }
-

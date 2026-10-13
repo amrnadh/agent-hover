@@ -289,10 +289,10 @@ export function setupSelector(app: OverlayApp) {
     });
   }
   window.addEventListener('scroll', () => { if (hoverEl) hideHover(); requestLayout(); }, { capture: true, passive: true });
-  // The pill, cards, dock and sidebar sit above the capture layer, so moving onto them never updates the
-  // hover; clear it so no stale outline stays on the page behind them.
+  // The pill, cards, dock, sidebar, task markers and comment pins sit above the capture layer, so moving onto
+  // them never updates the hover; clear it so no stale outline stays on the page behind them.
   shadow.addEventListener('pointerover', (e) => {
-    if (hoverEl && (e.target as Element).closest?.('.ah-surface, #ah-side')) hideHover();
+    if (hoverEl && (e.target as Element).closest?.('.ah-surface, #ah-side, .ah-marker, .ah-cpin')) hideHover();
   });
   window.addEventListener('resize', requestLayout, { passive: true });
 

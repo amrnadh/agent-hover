@@ -1,222 +1,124 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Check, Sparkles, HelpCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { useState } from "react";
+import { Check } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import {
-  staggerContainerVariants,
-  staggerItemVariants,
-} from "./ui/ScrollReveal";
+import { cn } from "../lib/utils";
+import { Button } from "./ui/button";
 
-export const Pricing: React.FC = () => {
-  const { openDemoModal } = useApp();
-  const [isAnnual, setIsAnnual] = useState(true);
+type Billing = "monthly" | "yearly";
 
-  const plans = [
-    {
-      name: "Starter",
-      description: "For startups automating core banking, invoicing, and vendor payouts.",
-      monthlyPrice: 149,
-      annualPrice: 119,
-      features: [
-        "Up to 1,000 automated workflow executions / mo",
-        "Bi-directional Harbor & Payflow connectors",
-        "Single-level human approval thresholds",
-        "Community & email support (4h SLA)",
-        "Audit log retention: 30 days",
-      ],
-      ctaText: "Start Starter Trial",
-      popular: false,
-    },
-    {
-      name: "Growth",
-      description: "For scaling finance and engineering teams requiring dual-key safeguards.",
-      monthlyPrice: 499,
-      annualPrice: 399,
-      features: [
-        "Unlimited automated workflow executions",
-        "All 100+ native connectors (Nimbus, Spendly, Trackline, etc.)",
-        "Dual-key cryptographic sign-off rules",
-        "Shared chat channel with systems engineer (15m SLA)",
-        "Self-healing schema drift protection",
-        "Audit log retention: 1 year (exportable)",
-      ],
-      ctaText: "Get Started with Growth",
-      popular: true,
-    },
-    {
-      name: "Enterprise",
-      description: "For regulated institutions demanding private VPC isolation and custom SLAs.",
-      monthlyPrice: "Custom",
-      annualPrice: "Custom",
-      features: [
-        "Dedicated private VPC agent container isolation",
-        "Custom ERP & proprietary banking rail connectors",
-        "Role-based RBAC with SAML / Okta SSO",
-        "Full audit exports and access reviews",
-        "Dedicated Enterprise Solutions Architect",
-        "99.99% contractual uptime SLA",
-      ],
-      ctaText: "Talk to Enterprise Sales",
-      popular: false,
-    },
-  ];
+interface Plan {
+  name: string;
+  description: string;
+  monthly: number;
+  yearly: number;
+  features: string[];
+  cta: "trial" | "demo";
+  featured?: boolean;
+}
+
+const plans: Plan[] = [
+  {
+    name: "Solo",
+    description: "For freelancers billing on their own.",
+    monthly: 12,
+    yearly: 10,
+    features: ["Unlimited invoices and clients", "Card and bank transfer payments", "Automatic reminders"],
+    cta: "trial",
+  },
+  {
+    name: "Studio",
+    description: "For small teams with retainers and projects.",
+    monthly: 39,
+    yearly: 32,
+    features: ["Everything in Solo", "Up to 10 teammates", "Recurring invoices", "Any currency", "Cash flow reports"],
+    cta: "trial",
+    featured: true,
+  },
+  {
+    name: "Agency",
+    description: "For agencies with approvals and many clients.",
+    monthly: 89,
+    yearly: 74,
+    features: ["Everything in Studio", "Unlimited teammates", "Invoice approvals", "Exports and API access", "Priority support"],
+    cta: "demo",
+  },
+];
+
+export function Pricing() {
+  const [billing, setBilling] = useState<Billing>("yearly");
+  const { openDemoDialog, showToast } = useApp();
 
   return (
-    <motion.section
-      id="pricing"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.1, margin: "0px 0px -40px 0px" }}
-      transition={{ duration: 0.65, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="w-full py-20 px-6 md:px-12 lg:px-20 font-body bg-secondary/20 border-y border-border"
-    >
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "0px 0px -50px 0px" }}
-          transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="text-center max-w-xl mx-auto space-y-3"
-        >
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
-            Predictable Pricing
-          </div>
-          <h2 className="font-display text-3xl md:text-5xl tracking-tight text-foreground leading-tight">
-            Transparent plans for <span className="italic">every</span> operational stage.
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            No surprise overages. Scale your autonomous workforce with predictable computing tiers.
-          </p>
+    <section id="pricing" className="py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-xl text-center">
+          <p className="text-sm font-medium text-brand">Pricing</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Simple plans, no payment cut</h2>
+          <p className="mt-4 text-muted-foreground">Every plan starts with a 14-day trial. Card fees are passed through at cost.</p>
+        </div>
 
-          {/* Billing Interval Toggle */}
-          <div className="pt-3 flex items-center justify-center gap-3">
-            <span
-              className={`text-xs ${
-                !isAnnual ? "font-semibold text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Monthly billing
-            </span>
+        <div role="radiogroup" aria-label="Billing period" className="mx-auto mt-8 flex w-fit rounded-full border border-border bg-surface p-1 text-sm">
+          {(["monthly", "yearly"] as const).map((period) => (
             <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className="relative w-11 h-6 rounded-full bg-secondary border border-border transition-colors cursor-pointer p-0.5"
-              aria-label="Toggle annual or monthly pricing"
+              key={period}
+              role="radio"
+              aria-checked={billing === period}
+              onClick={() => setBilling(period)}
+              className={cn(
+                "cursor-pointer rounded-full px-4 py-1.5 font-medium transition-colors",
+                billing === period ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              <div
-                className={`w-4.5 h-4.5 rounded-full bg-accent transition-transform ${
-                  isAnnual ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
+              {period === "monthly" ? "Monthly" : "Yearly"}
+              {period === "yearly" && <span className="ml-1.5 text-xs text-brand">2 months free</span>}
             </button>
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`text-xs ${
-                  isAnnual ? "font-semibold text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                Annual billing
-              </span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
-                Save 20%
-              </span>
-            </div>
-          </div>
-        </motion.div>
+          ))}
+        </div>
 
-        {/* Pricing Cards */}
-        <motion.div
-          variants={staggerContainerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-          custom={{ stagger: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch"
-        >
-          {plans.map((plan) => {
-            const price =
-              typeof plan.annualPrice === "number"
-                ? isAnnual
-                  ? plan.annualPrice
-                  : plan.monthlyPrice
-                : "Custom";
-
-            return (
-              <motion.div
-                key={plan.name}
-                variants={staggerItemVariants}
-                whileHover={{ y: -4, transition: { duration: 0.25 } }}
-                className={`rounded-2xl p-7 flex flex-col justify-between transition-shadow bg-background border ${
-                  plan.popular
-                    ? "border-accent ring-2 ring-accent/20 shadow-xl relative"
-                    : "border-border shadow-2xs hover:shadow-md"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[10px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Most Popular
-                  </div>
+        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          {plans.map((plan) => (
+            <article
+              key={plan.name}
+              className={cn(
+                "flex flex-col rounded-2xl border bg-card p-6",
+                plan.featured ? "border-foreground/80 shadow-window" : "border-border",
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">{plan.name}</h3>
+                {plan.featured && (
+                  <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">Most popular</span>
                 )}
-
-                <div className="space-y-5">
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">
-                      {plan.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                      {plan.description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-baseline gap-1 pt-2 border-t border-border">
-                    <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                      {typeof price === "number" ? `$${price}` : price}
-                    </span>
-                    {typeof price === "number" && (
-                      <span className="text-xs text-muted-foreground">
-                        / month {isAnnual && "(billed annually)"}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Feature Checklist */}
-                  <div className="space-y-3 pt-2">
-                    <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-                      Included capabilities:
-                    </span>
-                    <ul className="space-y-2.5">
-                      {plan.features.map((feat) => (
-                        <li
-                          key={feat}
-                          className="flex items-start gap-2.5 text-xs text-foreground"
-                        >
-                          <Check className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="pt-8">
-                  <Button
-                    onClick={() => openDemoModal(plan.name)}
-                    className={`w-full rounded-full py-5 text-xs font-medium cursor-pointer transition-all ${
-                      plan.popular
-                        ? "bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    }`}
-                  >
-                    {plan.ctaText}
-                  </Button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
+              <p className="mt-6 flex items-baseline gap-1">
+                <span className="text-4xl font-semibold tracking-tight tabular-nums">${plan[billing]}</span>
+                <span className="text-sm text-muted-foreground">/ month</span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{billing === "yearly" ? "Billed yearly" : "Billed monthly"}</p>
+              <Button
+                variant={plan.featured ? "default" : "outline"}
+                className="mt-6 w-full"
+                onClick={() =>
+                  plan.cta === "demo"
+                    ? openDemoDialog(plan.name)
+                    : showToast({ title: `${plan.name} trial started`, description: "Check your inbox to finish setting up." })
+                }
+              >
+                {plan.cta === "demo" ? "Book a demo" : "Start free trial"}
+              </Button>
+              <ul className="mt-6 space-y-2.5 text-sm">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex gap-2.5">
+                    <Check className="mt-0.5 size-4 shrink-0 text-brand" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
       </div>
-    </motion.section>
+    </section>
   );
-};
+}

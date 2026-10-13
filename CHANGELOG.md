@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `@agent-hover/core` uses `tinyglobby` instead of `fast-glob`, which drops the vulnerable `braces` dependency.
+- The demo app is now **Sorrel**, a fictional invoicing product with a coded product preview in the hero. It replaces the Nexora page and its hotlinked background video, so the README video and screenshots show a believable app and nothing loads from a third-party server. It stages one moment per feature on purpose: an underline you can't name, a one-off tile next to `<StatCard>`s, a misaligned header and an odd date, room for a new button, and a logo to lock (`demo/README.md`; `e2e/demo-scenes.spec.ts` keeps them in place).
+- **GitHub demo video**: `npm run record:demo` records six scenes (point instead of describe, like this not that, notes, add a feature, lock), each on a fresh demo copy, and joins them into `docs/media/agent-hover-demo.mp4`; scene 1 is the README GIF. `npm run record:demo -- 2` re-records one scene. `docs/media/VIDEOS.md` describes the demo video and the separate launch video.
+
+### Fixed
+- The bridge imported `fast-glob` without declaring it, so finding source files (file and line in prompts, open in editor) only worked when another package installed it. It now uses `tinyglobby`, declared by `@agent-hover/vite`. `npm run pack:check` fails when published code imports a package that is not in its dependencies.
+- Moving the pointer onto a task marker or a comment pin left the page's last hover outline on screen; it now clears, as it does over the dock and cards.
+- Components that render an SVG (icons, decorations) had no box: hovering showed `svg.…` instead of the component, and selecting the component found nothing to outline. SVG roots now count, in the overlay and in `list_components`.
+- Screenshot element and Compare drew SVG elements as blank images; they now capture the box around the SVG and crop it.
+- In Compare, the "After" label stretched over the whole after image as a dark layer; it is a small tag again.
+
+## [0.2.0] - 2026-10-12
+
 ### Added
 - **New overlay UI (0.2 design, docs/design/prototype.html)**, rebuilt on the existing engine:
   - **Selector**: blue hover outline and label (`<Component />` or `tag.class` + size); selection frame with corner ticks; locked components in red; hold ⌘/Ctrl over another element to see distances.

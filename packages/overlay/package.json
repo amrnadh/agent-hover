@@ -1,7 +1,7 @@
 {
   "name": "@agent-hover/overlay",
   "version": "0.2.0",
-  "description": "Agent Hover client overlay UI bundle",
+  "description": "The in-page UI of Agent Hover, injected by @agent-hover/vite during development.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,15 +26,6 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Arc-coder07/agent-hover.git",
-    "directory": "packages/overlay"
-  },
-  "homepage": "https://github.com/Arc-coder07/agent-hover#readme",
-  "bugs": {
-    "url": "https://github.com/Arc-coder07/agent-hover/issues"
   },
   "sideEffects": false,
   "exports": {

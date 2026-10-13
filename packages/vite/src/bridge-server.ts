@@ -270,8 +270,8 @@ export class BridgeServer {
         }
 
         // Search for files matching the component name
-        const fg = await import('fast-glob');
-        const files = await fg.default(
+        const { glob } = await import('tinyglobby');
+        const files = await glob(
           `**/${componentName}.{tsx,jsx,ts,js}`,
           {
             cwd: this.projectRoot,
@@ -306,7 +306,7 @@ export class BridgeServer {
             if (isShared) {
               // Try to find an ancestor component file that would be more useful
               for (const ancestorName of ancestors) {
-                const ancestorFiles = await fg.default(
+                const ancestorFiles = await glob(
                   `**/${ancestorName}.{tsx,jsx,ts,js}`,
                   { cwd: this.projectRoot, ignore: ['node_modules/**', 'dist/**'] }
                 );
@@ -362,7 +362,7 @@ export class BridgeServer {
         }
 
         // Fallback: scan all files for the component name as a function/const declaration
-        const allFiles = await fg.default('**/*.{tsx,jsx}', {
+        const allFiles = await glob('**/*.{tsx,jsx}', {
           cwd: this.projectRoot,
           ignore: ['node_modules/**', 'dist/**'],
         });
@@ -1175,7 +1175,7 @@ export class BridgeServer {
     this.app.post('/api/open-editor', async (req, res) => {
       try {
         const { file, line, text, component, editor } = req.body;
-        const fg = await import('fast-glob');
+        const { glob } = await import('tinyglobby');
         const path = await import('path');
 
         let targetFile: string | null = null;
@@ -1190,7 +1190,7 @@ export class BridgeServer {
 
         // If file doesn't exist or wasn't provided, try searching by component or text
         if (!targetFile || !existsSync(targetFile)) {
-          const files = await fg.default('**/*.{tsx,jsx,ts,js}', {
+          const files = await glob('**/*.{tsx,jsx,ts,js}', {
             cwd: this.projectRoot,
             ignore: ['node_modules/**', 'dist/**', '.git/**'],
           });
@@ -1336,10 +1336,10 @@ export class BridgeServer {
 
         // If file wasn't provided or was unresolved by client, scan project for originalText
         if (!targetFile && originalText) {
-          const fg = await import('fast-glob');
+          const { glob } = await import('tinyglobby');
           const fs = await import('fs/promises');
           const path = await import('path');
-          const files = await fg.default('**/*.{tsx,jsx}', {
+          const files = await glob('**/*.{tsx,jsx}', {
             cwd: this.projectRoot,
             ignore: ['node_modules/**', 'dist/**', '.git/**'],
           });
@@ -1379,11 +1379,11 @@ export class BridgeServer {
         // If not found in the specified file (e.g. call-site file was passed instead of definition file),
         // search for the component or text across all project source files
         if (!result.success) {
-          const fg = await import('fast-glob');
+          const { glob } = await import('tinyglobby');
           const fs = await import('fs/promises');
           const path = await import('path');
 
-          const files = await fg.default('**/*.{tsx,jsx}', {
+          const files = await glob('**/*.{tsx,jsx}', {
             cwd: this.projectRoot,
             ignore: ['node_modules/**', 'dist/**', targetFile],
           });
