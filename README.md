@@ -17,7 +17,9 @@ Click any element in your running React app, say what should change, and your co
 
 Works with Claude Code, Cursor, Codex and any other MCP agent, or with plain Copy for ChatGPT, Claude.ai, v0, Lovable and Bolt.
 
-![Agent Hover: select an element, ask, and the agent's progress shows on the page](docs/media/agent-hover.gif)
+![Agent Hover: point at an underline you can't name, ask, and the agent's progress shows on the page](docs/media/agent-hover.gif)
+
+**[Watch the full demo (1:36)](docs/media/agent-hover-demo.mp4)**: point instead of describe, "like this, not that", notes, adding a feature, and keeping agents off finished work.
 
 ## Quick start
 
@@ -97,9 +99,9 @@ Make this button larger with a subtle arrow icon
 
 ## Where
 - Element: `button#hero-primary-cta` with text “Book a demo”
-- Rendered by: `<Hero />` in `src/components/Hero.tsx`, lines 13–75
-- In the source, the element is around line 50
-- It is rendered through `<Button>` (line 49), a shared component: change this usage
+- Rendered by: `<Hero />` in `src/components/Hero.tsx`, lines 14–80
+- In the source, the element is around line 55
+- It is rendered through `<Button>` (line 54), a shared component: change this usage
   (className or props) rather than `<Button>` itself, unless the request is about every Button.
 
 ## The element now
@@ -109,7 +111,7 @@ Make this button larger with a subtle arrow icon
 - Change this element only; keep the rest of <Hero /> as it is.
 - Follow the existing styling approach (Tailwind utility classes in this file).
 
-## Source: src/components/Hero.tsx (lines 13–75)
+## Source: src/components/Hero.tsx (lines 14–80)
 …
 ```
 
