@@ -8,11 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Tests save screenshots to `test-results/` instead of rewriting the images in `docs/screenshots/` on every run; `npm run screenshots` refreshes the README images. Old 0.1-era screenshots and internal planning documents left the repository.
+- The repository moved to `github.com/amrnadh/agent-hover`. Every package's npm page now links to it (`repository`, `homepage`, `bugs`).
 - `@agent-hover/core` uses `tinyglobby` instead of `fast-glob`, which drops the vulnerable `braces` dependency.
 - The demo app is now **Sorrel**, a fictional invoicing product with a coded product preview in the hero. It replaces the Nexora page and its hotlinked background video, so the README video and screenshots show a believable app and nothing loads from a third-party server. It stages one moment per feature on purpose: an underline you can't name, a one-off tile next to `<StatCard>`s, a misaligned header and an odd date, room for a new button, and a logo to lock (`demo/README.md`; `e2e/demo-scenes.spec.ts` keeps them in place).
 - **GitHub demo video**: `npm run record:demo` records six scenes (point instead of describe, like this not that, notes, add a feature, lock), each on a fresh demo copy, and joins them into `docs/media/agent-hover-demo.mp4`; scene 1 is the README GIF. `npm run record:demo -- 2` re-records one scene. `docs/media/VIDEOS.md` describes the demo video and the separate launch video.
 
 ### Fixed
+- Task markers could go missing after a page reload or after the agent's change hot-reloaded the element, until you scrolled (mostly Safari/WebKit). Markers are placed again while the page settles, and when a task's element appears later (another route in a single-page app).
+- Compare's "before" image is now taken when you open Ask, not after Send, so a fast agent can no longer change the page while it is being captured (which left Compare missing or showing the changed element).
+- Screenshots and Compare's after image no longer hide the whole overlay while they capture; a slow capture (Linux WebKit) made the UI disappear for its duration. A capture now gives up after 10 seconds instead of waiting forever.
 - The bridge imported `fast-glob` without declaring it, so finding source files (file and line in prompts, open in editor) only worked when another package installed it. It now uses `tinyglobby`, declared by `@agent-hover/vite`. `npm run pack:check` fails when published code imports a package that is not in its dependencies.
 - Moving the pointer onto a task marker or a comment pin left the page's last hover outline on screen; it now clears, as it does over the dock and cards.
 - Components that render an SVG (icons, decorations) had no box: hovering showed `svg.…` instead of the component, and selecting the component found nothing to outline. SVG roots now count, in the overlay and in `list_components`.

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { shotsDir } from './helpers/overlay';
 import { pointClearOfPopover } from './helpers/bridge';
 import fs from 'fs/promises';
 import path from 'path';
@@ -93,7 +94,7 @@ test.describe('P2-03 Capture Layer & Wheel Forwarding', () => {
     await expect(page.locator('#ah-pill')).toBeVisible();
 
     // Save screenshot of active inspection mode
-    const screenshotsDir = path.resolve(process.cwd(), 'docs/screenshots/P2-03');
+    const screenshotsDir = shotsDir('P2-03');
     await fs.mkdir(screenshotsDir, { recursive: true });
     await page.screenshot({ path: path.join(screenshotsDir, '01-capture-layer-active.png') });
 

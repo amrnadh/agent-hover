@@ -50,6 +50,8 @@ The bridge server does **not**:
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Agent Hover, please report it responsibly:
-- **Email**: Open a security advisory on GitHub or contact the maintainers directly.
-- Please do not disclose vulnerabilities publicly in issues until a patch has been released.
+Please report security issues privately through GitHub: open the repository's **Security** tab and choose **Report a vulnerability** (https://github.com/amrnadh/agent-hover/security/advisories/new). Only the maintainers can see the report.
+
+- Include the affected package and version, steps to reproduce, and what an attacker could do.
+- You will get an answer within a few days. Fixes are released as a patch version and credited in the advisory unless you prefer otherwise.
+- Please do not open a public issue or disclose the problem until a fix is released.

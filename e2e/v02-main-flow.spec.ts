@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
-import { bridge, openDemo, selectHost, startInspect, overlaps, shadowActiveId } from './helpers/overlay';
+import { bridge, openDemo, selectHost, startInspect, overlaps, shadowActiveId, shotsDir } from './helpers/overlay';
 
-/** Main flow (docs/UX-NORTH-STAR.md steps 3–6): hover → select → pill → Ask → send → marker → done. */
+/** Main flow: hover → select → pill → Ask → send → marker → done. */
 test.describe('0.2 main flow', () => {
-  const shots = path.resolve('docs/screenshots/v0.2');
+  const shots = shotsDir('v0.2');
   test.beforeAll(async () => { await fs.mkdir(shots, { recursive: true }); });
 
   test('hover shows a blue outline and label; click shows the pill, not a card', async ({ page }) => {
@@ -81,7 +81,10 @@ test.describe('0.2 main flow', () => {
 
     // Moving onto the marker clears the page's hover outline, like the dock and cards. Approach it from
     // outside the selected button, so the outline left behind would belong to another element.
-    const m = (await marker.boundingBox())!;
+    // The marker is re-created on each layout, so read its box once it is settled.
+    let m: { x: number; y: number; width: number; height: number } | null = null;
+    await expect.poll(async () => (m = await marker.boundingBox())).not.toBeNull();
+    m = m!;
     await page.mouse.move(m.x + m.width + 8, m.y + m.height + 8);
     await expect(page.locator('#ah-hover')).toBeVisible();
     await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2);

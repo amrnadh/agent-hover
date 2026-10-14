@@ -24,7 +24,8 @@
     "typecheck": "for d in core overlay vite mcp cli; do tsc --noEmit -p packages/$d/tsconfig.json || exit 1; done",
     "pack:check": "node scripts/pack-check.mjs",
     "test:e2e:isolated": "node scripts/e2e-isolated.mjs",
-    "record:demo": "node scripts/record-demo.mjs"
+    "record:demo": "node scripts/record-demo.mjs",
+    "screenshots": "AH_SCREENSHOTS=1 node scripts/e2e-isolated.mjs e2e/v02-main-flow.spec.ts e2e/v02-verify.spec.ts e2e/v02-dock-sidebar.spec.ts e2e/v02-screenshots-update.spec.ts"
   },
   "keywords": [
     "agent-hover",

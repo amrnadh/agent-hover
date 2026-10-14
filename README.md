@@ -8,7 +8,7 @@
 # Agent Hover
 
 [![npm](https://img.shields.io/npm/v/@agent-hover/vite?label=%40agent-hover%2Fvite)](https://www.npmjs.com/package/@agent-hover/vite)
-[![CI](https://github.com/Arc-coder07/agent-hover/actions/workflows/ci.yml/badge.svg)](https://github.com/Arc-coder07/agent-hover/actions/workflows/ci.yml)
+[![CI](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 
 **Point at your UI. Your agent understands it.**

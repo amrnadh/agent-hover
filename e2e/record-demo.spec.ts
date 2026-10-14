@@ -429,7 +429,7 @@ test('scene-05 keep agents off it', async ({ page, request }) => {
 
 test('scene-06 end', async ({ page }) => {
   const rec = recorder();
-  await page.setContent(card('<p>Try it in your Vite + React app</p><code>npx agent-hover init</code><small>Claude Code · Cursor · Codex · any MCP agent &nbsp;·&nbsp; github.com/Arc-coder07/agent-hover</small>'));
+  await page.setContent(card('<p>Try it in your Vite + React app</p><code>npx agent-hover init</code><small>Claude Code · Cursor · Codex · any MCP agent &nbsp;·&nbsp; github.com/amrnadh/agent-hover</small>'));
   await page.evaluate(() => document.fonts.ready);
   rec.mark('start');
   await pause(page, 3500);

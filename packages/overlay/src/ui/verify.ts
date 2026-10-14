@@ -19,7 +19,7 @@ const STORE_KEY = 'agent-hover-shots:';
  */
 export function setupVerify(app: OverlayApp) {
   const { BRIDGE, fetch, api } = app;
-  Object.assign(api, { captureBefore, renderTaskVerifyActions, renderTaskVerifyPanel, onTaskCardAction });
+  Object.assign(api, { captureBefore, precaptureBefore, renderTaskVerifyActions, renderTaskVerifyPanel, onTaskCardAction });
 
   const shots = new Map<string, Shots>();
   const changes = new Map<string, Changes>();
@@ -58,8 +58,35 @@ export function setupVerify(app: OverlayApp) {
     }
   }
 
-  /** Called when a task is sent from the page: remember how the element looks now. */
-  function captureBefore(taskId: string, el: Element | null | undefined) {
+  // The "before" image starts when the composer opens (Ask), so it shows the element before the request and a
+  // fast agent can't change the page while it is still being captured.
+  type Early = { at: number; shot: Promise<{ url: string; size: { w: number; h: number } } | null> };
+  const early = new WeakMap<Element, Early>();
+  const EARLY_MAX_AGE_MS = 10 * 60 * 1000;
+
+  function precaptureBefore(el: Element | null | undefined) {
+    if (!el || !el.isConnected || !inViewport(el)) return;
+    const r = el.getBoundingClientRect();
+    const size = { w: Math.round(r.width), h: Math.round(r.height) };
+    const shot = Promise.resolve(api.captureElement(el))
+      .then((url: string | null) => (url ? { url, size } : null))
+      .catch(() => null);
+    early.set(el, { at: Date.now(), shot });
+  }
+
+  /** Called when a task is sent from the page: use the image taken when the composer opened, or take one now. */
+  async function captureBefore(taskId: string, el: Element | null | undefined) {
+    const pre = el ? early.get(el) : undefined;
+    if (el && pre && Date.now() - pre.at < EARLY_MAX_AGE_MS) {
+      early.delete(el);
+      const shot = await pre.shot;
+      if (shot) {
+        save(taskId, { ...load(taskId), before: shot.url, beforeSize: shot.size });
+        api.renderTaskCard?.();
+        api.renderSidebar?.('tasks');
+        return;
+      }
+    }
     capture(taskId, el, 'before', false);
   }
 

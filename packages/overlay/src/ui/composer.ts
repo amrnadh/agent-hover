@@ -64,6 +64,7 @@ export function setupComposer(app: OverlayApp) {
     renderDest();
     box.hidden = false;
     position();
+    api.precaptureBefore?.(state.selectedTarget.element);
     input.focus();
   }
 

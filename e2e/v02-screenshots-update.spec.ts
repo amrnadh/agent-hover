@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { clickHost, openDemo, selectHost, startInspect } from './helpers/overlay';
+import { clickHost, openDemo, selectHost, startInspect, shotsDir } from './helpers/overlay';
 
 test.describe('0.2 screenshots and update notice', () => {
-  const shots = path.resolve('docs/screenshots/v0.2');
+  const shots = shotsDir('v0.2');
 
   test('Screenshot element: toast, then View opens the lightbox; Escape closes it', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
