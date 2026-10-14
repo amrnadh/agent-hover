@@ -1,11 +1,12 @@
 import MARK_SVG from '../brand/mark.svg?raw';
+import { DART_PATH } from './cursor.js';
 /**
  * One icon set for the whole overlay (Lucide-style, 24px grid, 1.6 stroke), rendered as inline SVG strings.
  * Inline markup instead of <use href> because symbol references inside shadow roots are unreliable in Safari.
  */
 const PATHS: Record<string, string> = {
   mark: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
-  pointer: '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.43 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
+  pointer: `<path d="${DART_PATH}"/>`, // the page cursor's shape (lib/cursor.ts)
   comment: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   tasks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',

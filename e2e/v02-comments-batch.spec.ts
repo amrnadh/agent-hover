@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bridge, clickHost, openDemo, selectHost } from './helpers/overlay';
+import { bridge, clickHost, openDemo, selectHost, startInspect } from './helpers/overlay';
 
 test.describe('0.2 comments', () => {
   test('Comment mode drops a pin where you click; resolve and delete', async ({ page, request }) => {
@@ -74,5 +74,34 @@ test.describe('0.2 batch', () => {
       return t ? t.payload.pins.map((p: any) => p.role).join(',') : null;
     }).toBe('TARGET,REFERENCE');
     await expect(page.locator('.ah-batch-num')).toHaveCount(0);
+  });
+});
+
+test.describe('0.2 cursor', () => {
+  test('the page cursor says what a click does; with the Batch tab open, clicks collect', async ({ page }) => {
+    await openDemo(page);
+    const layer = page.locator('#ah-capture-layer');
+    const marks = page.locator('#ah-layer-batch .ah-batch-num');
+    await startInspect(page);
+    await expect(layer).toHaveAttribute('data-cursor', 'inspect');
+    expect(await layer.evaluate((el) => getComputedStyle(el).cursor)).toMatch(/^url\("data:image\/svg\+xml,.*crosshair$/);
+
+    await page.locator('#ah-d-batch').click();
+    await expect(layer).toHaveAttribute('data-cursor', 'batch');
+    await clickHost(page, '#hero-primary-cta');
+    await clickHost(page, '#hero-badge');
+    await expect(marks).toHaveCount(2);
+    await expect(page.locator('#ah-side .ah-li')).toHaveCount(2);
+    // Clicking an element that is already in the batch takes it out again.
+    await clickHost(page, '#hero-primary-cta');
+    await expect(marks).toHaveCount(1);
+
+    await page.locator('#ah-d-batch').click();
+    await expect(layer).toHaveAttribute('data-cursor', 'inspect');
+    await clickHost(page, '#hero-primary-cta');
+    await expect(marks).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await page.locator('#ah-d-comment').click();
+    await expect(layer).toHaveAttribute('data-cursor', 'comment');
   });
 });

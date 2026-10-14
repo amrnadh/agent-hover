@@ -194,6 +194,7 @@
 #ah-dock.vertical .ah-sep { width: 18px; height: 1px; }
 #ah-dock .ah-ibtn { width: 32px; height: 32px; border-radius: 9px; }
 #ah-dock .ah-ibtn[aria-pressed="true"] { background: var(--ui-ink); color: var(--ui-on-ink); }
+#ah-d-inspect[aria-pressed="true"] path, #ah-d-comment[aria-pressed="true"] path { fill: currentColor; } /* the active mode fills, like its page cursor */
 #ah-dock .mark { color: var(--ui-fg); }
 #ah-dock .mark .ah-dot { position: absolute; right: 3px; top: 3px; box-shadow: 0 0 0 2px var(--ui-bg); }
 #ah-dock .count { position: absolute; top: -2px; right: -2px; min-width: 16px; height: 16px; border-radius: 999px; padding: 0 4px; background: var(--ui-ink); color: var(--ui-on-ink); font: 600 10px/16px var(--ui-font); box-shadow: 0 0 0 2px var(--ui-bg); font-variant-numeric: tabular-nums; }
@@ -286,7 +287,7 @@ pre.ah-src { margin: 0 16px 14px; padding: 10px; border-radius: 8px; background:
   details.ah-sec summary .chev { transition: none; }
 }
 
-/* ---------- capture layer (inspect / comment clicks) ---------- */
+/* ---------- capture layer (inspect / comment clicks; the selector sets the cursor image, lib/cursor.ts) ---------- */
 .ah-capture-layer { position: fixed; inset: 0; z-index: 1; pointer-events: auto; cursor: crosshair; background: transparent; display: none; }
 .ah-capture-layer.is-active { display: block; }
 .ah-capture-layer.is-passthrough { pointer-events: none !important; }

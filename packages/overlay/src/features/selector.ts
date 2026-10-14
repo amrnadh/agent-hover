@@ -1,6 +1,7 @@
 import { buildHierarchyStack, getComponentBoundingRect, getComponentInfo } from '../lib/fiber.js';
 import { CaptureLayer } from '../ui/capture-layer.js';
 import { placeBox } from '../lib/ui.js';
+import { cursorCss, type CursorKind } from '../lib/cursor.js';
 import type { OverlayApp } from '../app/context.js';
 
 export type Mode = 'inspect' | 'comment' | null;
@@ -18,7 +19,7 @@ export interface SourceRef { file: string; line: number; component: string; }
 export function setupSelector(app: OverlayApp) {
   const { shadow, state, api } = app;
   Object.assign(api, {
-    setMode, select, selectElement, selectIndex, deselect, describe, labelFor, selectionRect, rectOf,
+    setMode, renderCursor, select, selectElement, selectIndex, deselect, describe, labelFor, selectionRect, rectOf,
     sourceFor, ownerOf, projectOwner, isFrozen, onLayout, requestLayout, insets, onSelectionChange, findComponentElement,
   });
 
@@ -120,8 +121,19 @@ export function setupSelector(app: OverlayApp) {
     state.mode = state.mode === mode ? null : mode;
     state.captureLayer?.setActive(!!state.mode);
     if (!state.mode) hideHover();
+    renderCursor();
     api.renderDock?.();
     if (state.mode === 'comment') api.toast?.('Click anywhere on the page to leave a comment');
+  }
+
+  /** The page cursor says what a click does: select, comment, or (Batch tab open) add to the batch. */
+  function renderCursor() {
+    const layer = shadow.getElementById('ah-capture-layer');
+    if (!layer || !state.mode) return;
+    const kind: CursorKind = state.mode === 'comment' ? 'comment' : api.isCollecting?.() ? 'batch' : 'inspect';
+    if (layer.dataset.cursor === kind) return;
+    layer.dataset.cursor = kind;
+    layer.style.cursor = cursorCss(kind);
   }
 
   // ---------- hover ----------
@@ -206,6 +218,7 @@ export function setupSelector(app: OverlayApp) {
     if (state.mode === 'comment') { api.addCommentAt?.(el, e.clientX, e.clientY); return; }
     const stack = el === hoverEl && hoverStack.length ? hoverStack : buildHierarchyStack(el);
     select(stack, preferredIndex(stack));
+    if (api.isCollecting?.()) api.toggleBatch(state.selectedTarget, state.currentStack);
   }
 
   /** Select `stack[index]`. Surfaces that follow the selection subscribe with `api.onSelectionChange`. */

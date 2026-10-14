@@ -13,24 +13,38 @@ export interface BatchItem {
 }
 
 /**
- * Batch: collect several elements (B or + Batch), give each a role, and send them as one task with one goal.
+ * Batch: collect several elements (B, + Batch, or clicks in Inspect while the Batch tab is open), give each a role, and send them as one task with one goal.
  * Selected items get numbered badges on the page.
  */
 export function setupBatch(app: OverlayApp) {
   const { shadow, state, api } = app;
-  Object.assign(api, { toggleBatch, isInBatch, removeFromBatch, setBatchRole, moveBatchItem, sendBatch, batchItems: () => state.batch as BatchItem[] });
+  Object.assign(api, { toggleBatch, isInBatch, isCollecting, removeFromBatch, setBatchRole, moveBatchItem, sendBatch, batchItems: () => state.batch as BatchItem[] });
 
   const layer = shadow.getElementById('ah-layer-batch') as HTMLElement;
   state.batch = [] as BatchItem[];
   let nextId = 1;
 
+  /** Inspecting with the Batch tab open: a click adds the element to the batch (or takes it out). */
+  function isCollecting(): boolean {
+    const side = state.side || {};
+    return state.mode === 'inspect' && !!side.open && !side.settings && side.tab === 'batch';
+  }
+
+  /** Stacks are rebuilt on every click, so items match by what they point at, not by object identity. */
+  function sameItem(a: any, b: any): boolean {
+    if (a === b) return true;
+    if (!a || !b || a.isDomElement !== b.isDomElement) return false;
+    if (a.isDomElement) return a.element === b.element;
+    return a.name === b.name && !!a.fiber && (a.fiber === b.fiber || a.fiber === b.fiber?.alternate);
+  }
+
   function isInBatch(item: any): boolean {
-    return !!item && state.batch.some((b: BatchItem) => b.stack[b.index] === item);
+    return !!item && state.batch.some((b: BatchItem) => sameItem(b.stack[b.index], item));
   }
 
   function toggleBatch(item: any, stack: any[]) {
     if (!item || !stack) return;
-    const existing = state.batch.findIndex((b: BatchItem) => b.stack[b.index] === item);
+    const existing = state.batch.findIndex((b: BatchItem) => sameItem(b.stack[b.index], item));
     if (existing >= 0) {
       state.batch.splice(existing, 1);
       api.toast('Removed from batch');

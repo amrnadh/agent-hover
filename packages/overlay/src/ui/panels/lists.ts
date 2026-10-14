@@ -104,7 +104,7 @@ export function setupListPanels(app: OverlayApp) {
     render(body: HTMLElement) {
       const items: any[] = api.batchItems();
       if (!items.length) {
-        body.innerHTML = `<div class="ah-empty"><b>Batch is empty</b>Select elements and press <kbd>B</kbd> (or + Batch in the pill) to collect several pieces of UI into one task, for example “make these three cards consistent”.</div>`;
+        body.innerHTML = `<div class="ah-empty"><b>Batch is empty</b>Select elements and press <kbd>B</kbd> (or + Batch in the pill), or click them in Inspect while this tab is open, to collect several pieces of UI into one task, for example “make these three cards consistent”.</div>`;
         return;
       }
       const agent = state.connectedAgents?.[0]?.client;

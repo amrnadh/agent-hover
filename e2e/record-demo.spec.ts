@@ -2,6 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { bridge, openDemo } from './helpers/overlay';
+import { cursorSvg, HOTSPOT } from '../packages/overlay/src/lib/cursor';
 
 /**
  * The GitHub demo video, one scene per test. scripts/record-demo.mjs runs each scene on its own fresh demo copy
@@ -42,21 +43,31 @@ function demoFiles() {
   };
 }
 
-/** Playwright videos have no mouse pointer; draw one. */
+/** Playwright videos have no mouse pointer; draw one. It mirrors the overlay's cursor (badged in Inspect, Comment, Batch). */
 async function showCursor(page: Page) {
-  await page.addInitScript(() => {
+  const svgs = { none: cursorSvg(null, 24), inspect: cursorSvg('inspect', 24), comment: cursorSvg('comment', 24), batch: cursorSvg('batch', 24) };
+  await page.addInitScript(({ svgs, hot }) => {
     const draw = () => {
       const c = document.createElement('div');
       c.id = 'rec-cursor';
-      c.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.43 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z" fill="#111" stroke="#fff" stroke-width="1.5"/></svg>';
-      c.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;transform:translate(-3px,-3px);transition:transform .02s';
+      const at = `translate(${-hot.x}px,${-hot.y}px)`;
+      c.style.cssText = `position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;transform:${at};transform-origin:${hot.x}px ${hot.y}px;transition:transform .02s`;
+      let shown = '';
+      const show = (kind: string) => { if (kind !== shown) { shown = kind; c.innerHTML = (svgs as Record<string, string>)[kind] || svgs.none; } };
+      // The capture layer is shown only in a mode, and carries the kind the overlay picked.
+      const kind = () => {
+        const layer = document.getElementById('agent-hover-root')?.shadowRoot?.getElementById('ah-capture-layer');
+        return layer && getComputedStyle(layer).display !== 'none' && getComputedStyle(layer).pointerEvents !== 'none' ? layer.dataset.cursor || 'none' : 'none';
+      };
+      show('none');
       document.documentElement.appendChild(c);
-      window.addEventListener('mousemove', (e) => { c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px'; }, true);
-      window.addEventListener('mousedown', () => { c.style.transform = 'translate(-3px,-3px) scale(.85)'; }, true);
-      window.addEventListener('mouseup', () => { c.style.transform = 'translate(-3px,-3px)'; }, true);
+      window.addEventListener('mousemove', (e) => { c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px'; show(kind()); }, true);
+      window.addEventListener('mousedown', () => { c.style.transform = `${at} scale(.85)`; }, true);
+      window.addEventListener('mouseup', () => { c.style.transform = at; show(kind()); }, true);
+      window.addEventListener('keyup', () => show(kind()), true);
     };
     if (document.documentElement) draw(); else document.addEventListener('DOMContentLoaded', draw);
-  });
+  }, { svgs, hot: HOTSPOT });
 }
 
 /** A short line at the top of the frame saying what the scene shows (part of the video, not of the demo app). */

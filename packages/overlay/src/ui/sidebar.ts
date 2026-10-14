@@ -82,6 +82,7 @@ export function setupSidebar(app: OverlayApp) {
     tabs.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(!state.side.settings && b.dataset.tab === state.side.tab)));
     updateCounts();
     api.renderDock?.();
+    api.renderCursor?.();
     api.requestLayout?.();
     if (!state.side.open) return;
     const scroll = body.scrollTop;

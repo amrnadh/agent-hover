@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **New page cursor.** In Inspect, Comment and Batch the pointer is the dock's Inspect dart, filled, with a small badge for what a click does: a framed square (select), a speech bubble (comment) or a blue + (add to batch). It replaces the crosshair, which stays as the fallback (`packages/overlay/src/lib/cursor.ts`). The active Inspect or Comment button in the dock fills to match, and the demo recorder draws the same cursors.
+- **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
+
 ### Changed
 - Tests save screenshots to `test-results/` instead of rewriting the images in `docs/screenshots/` on every run; `npm run screenshots` refreshes the README images. Old 0.1-era screenshots and internal planning documents left the repository.
 - The repository moved to `github.com/amrnadh/agent-hover`. Every package's npm page now links to it (`repository`, `homepage`, `bugs`).
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Components that render an SVG (icons, decorations) had no box: hovering showed `svg.…` instead of the component, and selecting the component found nothing to outline. SVG roots now count, in the overlay and in `list_components`.
 - Screenshot element and Compare drew SVG elements as blank images; they now capture the box around the SVG and crop it.
 - In Compare, the "After" label stretched over the whole after image as a dark layer; it is a small tag again.
+- Pressing B on an element already in the batch added it a second time if you had selected it again in between; it now takes it out, as the button says.
 
 ## [0.2.0] - 2026-10-12
 
