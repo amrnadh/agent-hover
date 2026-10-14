@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { bridge, openDemo, selectHost } from './helpers/overlay';
+import { bridge, openDemo, selectHost, shotsDir } from './helpers/overlay';
 
 /** P3-01: before/after compare and Undo, with a scripted "agent" that really edits a demo file. */
 test.describe('0.2 compare and undo', () => {
   const heroFile = path.resolve(process.env.AH_DEMO_DIR || 'demo', 'src/components/Hero.tsx');
-  const shots = path.resolve('docs/screenshots/v0.2');
+  const shots = shotsDir('v0.2');
   let original = '';
 
   test.beforeAll(() => { original = fs.readFileSync(heroFile, 'utf8'); });

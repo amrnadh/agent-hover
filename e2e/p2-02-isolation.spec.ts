@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { shotsDir } from './helpers/overlay';
 
 test.describe('P2-02 Isolation, Popover Mounting & Modal Dialog Inert Fallback', () => {
   test('overlay remains isolated against hostile host CSS, top-layer z-index, and modal dialog inertness', async ({ page }) => {
@@ -90,7 +91,7 @@ test.describe('P2-02 Isolation, Popover Mounting & Modal Dialog Inert Fallback',
     // Save visual verification screenshots for P2-02
     const fs = await import('fs');
     const path = await import('path');
-    const screenshotDir = path.resolve('docs/screenshots/P2-02');
+    const screenshotDir = shotsDir('P2-02');
     fs.mkdirSync(screenshotDir, { recursive: true });
     await page.screenshot({ path: path.join(screenshotDir, '01-isolation-hostile-css.png'), fullPage: false });
 

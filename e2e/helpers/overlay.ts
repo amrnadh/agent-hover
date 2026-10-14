@@ -1,4 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
 import { readDemoSession } from './bridge';
 
 /** Authenticated bridge API for simulating an agent (presence, next, claim, complete) and checking state. */
@@ -67,4 +69,14 @@ export const overlaps = (a: { x: number; y: number; width: number; height: numbe
 
 export async function shadowActiveId(page: Page) {
   return page.evaluate(() => document.querySelector('#agent-hover-root')!.shadowRoot!.activeElement?.id || null);
+}
+
+/**
+ * Where a test saves its screenshots. By default the ignored test-results/ folder, so test runs don't rewrite
+ * images in the repo; `npm run screenshots` sets AH_SCREENSHOTS=1 to refresh the README images in docs/screenshots/.
+ */
+export function shotsDir(name: string) {
+  const dir = path.resolve(process.env.AH_SCREENSHOTS ? 'docs/screenshots' : 'test-results/screenshots', name);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
 }

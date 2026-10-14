@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
-import { bridge, openDemo, selectHost } from './helpers/overlay';
+import { bridge, openDemo, selectHost, shotsDir } from './helpers/overlay';
 
 test.describe('0.2 dock', () => {
-  const shots = path.resolve('docs/screenshots/v0.2');
+  const shots = shotsDir('v0.2');
   test.beforeAll(async () => { await fs.mkdir(shots, { recursive: true }); });
 
   test('sits bottom-center with mark, Inspect, Comment, Tasks, Batch, More and grip', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('0.2 dock', () => {
 });
 
 test.describe('0.2 sidebar', () => {
-  const shots = path.resolve('docs/screenshots/v0.2');
+  const shots = shotsDir('v0.2');
 
   test('Inspect shows identity, breadcrumb, layout and source for the selection', async ({ page }) => {
     await openDemo(page);

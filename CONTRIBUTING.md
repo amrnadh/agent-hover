@@ -37,6 +37,7 @@ npm run typecheck
 npm test                     # unit tests (vitest)
 npm run test:e2e:isolated    # e2e (Playwright) against a throwaway git copy of the demo on port 5175
 npm run pack:check           # what each package would publish
+npm run screenshots          # refresh the README images in docs/screenshots (tests otherwise save to test-results/)
 ```
 
 Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not collide with a dev server you have running. The first time, install the browser with `npx playwright install chromium`. The suite includes the full agent loop through the real MCP server, an accessibility scan (axe) and a performance budget. `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit` runs the user flows in Firefox and WebKit too (`npx playwright install firefox webkit`). CI runs all of it on every pull request.
