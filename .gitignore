@@ -19,3 +19,6 @@ AGENT_HOVER_V2_PLAN.md
 v0.2.0-plan.md
 update_vscode.py
 skills-lock.json
+.claude/launch.json
+# Internal planning notes kept locally, not published
+notes/
