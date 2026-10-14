@@ -29,13 +29,18 @@ export function setupTasks(app: OverlayApp) {
     return t.payload?.label || (t.target?.component ? `<${t.target.component} />` : t.type === 'pinned-stack' || t.type === 'batch' ? 'Batch' : 'Task');
   }
 
+  const hasBox = (el: Element) => { const r = el.getBoundingClientRect(); return r.width > 0 || r.height > 0; };
+
+  /** The task's element on the page now: the one it was sent from, or a match for its selector. A hot update can
+   * leave the old node behind with no box while the new one renders, so prefer a match that has a box. */
   function elementForTask(t: any): Element | null {
     const known = elements.get(t.id);
-    if (known && known.isConnected) return known;
+    if (known && known.isConnected && hasBox(known)) return known;
     const sel = t.target?.selector || t.payload?.selector;
-    if (!sel) return null;
+    if (!sel) return known && known.isConnected ? known : null;
     try {
-      const el = document.querySelector(sel);
+      const matches = Array.from(document.querySelectorAll(sel));
+      const el = matches.find(hasBox) || matches[0] || null;
       if (el) elements.set(t.id, el);
       return el;
     } catch {
@@ -82,6 +87,16 @@ export function setupTasks(app: OverlayApp) {
     api.renderSidebar?.('tasks');
     if (openId) renderCard();
     api.requestLayout();
+    settleMarkers();
+  }
+
+  // After a task changes or the list loads, the page is often still moving: an entrance animation, or a hot update
+  // swapping the element the agent just edited. Place the markers again a few times while it settles. Drawn
+  // directly, not on an animation frame, so it doesn't depend on the browser delivering frames during the update.
+  let settleTimers: Array<ReturnType<typeof setTimeout>> = [];
+  function settleMarkers() {
+    settleTimers.forEach(clearTimeout);
+    settleTimers = [400, 1500, 3000, 6000].map((ms) => setTimeout(renderMarkers, ms));
   }
 
   async function cancelTask(id: string) {
@@ -96,25 +111,49 @@ export function setupTasks(app: OverlayApp) {
   }
 
   // ---------- markers ----------
-  function markerTasks(): Array<{ task: any; el: Element }> {
+  function markerTasks(): { found: Array<{ task: any; el: Element }>; missing: number } {
     const seen = new Set<Element>();
-    const out: Array<{ task: any; el: Element }> = [];
+    const found: Array<{ task: any; el: Element }> = [];
+    let missing = 0;
     for (const t of taskList()) {
       const recent = ACTIVE.has(t.status) || ((t.status === 'done' || t.status === 'failed') && Date.now() - Date.parse(t.updatedAt) < MARKER_TTL_MS);
       if (!recent) continue;
       const el = elementForTask(t);
-      if (!el || seen.has(el)) continue;
+      // Not on the page yet, or there but without a box (mid-swap after a hot update): place it again later.
+      if (!el || !hasBox(el)) { if (el || t.target?.selector || t.payload?.selector) missing++; continue; }
+      if (seen.has(el)) continue;
       seen.add(el);
-      out.push({ task: t, el });
+      found.push({ task: t, el });
     }
-    return out;
+    return { found, missing };
+  }
+
+  // A task's element may not be on the page yet (the app renders after the task list loads, it lives on another
+  // route, or a hot update is swapping it). While any is missing, place markers again when the page's DOM, styles or
+  // classes change (debounced); stop once all are found.
+  let domWatch: MutationObserver | null = null;
+  let domTimer: ReturnType<typeof setTimeout> | null = null;
+  function watchForMissing(missing: number) {
+    if (!missing) {
+      domWatch?.disconnect();
+      domWatch = null;
+      return;
+    }
+    if (domWatch || !document.body) return;
+    domWatch = new MutationObserver(() => {
+      if (domTimer) return;
+      domTimer = setTimeout(() => { domTimer = null; api.requestLayout(); }, 150);
+    });
+    domWatch.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
   }
 
   function renderMarkers() {
     markersLayer.innerHTML = '';
     const pill = shadow.getElementById('ah-pill') as HTMLElement | null;
     const ins = api.insets();
-    for (const { task, el } of markerTasks()) {
+    const { found, missing } = markerTasks();
+    watchForMissing(missing);
+    for (const { task, el } of found) {
       const r = el.getBoundingClientRect();
       if (r.bottom < 0 || r.top > window.innerHeight || (r.width === 0 && r.height === 0)) continue;
       const m = document.createElement('button');

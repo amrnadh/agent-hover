@@ -9,6 +9,7 @@ interface CaptureOptions { width?: number; height?: number; scrollX?: number; sc
 interface Shot { dataUrl: string; mode: SnapMode; filename: string; savedPath: string | null; width: number; height: number }
 
 const MODE_LABEL: Record<SnapMode, string> = { component: 'Element', viewport: 'Visible area', fullpage: 'Full page' };
+const CAPTURE_TIMEOUT_MS = 10000;
 const BLOCK_TAGS = new Set(['div', 'p', 'section', 'article', 'header']);
 
 /**
@@ -181,10 +182,11 @@ export function setupScreenshots(app: OverlayApp) {
       console.error('[agent-hover] Screenshot library not loaded');
       return null;
     }
-    // Hide the whole overlay so only the page is captured.
-    const root = (shadow.host as HTMLElement) || container;
-    const prevVisibility = root.style.visibility;
-    root.style.visibility = 'hidden';
+    // The overlay stays visible: the capture clones the page DOM, and the filter below leaves out the overlay's
+    // host. (Hiding it made the whole UI disappear for as long as a slow capture took.)
+    // A capture that takes too long gives up instead of keeping the caller waiting.
+    const png = (target: Element, o: Record<string, any>): Promise<string | null> =>
+      Promise.race([lib.domToPng(target, o) as Promise<string>, new Promise<null>((res) => setTimeout(() => res(null), CAPTURE_TIMEOUT_MS))]);
 
     const isViewport = opts?.scrollX !== undefined;
     const isFullPage = !!opts?.height && opts.height > window.innerHeight;
@@ -223,22 +225,20 @@ export function setupScreenshots(app: OverlayApp) {
       const box = !isViewport && !isFullPage && element instanceof SVGElement ? htmlBoxAround(element) : null;
       if (box) {
         const { onCloneEachNode: _keepLayout, ...boxOptions } = options;
-        const png = await lib.domToPng(box, boxOptions);
-        return png ? await crop(png, box.getBoundingClientRect(), element.getBoundingClientRect(), options.scale) : null;
+        const shot = await png(box, boxOptions);
+        return shot ? await crop(shot, box.getBoundingClientRect(), element.getBoundingClientRect(), options.scale) : null;
       }
       try {
-        return (await lib.domToPng(element, options)) || null;
+        return (await png(element, options)) || null;
       } catch (err) {
         // Very tall pages can exceed the canvas limit at 2×; retry at 1×.
         if (!isFullPage) throw err;
         options.scale = 1;
-        return (await lib.domToPng(element, options)) || null;
+        return (await png(element, options)) || null;
       }
     } catch (err) {
       console.error('[agent-hover] Screenshot capture failed:', err);
       return null;
-    } finally {
-      root.style.visibility = prevVisibility || 'visible';
     }
   }
 
