@@ -7,7 +7,7 @@ Thanks for helping. Bug reports with steps to reproduce, and small focused pull 
 Node 20 or newer, and git.
 
 ```bash
-git clone https://github.com/Arc-coder07/agent-hover.git
+git clone https://github.com/amrnadh/agent-hover.git
 cd agent-hover
 npm install
 npm run build

@@ -50,7 +50,7 @@ The bridge server does **not**:
 
 ## Reporting a Vulnerability
 
-Please report security issues privately through GitHub: open the repository's **Security** tab and choose **Report a vulnerability** (https://github.com/Arc-coder07/agent-hover/security/advisories/new). Only the maintainers can see the report.
+Please report security issues privately through GitHub: open the repository's **Security** tab and choose **Report a vulnerability** (https://github.com/amrnadh/agent-hover/security/advisories/new). Only the maintainers can see the report.
 
 - Include the affected package and version, steps to reproduce, and what an attacker could do.
 - You will get an answer within a few days. Fixes are released as a patch version and credited in the advisory unless you prefer otherwise.

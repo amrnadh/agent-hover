@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The repository moved to `github.com/amrnadh/agent-hover`. Every package's npm page now links to it (`repository`, `homepage`, `bugs`).
 - `@agent-hover/core` uses `tinyglobby` instead of `fast-glob`, which drops the vulnerable `braces` dependency.
 - The demo app is now **Sorrel**, a fictional invoicing product with a coded product preview in the hero. It replaces the Nexora page and its hotlinked background video, so the README video and screenshots show a believable app and nothing loads from a third-party server. It stages one moment per feature on purpose: an underline you can't name, a one-off tile next to `<StatCard>`s, a misaligned header and an odd date, room for a new button, and a logo to lock (`demo/README.md`; `e2e/demo-scenes.spec.ts` keeps them in place).
 - **GitHub demo video**: `npm run record:demo` records six scenes (point instead of describe, like this not that, notes, add a feature, lock), each on a fresh demo copy, and joins them into `docs/media/agent-hover-demo.mp4`; scene 1 is the README GIF. `npm run record:demo -- 2` re-records one scene. `docs/media/VIDEOS.md` describes the demo video and the separate launch video.

@@ -21,6 +21,15 @@
     "vite": "^6.0.0"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amrnadh/agent-hover.git",
+    "directory": "packages/overlay"
+  },
+  "homepage": "https://github.com/amrnadh/agent-hover#readme",
+  "bugs": {
+    "url": "https://github.com/amrnadh/agent-hover/issues"
+  },
   "engines": {
     "node": ">=20"
   },

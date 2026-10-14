@@ -38,5 +38,14 @@
     "cli"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amrnadh/agent-hover.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/amrnadh/agent-hover#readme",
+  "bugs": {
+    "url": "https://github.com/amrnadh/agent-hover/issues"
+  },
   "sideEffects": true
 }
