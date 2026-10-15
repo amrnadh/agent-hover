@@ -202,12 +202,21 @@ function sourceSection(f: PromptFacts | undefined, h = 2): string {
   return `${'#'.repeat(h)} Source: ${c.file} (lines ${win.from}–${win.to})${note}\n\`\`\`${lang}\n${win.text}\n\`\`\``;
 }
 
-/** One element, one request. The default prompt for Ask and Copy. */
-export function formatChangeRequest(f: PromptFacts, instruction: string): string {
+/** An earlier task on the same element that this request follows up on. */
+export interface PreviousAttempt { instruction: string; summary?: string; files?: string[] }
+
+/** One element, one request. The default prompt for Ask and Copy; with `previous`, a follow-up to that task. */
+export function formatChangeRequest(f: PromptFacts, instruction: string, previous?: PreviousAttempt): string {
   const title = instruction.trim() ? `# Change request: ${describeTarget(f)}` : `# Context: ${describeTarget(f)}`;
   const parts = [title];
   if (instruction.trim()) parts.push(`## What to do\n${instruction.trim()}`);
   else parts.push('## What to do\nNo instruction yet. Use this as context for the next request about this element.');
+  if (previous) {
+    const lines = [`- Asked: ${previous.instruction.trim()}`];
+    if (previous.summary?.trim()) lines.push(`- The agent's summary: ${previous.summary.trim()}`);
+    if (previous.files?.length) lines.push(`- Files changed: ${previous.files.join(', ')}`);
+    parts.push(`## Previous attempt\nThis is a follow-up. An earlier change to this element was kept on the page:\n${lines.join('\n')}\n\nBuild on that change instead of starting over, and don't undo it unless the request says so.`);
+  }
   parts.push(formatElementSections(f, 2));
   parts.push(`## Constraints\n${constraints(f)}`);
   const src = sourceSection(f, 2);

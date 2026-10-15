@@ -47,6 +47,7 @@ ${uiCss}
 
         <div id="ah-composer" class="ah-surface" hidden role="dialog" aria-label="Ask your agent">
           <div class="target">${icon('target', 14)}<b id="ah-comp-name"></b><span id="ah-comp-file" class="ah-mono"></span></div>
+          <div class="follow" id="ah-comp-follow" hidden></div>
           <textarea id="ah-comp-input" aria-label="What should change" placeholder="What should change? e.g. Make the amount larger and add a sparkline"></textarea>
           <div class="foot">
             <button class="ah-tbtn outline dest" id="ah-comp-dest" aria-haspopup="menu"><span class="ah-dot" id="ah-comp-dest-dot"></span><span id="ah-comp-dest-label"></span>${icon('chev-down', 14)}</button>

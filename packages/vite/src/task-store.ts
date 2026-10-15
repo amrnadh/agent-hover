@@ -12,6 +12,7 @@ import type {
   AgentTaskResult,
   Intent,
   Scope,
+  TaskReview,
 } from '@agent-hover/core';
 import { BRAND } from '@agent-hover/core';
 
@@ -251,6 +252,22 @@ export class TaskStore extends EventEmitter {
       task.result.filesChanged = data.filesChanged;
     }
     task.updatedAt = new Date().toISOString();
+    await this.saveToDisk();
+    this.emit('task:updated', task);
+    return task;
+  }
+
+  /** Record your review of a finished task. Only a done task's change can be reviewed. */
+  public async review(id: string, review: Omit<TaskReview, 'at'>): Promise<AgentTask> {
+    const task = this.tasks.get(id);
+    if (!task) {
+      throw new Error(`Task '${id}' not found`);
+    }
+    if (task.status !== 'done') {
+      throw new Error(`Cannot review a task in '${task.status}' state (must be done)`);
+    }
+    task.review = { ...review, at: new Date().toISOString() };
+    task.updatedAt = task.review.at;
     await this.saveToDisk();
     this.emit('task:updated', task);
     return task;

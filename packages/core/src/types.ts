@@ -242,12 +242,22 @@ export interface AgentTaskPayload {
   goal?: string;
   screenshotId?: string;
   prompt?: string;
+  /** The task this one follows up on (Follow up in the task card). */
+  followUpOf?: string;
 }
 
 export interface AgentTaskResult {
   summary?: string;
   filesChanged?: string[];
   error?: string;
+}
+
+/** What you decided about a finished task's change: kept it, undid it, or asked for a follow-up. */
+export interface TaskReview {
+  state: 'kept' | 'undone' | 'followed-up';
+  at: string;
+  /** The follow-up task, for 'followed-up'. */
+  followUp?: string;
 }
 
 export interface AgentTask {
@@ -267,6 +277,7 @@ export interface AgentTask {
   claimedBy?: string;
   checkpointId?: string;
   result?: AgentTaskResult;
+  review?: TaskReview;
 }
 
 export interface AgentPresence {

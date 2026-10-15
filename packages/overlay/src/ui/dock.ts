@@ -45,7 +45,12 @@ export function setupDock(app: OverlayApp) {
     pressed('ah-d-tasks', !!side.open && !side.settings && side.tab === 'tasks');
     pressed('ah-d-batch', !!side.open && !side.settings && side.tab === 'batch');
     const tasks = state.tasks ? [...state.tasks.values()] : [];
-    $('ah-d-tasks-dot').hidden = !tasks.some((t: any) => api.isTaskActive?.(t));
+    // Pulses while an agent has work; a still dot means a change is waiting for your review.
+    const working = tasks.some((t: any) => api.isTaskActive?.(t));
+    const toReview = tasks.some((t: any) => api.awaitingReview?.(t));
+    $('ah-d-tasks-dot').hidden = !working && !toReview;
+    $('ah-d-tasks-dot').className = 'ah-dot working ' + (working ? 'pulse warn' : 'ok'); // .working places it on the button
+    $('ah-d-tasks').dataset.tip = !working && toReview ? 'Tasks · waiting for your review' : 'Tasks';
     const count = (state.batch || []).length;
     $('ah-d-batch-count').hidden = !count;
     $('ah-d-batch-count').textContent = String(count);

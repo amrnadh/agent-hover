@@ -1,6 +1,7 @@
 import { anchorTo, esc, timeAgo } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
 import { describeTaskStatus, prettyAgentName } from '../lib/task-status.js';
+import { lockedChanges, needsReview, REVIEW_TTL_MS, reviewText } from '../lib/review.js';
 import type { OverlayApp } from '../app/context.js';
 
 const ACTIVE = new Set(['queued', 'delivered', 'in_progress']);
@@ -9,11 +10,12 @@ const MARKER_TTL_MS = 30 * 60 * 1000;
 
 /**
  * Tasks: the store (loaded from the bridge, kept live from WebSocket events), the marker on each element
- * with a recent task, and the task card (status timeline, agent summary, changed files).
+ * with a recent task, and the task card (status timeline, agent summary, changed files). A finished change
+ * waits on its element for review: Keep, Undo (verify.ts) or Follow up.
  */
 export function setupTasks(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
-  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status) });
+  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status), reviewTask, followUpTask, awaitingReview, lockedFor, renderReviewActions });
 
   const markersLayer = shadow.getElementById('ah-layer-markers') as HTMLElement;
   const card = shadow.getElementById('ah-task-card') as HTMLElement;
@@ -99,6 +101,51 @@ export function setupTasks(app: OverlayApp) {
     settleTimers = [400, 1500, 3000, 6000].map((ms) => setTimeout(renderMarkers, ms));
   }
 
+  /** An unreviewed change recent enough to keep its marker (and the dock's dot). */
+  function awaitingReview(t: any): boolean {
+    return needsReview(t) && Date.now() - Date.parse(t.updatedAt) < REVIEW_TTL_MS;
+  }
+
+  /** Locked components this finished task changed anyway. */
+  function lockedFor(t: any): string[] {
+    return t.status === 'done' ? lockedChanges(t.result?.filesChanged, state.frozenEntries) : [];
+  }
+
+  async function reviewTask(id: string, action: 'keep' | 'follow-up', followUp?: string) {
+    try {
+      const res = await fetch(BRIDGE + `/api/agent/tasks/${encodeURIComponent(id)}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, followUp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save the review');
+      onTaskEvent(data.task);
+      if (action === 'keep') api.toast(`Kept · ${taskLabel(data.task)}`);
+    } catch (err: any) {
+      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message || 'Could not save the review');
+    }
+  }
+
+  /** Ask again about the same element, with this task's request and result in the prompt. */
+  function followUpTask(t: any) {
+    const el = elementForTask(t);
+    if (!el) { api.toast('That element is not on this page any more'); return; }
+    closeTaskCard();
+    el.scrollIntoView({ block: 'nearest' });
+    api.selectElement(el);
+    api.openComposer({ followUp: t });
+  }
+
+  /** Keep, then Compare and Undo (verify.ts), then Follow up. Shared by the task card and the Tasks tab. */
+  function renderReviewActions(t: any): string {
+    const verify = api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : '';
+    if (t.status !== 'done') return verify;
+    const keep = needsReview(t) ? `<button class="ah-tbtn primary" data-act="keep">${icon('check', 14)}Keep</button>` : '';
+    const follow = t.review?.state !== 'undone' && elementForTask(t) ? '<button class="ah-tbtn outline" data-act="follow-up">Follow up</button>' : '';
+    return keep + verify + follow;
+  }
+
   async function cancelTask(id: string) {
     try {
       const res = await fetch(BRIDGE + `/api/agent/tasks/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
@@ -116,8 +163,7 @@ export function setupTasks(app: OverlayApp) {
     const found: Array<{ task: any; el: Element }> = [];
     let missing = 0;
     for (const t of taskList()) {
-      const recent = ACTIVE.has(t.status) || ((t.status === 'done' || t.status === 'failed') && Date.now() - Date.parse(t.updatedAt) < MARKER_TTL_MS);
-      if (!recent) continue;
+      if (!showsMarker(t)) continue;
       const el = elementForTask(t);
       // Not on the page yet, or there but without a box (mid-swap after a hot update): place it again later.
       if (!el || !hasBox(el)) { if (el || t.target?.selector || t.payload?.selector) missing++; continue; }
@@ -126,6 +172,14 @@ export function setupTasks(app: OverlayApp) {
       found.push({ task: t, el });
     }
     return { found, missing };
+  }
+
+  /** Active tasks, changes waiting for review, and other recent results. A reviewed change has nothing left to do. */
+  function showsMarker(t: any): boolean {
+    if (ACTIVE.has(t.status)) return true;
+    if (t.review) return false;
+    if (needsReview(t)) return awaitingReview(t);
+    return (t.status === 'done' || t.status === 'failed') && Date.now() - Date.parse(t.updatedAt) < MARKER_TTL_MS;
   }
 
   // A task's element may not be on the page yet (the app renders after the task list loads, it lives on another
@@ -157,7 +211,9 @@ export function setupTasks(app: OverlayApp) {
       const r = el.getBoundingClientRect();
       if (r.bottom < 0 || r.top > window.innerHeight || (r.width === 0 && r.height === 0)) continue;
       const m = document.createElement('button');
-      m.className = 'ah-marker' + (task.status === 'done' ? ' done' : task.status === 'failed' ? ' failed' : '');
+      const locked = lockedFor(task).length > 0;
+      const review = needsReview(task);
+      m.className = 'ah-marker' + (task.status === 'done' ? ' done' : task.status === 'failed' ? ' failed' : '') + (review ? ' review' : '') + (locked ? ' locked' : '');
       const left = Math.min(r.right - 11, window.innerWidth - ins.right - 26);
       let top = Math.max(4, r.top - 11);
       // Don't sit on the action pill: use the bottom corner instead.
@@ -168,9 +224,11 @@ export function setupTasks(app: OverlayApp) {
       m.style.left = left + 'px';
       m.style.top = top + 'px';
       const view = describeTaskStatus(task, state.connectedAgents?.[0]?.client);
-      m.title = `${taskLabel(task)} · ${view.text}`;
-      m.setAttribute('aria-label', `Task: ${view.text}`);
+      const extra = [review ? 'waiting for your review' : '', locked ? 'changed a locked component' : ''].filter(Boolean).join(' · ');
+      m.title = `${taskLabel(task)} · ${view.text}${extra ? ' · ' + extra : ''}`;
+      m.setAttribute('aria-label', `Task: ${view.text}${extra ? ', ' + extra : ''}`);
       m.innerHTML = task.status === 'in_progress' ? '<span class="spin"></span>'
+        : locked ? icon('lock', 13)
         : task.status === 'done' ? icon('check', 14)
         : task.status === 'failed' ? icon('alert', 14)
         : '<span class="ah-dot pulse"></span>';
@@ -197,10 +255,13 @@ export function setupTasks(app: OverlayApp) {
     const t = openId ? state.tasks.get(openId) : null;
     if (!t) { closeTaskCard(); return; }
     const view = describeTaskStatus(t, state.connectedAgents?.[0]?.client);
-    const steps = ['Sent', 'Seen', 'Working', 'Done'];
-    const reached = t.status === 'queued' ? 0 : t.status === 'delivered' ? 1 : t.status === 'in_progress' ? 2 : t.status === 'done' ? 3 : -1;
-    const tone = view.tone === 'success' ? 'ok' : view.tone === 'error' ? 'bad' : view.tone === 'working' ? 'warn pulse' : '';
     const files: string[] = t.result?.filesChanged || [];
+    // A change gets a last step: waiting for your review, then what you decided.
+    const reviewable = t.status === 'done' && (files.length > 0 || !!t.review);
+    const steps = ['Sent', 'Seen', 'Working', 'Done', ...(reviewable ? [t.review ? reviewText(t) : 'Review'] : [])];
+    const reached = t.status === 'queued' ? 0 : t.status === 'delivered' ? 1 : t.status === 'in_progress' ? 2 : t.status === 'done' ? (t.review ? 4 : 3) : -1;
+    const locked = lockedFor(t);
+    const tone = view.tone === 'success' ? 'ok' : view.tone === 'error' ? 'bad' : view.tone === 'working' ? 'warn pulse' : '';
     const cancellable = t.status === 'queued' || t.status === 'delivered';
     const el = elementForTask(t);
     card.innerHTML = `
@@ -208,15 +269,16 @@ export function setupTasks(app: OverlayApp) {
       <div class="body">${esc(t.instruction || '')}</div>
       ${reached >= 0 ? `<div class="ah-timeline">${steps.map((s, i) => `<span class="${i <= reached ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 12))}</div>` : `<div class="ah-timeline"><span class="on">${esc(view.text)}</span></div>`}
       ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
+      ${locked.length && t.review?.state !== 'undone' ? `<div class="ah-lockwarn">${icon('lock', 14)}<span>Changed ${locked.map((c) => `<b>&lt;${esc(c)} /&gt;</b>`).join(', ')}, which ${locked.length === 1 ? 'is' : 'are'} locked. Undo it, or unlock it if you meant to allow this.</span></div>` : ''}
       ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}" title="Open in editor">${icon('file', 14)}${esc(f)}</button>`).join('')}</div>` : ''}
       ${api.renderTaskVerifyPanel ? api.renderTaskVerifyPanel(t) : ''}
       <div class="ah-actions">
-        ${api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : ''}
+        ${renderReviewActions(t)}
         ${cancellable ? '<button class="ah-tbtn outline" data-act="cancel">Cancel task</button>' : ''}
-        ${!el ? '' : '<button class="ah-tbtn" data-act="show">Show on page</button>'}
+        ${!el || needsReview(t) ? '' : '<button class="ah-tbtn" data-act="show">Show on page</button>'}
         <button class="ah-tbtn" data-act="tasks">View in Tasks</button>
       </div>
-      <div class="ah-muted" style="font-size:11.5px">${esc(timeAgo(t.createdAt))}</div>`;
+      <div class="ah-muted" style="font-size:11.5px">${esc(timeAgo(t.createdAt))}${t.review ? ` · ${esc(reviewText(t))} ${esc(timeAgo(t.review.at))}` : ''}</div>`;
     card.hidden = false;
     positionCard();
   }
@@ -245,6 +307,8 @@ export function setupTasks(app: OverlayApp) {
     if (act === 'close') closeTaskCard();
     if (act === 'cancel') cancelTask(openId);
     if (act === 'tasks') { closeTaskCard(); api.openSidebar('tasks'); }
+    if (act === 'keep' && t) reviewTask(t.id, 'keep');
+    if (act === 'follow-up' && t) { followUpTask(t); return; }
     if (act === 'show' && t) {
       const el = elementForTask(t);
       if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => api.selectElement(el), 350); }

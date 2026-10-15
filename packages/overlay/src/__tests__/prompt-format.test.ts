@@ -89,6 +89,17 @@ describe('formatChangeRequest', () => {
   it('copy without an instruction still reads as context', () => {
     expect(formatChangeRequest(facts(), '')).toMatch(/^# Context: /);
   });
+
+  it('a follow-up carries the earlier request, its result and files, right after the new request', () => {
+    const p = formatChangeRequest(facts(), 'A bit smaller', { instruction: 'Make the CTA larger', summary: 'Raised it to h-12.', files: ['src/components/Hero.tsx'] });
+    expect(p).toContain('## Previous attempt');
+    expect(p).toContain('- Asked: Make the CTA larger');
+    expect(p).toContain("- The agent's summary: Raised it to h-12.");
+    expect(p).toContain('- Files changed: src/components/Hero.tsx');
+    expect(p.indexOf('## What to do')).toBeLessThan(p.indexOf('## Previous attempt'));
+    expect(p.indexOf('## Previous attempt')).toBeLessThan(p.indexOf('## Constraints'));
+    expect(formatChangeRequest(facts(), 'A bit smaller')).not.toContain('## Previous attempt');
+  });
 });
 
 describe('batch and comments', () => {

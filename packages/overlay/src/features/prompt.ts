@@ -2,7 +2,7 @@ import { buildHierarchyStack } from '../lib/fiber.js';
 import { formatColorToHex } from '../lib/computed-styles.js';
 import { buildCSSSelector } from '../lib/ui.js';
 import { previewValue } from '../lib/value-preview.js';
-import { findElementLine, formatChangeRequest, type ComponentFacts, type ElementFacts, type PromptFacts } from '../lib/prompt-format.js';
+import { findElementLine, formatChangeRequest, type ComponentFacts, type ElementFacts, type PromptFacts, type PreviousAttempt } from '../lib/prompt-format.js';
 import type { OverlayApp } from '../app/context.js';
 
 export interface BuiltPrompt {
@@ -166,12 +166,12 @@ export function setupPrompt(app: OverlayApp) {
     return { facts, tokens };
   }
 
-  async function buildPrompt(stack: any[], index: number, instruction: string): Promise<BuiltPrompt | null> {
+  async function buildPrompt(stack: any[], index: number, instruction: string, previous?: PreviousAttempt): Promise<BuiltPrompt | null> {
     const built = await buildFacts(stack, index);
     if (!built) return null;
     const { facts, tokens } = built;
     return {
-      prompt: formatChangeRequest(facts, instruction),
+      prompt: formatChangeRequest(facts, instruction, previous),
       facts,
       label: facts.element.label,
       component: facts.component?.name || '',

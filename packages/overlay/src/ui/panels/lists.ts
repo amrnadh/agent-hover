@@ -1,6 +1,7 @@
 import { esc, timeAgo } from '../../lib/ui.js';
 import { icon } from '../../lib/icon.js';
 import { describeTaskStatus, prettyAgentName } from '../../lib/task-status.js';
+import { needsReview, reviewText } from '../../lib/review.js';
 import type { OverlayApp } from '../../app/context.js';
 
 const TONE: Record<string, string> = { neutral: '', working: 'warn pulse', success: 'ok', error: 'bad' };
@@ -24,25 +25,28 @@ export function setupListPanels(app: OverlayApp) {
         return;
       }
       const active = tasks.filter((t) => api.isTaskActive(t));
-      const done = tasks.filter((t) => !api.isTaskActive(t));
+      const review = tasks.filter((t) => needsReview(t));
+      const done = tasks.filter((t) => !api.isTaskActive(t) && !needsReview(t));
       const row = (t: any) => {
         const view = describeTaskStatus(t, agent);
         const files: string[] = t.result?.filesChanged || [];
+        const status = t.review ? `${view.text} · ${reviewText(t)}` : view.text;
         const open = expanded === t.id;
         return `<div class="ah-li" data-id="${esc(t.id)}" role="button" tabindex="0" aria-expanded="${open}">
           <span class="ah-dot ${TONE[view.tone]}"></span><div class="t">${esc(t.instruction || api.taskLabel(t))}</div><span class="time">${esc(timeAgo(t.createdAt))}</span>
-          <div class="s"><span class="ah-mono">${esc(api.taskLabel(t))}</span><span>${esc(view.text)}</span></div>
+          <div class="s"><span class="ah-mono">${esc(api.taskLabel(t))}</span><span>${esc(status)}</span></div>
           ${open ? `<div class="more">
             ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
             ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}">${icon('file', 14)}${esc(f)}</button>`).join('')}</div>` : ''}
             <div class="ah-actions">
+              ${api.renderReviewActions(t)}
               ${api.elementForTask(t) ? '<button class="ah-tbtn outline" data-act="show">Show on page</button>' : ''}
-              ${api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : ''}
               ${t.status === 'queued' || t.status === 'delivered' ? '<button class="ah-tbtn outline" data-act="cancel">Cancel</button>' : ''}
             </div></div>` : ''}
         </div>`;
       };
       body.innerHTML = (active.length ? `<div class="ah-group">Active</div><div class="ah-list">${active.map(row).join('')}</div>` : '')
+        + (review.length ? `<div class="ah-group">To review</div><div class="ah-list">${review.map(row).join('')}</div>` : '')
         + (done.length ? `<div class="ah-group">Done</div><div class="ah-list">${done.map(row).join('')}</div>` : '');
       body.onclick = (e) => {
         const li = (e.target as Element).closest('.ah-li') as HTMLElement | null;
@@ -57,6 +61,8 @@ export function setupListPanels(app: OverlayApp) {
           return;
         }
         if (b?.dataset.act === 'cancel') { api.cancelTask(t.id); return; }
+        if (b?.dataset.act === 'keep') { api.reviewTask(t.id, 'keep'); return; }
+        if (b?.dataset.act === 'follow-up') { api.followUpTask(t); return; }
         if (b) { api.onTaskCardAction?.(b.dataset.act, t); return; }
         if ((e.target as Element).closest('.more')) return;
         expanded = expanded === t.id ? null : t.id;

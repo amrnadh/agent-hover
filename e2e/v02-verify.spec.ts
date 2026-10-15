@@ -66,4 +66,72 @@ test.describe('0.2 compare and undo', () => {
     await expect(page.locator('#hero-primary-cta')).toHaveText(/^Book a demo$/, { timeout: 15000 });
     await expect(card).toContainText('Undone');
   });
+
+  test('a finished change waits for review: Follow up carries it forward, a locked file is flagged, Keep settles it', async ({ page, request }) => {
+    test.setTimeout(60000);
+    const api = bridge(request);
+    // Start with nothing waiting for review (other specs finish tasks too).
+    for (const t of (await api.get('/agent/tasks?limit=100')).tasks) {
+      if (t.status === 'done' && !t.review && t.result?.filesChanged?.length) await api.post(`/agent/tasks/${t.id}/review`, { action: 'keep' });
+    }
+    await openDemo(page);
+    await api.post('/agent/presence', { client: 'claude-code' });
+    const ask = async (text: string) => {
+      await page.locator('#ah-comp-input').fill(text);
+      await page.keyboard.press('ControlOrMeta+Enter');
+      let task: any = null;
+      await expect.poll(async () => (task = (await api.get('/agent/tasks?limit=20')).tasks.find((x: any) => x.instruction === text)) && task.id).toBeTruthy();
+      return task;
+    };
+    const finish = async (id: string) => {
+      expect(await api.takeTask(id)).toBeTruthy();
+      await api.post(`/agent/tasks/${id}/claim`, { client: 'claude-code' });
+      await api.post(`/agent/tasks/${id}/complete`, { summary: 'Raised the CTA to h-12.', filesChanged: ['src/components/Hero.tsx'] });
+    };
+
+    await selectHost(page, '#hero-primary-cta');
+    await page.locator('#ah-pill-ask').click();
+    const first = await ask(`Make the CTA larger ${Date.now()}`);
+    await finish(first.id);
+
+    const marker = page.locator('.ah-marker.review');
+    await expect(marker).toHaveCount(1);
+    await expect(page.locator('#ah-d-tasks-dot')).toBeVisible();
+    await marker.click();
+    const card = page.locator('#ah-task-card');
+    await expect(card.locator('.ah-timeline span').last()).toHaveText('Review');
+    await expect(card.locator('[data-act=keep]')).toBeVisible();
+
+    // Follow up: same element, the earlier request and result go into the new prompt.
+    await card.locator('[data-act=follow-up]').click();
+    await expect(page.locator('#ah-composer')).toBeVisible();
+    await expect(page.locator('#ah-comp-follow')).toContainText(first.instruction);
+    const second = await ask(`A bit smaller ${Date.now()}`);
+    expect(second.payload.followUpOf).toBe(first.id);
+    expect(second.payload.prompt).toContain('## Previous attempt');
+    expect(second.payload.prompt).toContain(`- Asked: ${first.instruction}`);
+    await expect.poll(async () => (await api.get(`/agent/tasks/${first.id}`)).task.review?.state).toBe('followed-up');
+
+    // The agent changes a locked component's file anyway: the marker and card say so.
+    const lock = { file: 'src/components/Hero.tsx', component: 'Hero' };
+    await api.post('/freeze', { action: 'add', ...lock });
+    try {
+      await finish(second.id);
+      await expect(marker).toHaveClass(/locked/);
+      await marker.click();
+      await expect(card.locator('.ah-lockwarn')).toContainText('<Hero />');
+      await page.screenshot({ path: path.join(shots, '09-lock-guard.png') });
+
+      // Keep settles it: no marker, still settled after a reload.
+      await card.locator('[data-act=keep]').click();
+      await expect(page.locator('#ah-toast')).toContainText('Kept');
+      await expect(marker).toHaveCount(0);
+      await expect.poll(async () => (await api.get(`/agent/tasks/${second.id}`)).task.review?.state).toBe('kept');
+      await page.reload();
+      await page.waitForTimeout(1200);
+      await expect(page.locator('.ah-marker.review')).toHaveCount(0);
+    } finally {
+      await api.post('/freeze', { action: 'remove', ...lock });
+    }
+  });
 });

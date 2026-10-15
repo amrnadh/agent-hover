@@ -395,6 +395,39 @@ describe('BridgeServer Integration Tests', () => {
     expect(completedTask.result?.summary).toBe('Added p-4 to Button container');
   });
 
+  it('records your review of a finished task: keep, follow-up, and only once it is done', async () => {
+    const testPort = 41000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+    const call = async (method: string, url: string, body?: unknown) => {
+      const res = await fetch(`http://localhost:${activePort}/api${url}`, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return { status: res.status, data: await res.json() };
+    };
+
+    const { data: { task } } = await call('POST', '/agent/tasks', { instruction: 'Make it larger', target: { selector: '#cta' } });
+    // Not finished yet: nothing to review.
+    expect((await call('POST', `/agent/tasks/${task.id}/review`, { action: 'keep' })).status).toBe(409);
+    await call('POST', `/agent/tasks/${task.id}/claim`, { client: 'claude-code' });
+    await call('POST', `/agent/tasks/${task.id}/complete`, { summary: 'Done', filesChanged: ['src/a.tsx'] });
+    expect((await call('POST', `/agent/tasks/${task.id}/review`, { action: 'approve' })).status).toBe(400);
+
+    const kept = await call('POST', `/agent/tasks/${task.id}/review`, { action: 'keep' });
+    expect(kept.status).toBe(200);
+    expect(kept.data.task.review.state).toBe('kept');
+    expect(Date.parse(kept.data.task.review.at)).not.toBeNaN();
+
+    const follow = await call('POST', `/agent/tasks/${task.id}/review`, { action: 'follow-up', followUp: 'task_next' });
+    expect(follow.data.task.review).toMatchObject({ state: 'followed-up', followUp: 'task_next' });
+    // Saved with the task, so it survives a reload of the page.
+    expect((await call('GET', `/agent/tasks/${task.id}`)).data.task.review.state).toBe('followed-up');
+    expect((await call('POST', '/agent/tasks/task_missing/review', { action: 'keep' })).status).toBe(404);
+  });
+
   it('records agent presence and reports connected agents (P1-06)', async () => {
     const testPort = 43000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);

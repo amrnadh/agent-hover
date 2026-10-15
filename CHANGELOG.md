@@ -8,10 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Review on the page.** A finished task that changed files now waits on its element until you decide, instead of its marker fading after 30 minutes.
+  - The marker gets a ring, the timeline gains a last step (Review, then Kept, Undone or Followed up), and the dock's Tasks dot stays on, without pulsing.
+  - The task card leads with **Keep**, then Compare, Undo and **Follow up**.
+  - Follow up opens Ask on the same element, and the new prompt carries a "Previous attempt" section (the earlier request, the agent's summary and its files), so the agent builds on the change instead of starting over. The new task records `followUpOf`.
+  - The Tasks tab lists these under "To review".
+  - Your decision is saved with the task (`review` on the task, `POST /api/agent/tasks/:id/review`), so it survives reloads. Undo records itself. Keep leaves the checkpoint in place, so Undo stays possible until checkpoints are pruned.
+- **Lock is checked, not only asked.** If a finished task changed the file of a component you locked, its marker turns amber with a lock and the card names the component, with Undo right there.
 - **New page cursor.** In Inspect, Comment and Batch the pointer is the dock's Inspect dart, filled, with a small badge for what a click does: a framed square (select), a speech bubble (comment) or a blue + (add to batch). It replaces the crosshair, which stays as the fallback (`packages/overlay/src/lib/cursor.ts`). The active Inspect or Comment button in the dock fills to match, and the demo recorder draws the same cursors.
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- The README, the `@agent-hover/vite` and `@agent-hover/mcp` npm descriptions, and the README GIF lead with what happens after you ask: the task on the element, review, Keep or Undo, and locks. The GIF is re-cut from the existing recording and starts at Send. `npm run record:demo` keeps this cut with a `gifStart` mark and a new caption at that moment.
 - Tests save screenshots to `test-results/` instead of rewriting the images in `docs/screenshots/` on every run; `npm run screenshots` refreshes the README images. Old 0.1-era screenshots and internal planning documents left the repository.
 - The repository moved to `github.com/amrnadh/agent-hover`. Every package's npm page now links to it (`repository`, `homepage`, `bugs`).
 - `@agent-hover/core` uses `tinyglobby` instead of `fast-glob`, which drops the vulnerable `braces` dependency.

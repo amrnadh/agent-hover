@@ -1126,10 +1126,29 @@ export class BridgeServer {
       try {
         const files = Array.isArray(req.body?.files) ? req.body.files.filter((f: unknown) => typeof f === 'string') : undefined;
         const result = await this.checkpoints.undo(task.id, files);
+        if (task.status === 'done') await this.taskStore.review(task.id, { state: 'undone' }).catch(() => {});
         this.broadcast({ type: 'task.undone', data: { id: task.id, ...result } });
         res.json(result);
       } catch (err: any) {
         res.status(409).json({ error: err.message || 'Undo failed' });
+      }
+    });
+
+    // Review a finished task (POST /api/agent/tasks/:id/review { action: 'keep' | 'follow-up', followUp? }).
+    // Undo records itself. Keeping leaves the checkpoint in place, so Undo stays possible until it is pruned.
+    this.app.post('/api/agent/tasks/:id/review', async (req, res) => {
+      const { action, followUp } = req.body || {};
+      if (action !== 'keep' && action !== 'follow-up') {
+        res.status(400).json({ error: "action must be 'keep' or 'follow-up'" });
+        return;
+      }
+      try {
+        const task = await this.taskStore.review(req.params.id, action === 'keep'
+          ? { state: 'kept' }
+          : { state: 'followed-up', followUp: typeof followUp === 'string' ? followUp : undefined });
+        res.json({ task });
+      } catch (err: any) {
+        res.status(err.message?.includes('not found') ? 404 : 409).json({ error: err.message });
       }
     });
 

@@ -117,13 +117,13 @@ export function setupVerify(app: OverlayApp) {
     const s = load(t.id);
     const ch = changes.get(t.id);
     const compare = s.before ? `<button class="ah-tbtn outline" data-act="compare" aria-pressed="${isPanel(t.id, 'compare')}">${icon('panel', 14)}Compare</button>` : '';
-    const undo = t.checkpointId && !ch?.undoneAt ? `<button class="ah-tbtn outline" data-act="undo" aria-pressed="${isPanel(t.id, 'undo')}">Undo</button>` : '';
+    const undo = t.checkpointId && !ch?.undoneAt && t.review?.state !== 'undone' ? `<button class="ah-tbtn outline" data-act="undo" aria-pressed="${isPanel(t.id, 'undo')}">Undo</button>` : '';
     return compare + undo;
   }
 
   function renderTaskVerifyPanel(t: any): string {
     if (!panel || panel.id !== t.id) {
-      const done = changes.get(t.id)?.undoneAt;
+      const done = changes.get(t.id)?.undoneAt || (t.review?.state === 'undone' ? t.review.at : undefined);
       return done ? `<div class="ah-summary">Undone ${esc(timeAgo(done))}. The files are back to how they were before the agent started.</div>` : '';
     }
     if (panel.kind === 'compare') {

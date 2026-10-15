@@ -6,6 +6,7 @@ import type { OverlayApp } from '../app/context.js';
 /**
  * Composer: opens only from Ask (or Enter). Target, instruction, destination (connected agent or Copy),
  * Send ⌘↵. Closes after sending; the task's progress moves to the element marker and the Tasks tab.
+ * Follow up (task card) opens it with an earlier task, whose request and result go into the prompt.
  */
 export function setupComposer(app: OverlayApp) {
   const { shadow, state, api } = app;
@@ -23,6 +24,9 @@ export function setupComposer(app: OverlayApp) {
   const hint = shadow.getElementById('ah-comp-hint') as HTMLElement;
   const destMenu = shadow.getElementById('ah-dest-menu') as HTMLElement;
   const kbd = shadow.getElementById('ah-comp-kbd') as HTMLElement;
+  const followEl = shadow.getElementById('ah-comp-follow') as HTMLElement;
+  /** The finished task this request follows up on, if any. */
+  let followUp: any = null;
 
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   kbd.textContent = isMac ? '⌘↵' : 'Ctrl↵';
@@ -51,8 +55,11 @@ export function setupComposer(app: OverlayApp) {
     hint.textContent = 'No agent connected. The prompt goes to your clipboard for any AI tool. Connect one in Settings › Agents.';
   }
 
-  function openComposer() {
+  function openComposer(opts: { followUp?: any } = {}) {
     if (!state.selectedTarget) return;
+    followUp = opts.followUp || null;
+    followEl.hidden = !followUp;
+    followEl.textContent = followUp ? `Follow-up to “${followUp.instruction || api.taskLabel(followUp)}”` : '';
     api.closePillMenu?.();
     // One card at a time: the composer replaces an open comment or task card.
     api.closeCommentCard?.();
@@ -76,6 +83,7 @@ export function setupComposer(app: OverlayApp) {
     }
     box.hidden = true;
     destMenu.hidden = true;
+    followUp = null;
   }
 
   function position() {
@@ -112,15 +120,20 @@ export function setupComposer(app: OverlayApp) {
     const stack = state.currentStack;
     const index = state.currentStackIndex;
     const dest = destination();
+    const previous = followUp;
     sendBtn.disabled = true;
     try {
-      const built = await api.buildPrompt(stack, index, text);
+      const built = await api.buildPrompt(stack, index, text, previous
+        ? { instruction: previous.instruction || '', summary: previous.result?.summary, files: previous.result?.filesChanged }
+        : undefined);
       if (!built) return;
       const result = await api.dispatchToAgent(
         built.prompt,
-        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label },
+        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, ...(previous ? { followUpOf: previous.id } : {}) },
         { quiet: true, destination: dest.kind },
       );
+      // The earlier change is now settled: this task carries it forward.
+      if (previous && result.task && previous.status === 'done' && !previous.review) api.reviewTask?.(previous.id, 'follow-up', result.task.id);
       drafts.delete(target);
       input.value = '';
       closeComposer(false);
