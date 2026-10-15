@@ -19,8 +19,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "npx tsc && chmod +x dist/cli.js",
-    "prepack": "npx tsc && chmod +x dist/cli.js",
+    "build": "npx tsc && node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
+    "prepack": "npx tsc && node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
     "dev": "npx tsc --watch"
   },
   "devDependencies": {

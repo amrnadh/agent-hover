@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Run the e2e suite against a throwaway git copy of the demo on its own port, so it never edits demo/
 // files (the Undo test changes a component and restores it) or collides with a dev server you have running.
-// Usage: npm run test:e2e:isolated [-- <playwright args>]   (add --keep to keep the copy for debugging)
+// Usage: npm run test:e2e:isolated [-- <playwright args>]   (add --keep to keep the copy for debugging,
+// --screenshots to write the README images)
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, existsSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
@@ -11,7 +12,9 @@ const root = path.resolve(import.meta.dirname, '..');
 const demo = path.join(root, 'demo');
 const args = process.argv.slice(2);
 const keep = args.includes('--keep');
-const playwrightArgs = args.filter((a) => a !== '--keep');
+// --screenshots refreshes the README images in docs/screenshots/ (npm run screenshots).
+const screenshots = args.includes('--screenshots');
+const playwrightArgs = args.filter((a) => a !== '--keep' && a !== '--screenshots');
 
 const dir = mkdtempSync(path.join(os.tmpdir(), 'ah-e2e-'));
 const skip = new Set(['node_modules', '.agent-hover', 'dist']);
@@ -43,7 +46,7 @@ const result = spawnSync('npx', ['playwright', 'test', ...playwrightArgs], {
   cwd: root,
   stdio: 'inherit',
   shell: process.platform === 'win32',
-  env: { ...process.env, AH_DEMO_DIR: dir, AH_E2E_PORT: process.env.AH_E2E_PORT || '5175' },
+  env: { ...process.env, AH_DEMO_DIR: dir, AH_E2E_PORT: process.env.AH_E2E_PORT || '5175', ...(screenshots ? { AH_SCREENSHOTS: '1' } : {}) },
 });
 if (keep) console.log(`[e2e] kept ${dir}`);
 else rmSync(dir, { recursive: true, force: true });
