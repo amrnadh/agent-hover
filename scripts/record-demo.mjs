@@ -5,7 +5,8 @@
 // scene can be re-recorded without the others.
 // Usage: npm run record:demo           every scene, then the full video and the README GIF
 //        npm run record:demo -- 2 4    re-record scenes 2 and 4 only; the other clips come from the last run
-// Output: docs/media/agent-hover-demo.mp4 (all scenes); docs/media/agent-hover.gif and .mp4 (scene 1, README top).
+// Output: docs/media/agent-hover-demo.mp4 (all scenes); docs/media/agent-hover.gif and .mp4 (scene 1 from Send to
+// Compare, the gifStart and gifEnd marks: the README top).
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -46,9 +47,11 @@ for (const scene of wanted.length ? wanted : scenes) {
   const marks = JSON.parse(readFileSync(path.join(dir, 'marks.json'), 'utf8'));
   ffmpeg(...range(marks.start, marks.end), '-i', video, ...mp4, path.join(cache, `${scene}.mp4`));
   if (marks.gifEnd) {
-    // The README top: this scene up to the Compare slider, as a GIF and an MP4.
-    ffmpeg(...range(marks.start, marks.gifEnd), '-i', video, ...mp4, '-movflags', '+faststart', path.join(out, 'agent-hover.mp4'));
-    ffmpeg(...range(marks.start, marks.gifEnd), '-i', video, '-vf',
+    // The README top: this scene from Send to the Compare slider, as a GIF and an MP4. It opens on the task, not on
+    // pointing, because what happens after you send is what Agent Hover is about.
+    const gifStart = marks.gifStart ?? marks.start;
+    ffmpeg(...range(gifStart, marks.gifEnd), '-i', video, ...mp4, '-movflags', '+faststart', path.join(out, 'agent-hover.mp4'));
+    ffmpeg(...range(gifStart, marks.gifEnd), '-i', video, '-vf',
       'fps=10,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
       path.join(out, 'agent-hover.gif'));
   }

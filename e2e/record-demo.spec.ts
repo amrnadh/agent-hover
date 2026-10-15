@@ -183,7 +183,9 @@ test('scene-01 point at it', async ({ page, request }) => {
     await glideClick(page, page.locator('#ah-pill-ask'), 0.5, 0.5, 15);
     await pause(page, 300);
     await page.keyboard.type(instruction, { delay: 45 });
-    await pause(page, 500);
+    rec.mark('gifStart'); // the README GIF starts here, on the request
+    await caption(page, 'Ask on the page. Watch it land on the element.');
+    await pause(page, 900);
     await glideClick(page, page.locator('#ah-comp-send'), 0.5, 0.5, 12);
     await expect(page.locator('#ah-toast')).toContainText('Sent to Claude Code');
     await pause(page, 500);

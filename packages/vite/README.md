@@ -1,6 +1,6 @@
-**Point at your UI. Your agent understands it.**
+**See every UI change your agent makes, right on the page. Keep it or undo it.**
 
-Agent Hover is a dev-only Vite plugin for React apps. Click any element in your running app, say what should change, and your coding agent gets the exact file, the line that renders it, how it looks right now, its props, and the rules to stay in scope. Then follow the task on the element itself (Sent → Seen → Working → Done), compare before and after, and undo if you don't like the result.
+Agent Hover is a dev-only Vite plugin for React apps. Ask for a change on any element of your running app, and your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. The task stays on the element while the agent works (Sent → Seen → Working → Done). Then review it there: compare before and after, keep it, undo it in one click, or follow up. Lock finished components, and Agent Hover tells you if an agent changed one anyway.
 
 Works with Claude Code, Cursor, Codex, Antigravity, Windsurf and any other MCP agent. No agent connected? Every prompt can be copied into ChatGPT, Claude.ai, v0, Lovable or Bolt.
 
@@ -67,14 +67,13 @@ Then register the MCP server with your agent:
 
 ## Using it
 
-- **Point.** Turn on Inspect (Alt) and hover: you see the component and its size. Click to select it; a small pill appears with Ask, Comment, Batch, Copy and more.
-- **Ask.** Describe the change and send it to your connected agent, or choose Copy prompt to paste it into any AI tool.
+- **Ask.** Turn on Inspect (Alt) and click an element; a small pill appears with Ask, Comment, Batch, Copy and more. Describe the change and send it to your connected agent, or choose Copy prompt to paste it into any AI tool.
 - **Track.** A marker on the element follows the task: Sent → Seen → Working → Done. Click it for the agent's summary and the files it changed. Markers come back after a reload.
-- **Compare and Undo.** When the agent starts a task, Agent Hover takes a git checkpoint of your project (including uncommitted and untracked files, without touching them). The task card shows a before/after slider of the element, and **Undo** restores exactly the files that changed after showing you the list.
+- **Review.** A finished change waits on its element. **Compare** shows a before/after slider of the element. **Keep** settles it. **Undo** restores exactly the files that changed, after showing you the list: when the agent starts a task, Agent Hover takes a git checkpoint of your project (including uncommitted and untracked files, without touching them). **Follow up** asks again about the same element with the earlier request and the agent's summary in the prompt.
 - **Comment.** Press **C** and click anywhere to drop a numbered note. Send notes one at a time or all open ones as a single task.
 - **Batch.** Press **B** on several elements and mark each as Change, Reference or Don't touch, then describe one goal ("make these three cards consistent").
 - **Inspect.** Press **D** for the sidebar: component, clickable breadcrumb, live props (secrets are redacted), hooks, text, box model and key styles, source, and the token count of what would be sent.
-- **Lock.** In the pill's ⋯ menu, "Don't let agents change this" adds the component to every prompt's do-not-modify list.
+- **Lock.** In the pill's ⋯ menu, "Don't let agents change this" adds the component to every prompt's do-not-modify list. If a finished task changed a locked component's file anyway, its marker turns amber and the card names the component, with Undo right there.
 - **Screenshots.** Element (pill ⋯ menu), visible area or full page (dock ⋯ menu). Each is copied to the clipboard and saved to `.agent-hover/screenshots/` so agents can open it.
 
 ### Listen mode

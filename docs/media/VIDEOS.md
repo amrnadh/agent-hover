@@ -16,7 +16,7 @@ Recorded from the demo app (Sorrel, `demo/`) by `e2e/record-demo.spec.ts`, one P
 | Scene | Caption | Feature |
 |---|---|---|
 | 00 | Title card | |
-| 01 | Don't know what it's called? Point at it. | Ask on an un-nameable element (the hero underline, `<Squiggle />`), task marker, Compare, Undo |
+| 01 | Don't know what it's called? Point at it. / Ask on the page. Watch it land on the element. | Ask on an un-nameable element (the hero underline, `<Squiggle />`), task marker, Compare, Undo |
 | 02 | Like this, not that: point at both. | Batch: the one-off tile (Change) and a `<StatCard>` (Reference) |
 | 03 | Small things? Leave a note right where they are. | Comment pins on the Amount header and an odd date, sent as one task |
 | 04 | Not just styling: ask for what's missing. | Ask on the table header to add an Export CSV button |
@@ -37,7 +37,7 @@ npm run record:demo -- 2 4
 
 Output:
 - `docs/media/agent-hover-demo.mp4`: all scenes, about 1:36.
-- `docs/media/agent-hover.gif` and `agent-hover.mp4`: scene 1 up to Compare, for the top of the README.
+- `docs/media/agent-hover.gif` and `agent-hover.mp4`: scene 1 from Send to Compare (the `gifStart` and `gifEnd` marks), for the top of the README. It opens on the task rather than on pointing: what happens after you send is what sets Agent Hover apart.
 
 GitHub only plays videos inline when they are uploaded through its editor. After re-recording, drag `agent-hover-demo.mp4` into the README editor on github.com to get a player, or keep the link.
 

@@ -1,7 +1,7 @@
 {
   "name": "@agent-hover/vite",
   "version": "0.2.0",
-  "description": "Point at your UI, your agent understands it. Dev-only Vite plugin for React: click any element and send precise context to Claude Code, Cursor, Codex or any MCP agent.",
+  "description": "See every UI change your agent makes, right on the page. Dev-only Vite plugin for React: ask for a change on any element, track it there while Claude Code, Cursor, Codex or any MCP agent works, then compare, keep, undo or follow up.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

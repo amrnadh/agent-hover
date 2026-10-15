@@ -1,7 +1,7 @@
 {
   "name": "@agent-hover/mcp",
   "version": "0.2.0",
-  "description": "MCP server for Agent Hover: connects Claude Code, Cursor, Codex, Antigravity and other agents to the elements you point at in your running app.",
+  "description": "MCP server for Agent Hover: Claude Code, Cursor, Codex, Antigravity and other agents pick up the UI changes you ask for on the page, and report back to the element so you can review them.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

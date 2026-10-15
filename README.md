@@ -11,13 +11,13 @@
 [![CI](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 
-**Point at your UI. Your agent understands it.**
+**See every UI change your agent makes, right on the page. Keep it or undo it.**
 
-Click any element in your running React app, say what should change, and your coding agent gets the exact file, the line that renders it, how it looks right now, its props, and the rules to stay in scope. Then watch the task go from Sent to Done on the element itself, compare before and after, and undo if you don't like it.
+Ask for a change on any element of your running React app. Your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. While it works, the task stays on the element: Sent, Seen, Working, Done. Then you review it there: compare before and after, keep it, undo it in one click, or follow up. Lock what's finished, and Agent Hover tells you if an agent changed it anyway.
 
 Works with Claude Code, Cursor, Codex and any other MCP agent, or with plain Copy for ChatGPT, Claude.ai, v0, Lovable and Bolt.
 
-![Agent Hover: point at an underline you can't name, ask, and the agent's progress shows on the page](docs/media/agent-hover.gif)
+![Agent Hover: a change request on the page, the agent's progress on the element, then before and after, and Undo](docs/media/agent-hover.gif)
 
 **[Watch the full demo (1:36)](docs/media/agent-hover-demo.mp4)**: point instead of describe, "like this, not that", notes, adding a feature, and keeping agents off finished work.
 
@@ -69,21 +69,23 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 
 ## How it works
 
-**Point.** Hover shows the component and size; click selects it and opens a small action pill: Ask, Comment, add to Batch, Copy, and more (open in editor, screenshot, lock from agents, parent/child, details).
+**Ask.** Press **Alt** (or the pointer in the dock) and click an element. A small pill offers Ask, Comment, add to Batch, Copy, and more (open in editor, screenshot, lock from agents, parent/child, details). Describe the change; it goes to your connected agent, or to the clipboard when none is connected (or when you prefer Copy).
 
 ![Action pill on a selected element](docs/screenshots/v0.2/01-pill.png)
 
-**Ask.** Describe the change. It goes to your connected agent, or to the clipboard when none is connected (or when you prefer Copy).
-
 **Track.** A marker on the element follows the task: Sent → Seen → Working → Done. Open it for the agent's summary and the files it changed. Markers come back after a reload.
 
-![Task card with the agent's summary](docs/screenshots/v0.2/02-task-done.png)
+![Task card: the agent's summary, waiting for your review](docs/screenshots/v0.2/02-task-done.png)
 
-**Compare and Undo.** When the agent picks up a task, Agent Hover takes a git checkpoint of your work tree (including uncommitted and untracked files, without touching them). The task card shows a before/after slider of the element, and **Undo** restores exactly the files that changed, after showing you the list.
+**Review.** A finished change waits on its element until you decide. **Compare** shows the element before and after. **Keep** settles it. **Undo** restores exactly the files that changed, after showing you the list: when the agent picks up a task, Agent Hover takes a git checkpoint of your work tree (including uncommitted and untracked files, without touching them). **Follow up** asks again about the same element, and the new prompt carries the earlier request and what the agent did, so it builds on the change instead of starting over.
 
 ![Before and after comparison](docs/screenshots/v0.2/06-compare.png)
 
-**Comment and Batch.** Press **C** to drop numbered notes anywhere and send them one at a time or all at once. Press **B** to collect several elements into one task, each marked Change, Reference or Don't touch ("make these three cards consistent").
+**Lock.** "Don't let agents change this" on a component puts it in every prompt as off limits. If a finished task changed its file anyway, its marker turns amber and the card says which locked component changed, with Undo right there.
+
+![A finished task that changed a locked component](docs/screenshots/v0.2/09-lock-guard.png)
+
+**Comment and Batch.** Press **C** to drop numbered notes anywhere and send them one at a time or all at once. Press **B** (or click elements while the Batch tab is open) to collect several elements into one task, each marked Change, Reference or Don't touch ("make these three cards consistent").
 
 **Inspect.** The sidebar shows the component, a clickable breadcrumb, live props (secrets redacted), hooks, text, box model and key styles, and the source, with the token count of what would be sent.
 

@@ -2,7 +2,7 @@
   "name": "agent-hover",
   "version": "0.2.0",
   "private": true,
-  "description": "Point at your UI. Your agent understands it.",
+  "description": "See every UI change your agent makes, right on the page. Keep it or undo it.",
   "workspaces": [
     "packages/*",
     "demo"
