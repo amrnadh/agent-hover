@@ -61,4 +61,12 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
     expect(folderPlan.bin).toBeDefined();
     expect(folderPlan.args).toEqual(['/project/.agent-hover/screenshots']);
   });
+
+  it('opens files through the editor\'s own link on Windows, where its CLI is a .cmd shim', () => {
+    const plan = buildEditorLaunchPlan({ editor: 'cursor', targetFile: 'C:\\Users\\me\\app\\src\\a & b.tsx', targetLine: 3, targetColumn: 2, projectRoot: 'C:\\Users\\me\\app' }, 'win32');
+    expect(plan).toEqual({ bin: 'rundll32.exe', args: ['url.dll,FileProtocolHandler', 'cursor://file/C:/Users/me/app/src/a & b.tsx:3:2'] });
+    expect(buildEditorLaunchPlan({ editor: 'vscode', targetFile: 'C:\\a.tsx', projectRoot: 'C:\\' }, 'win32').args[1]).toBe('vscode://file/C:/a.tsx:1:1');
+    expect(buildEditorLaunchPlan({ editor: 'zed', targetFile: 'C:\\a.tsx', projectRoot: 'C:\\' }, 'win32').bin).toBe('zed');
+    expect(buildEditorLaunchPlan({ editor: 'cursor', targetFile: '/app/a.tsx', projectRoot: '/app' }, 'darwin').bin).toBe('cursor');
+  });
 });

@@ -36,7 +36,7 @@ Then:
 1. Start your dev server (`npm run dev`) and open the app.
 2. Press **Alt** (or the pointer in the dock) and click anything.
 3. Press **Ask**, type what to change, press **⌘/Ctrl + Enter**.
-4. Tell your agent once: **"Listen for agent-hover tasks."** It picks up each task you send, does it, reports back, and waits for the next one.
+4. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** It picks up each task you send, does it, reports back, and waits for the next one.
 
 Something not working? `npx agent-hover doctor` checks the plugin, the dev server, the token and the agent connection, and tells you what to fix.
 
@@ -69,7 +69,7 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 
 ## How it works
 
-**Ask.** Press **Alt** (or the pointer in the dock) and click an element. A small pill offers Ask, Comment, add to Batch, Copy, and more (open in editor, screenshot, lock from agents, parent/child, details). Describe the change; it goes to your connected agent, or to the clipboard when none is connected (or when you prefer Copy).
+**Ask.** Press **Alt** (or the pointer in the dock) and click an element. A small pill offers Ask, Comment, add to Batch, Copy, and more (open in editor, screenshot, lock from agents, parent/child, details). Describe the change (or click the mic and say it); it goes to your connected agent, or to the clipboard when none is connected (or when you prefer Copy). With several agents connected, pick which one gets it.
 
 ![Action pill on a selected element](docs/screenshots/v0.2/01-pill.png)
 
@@ -151,6 +151,7 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 ## Requirements
 
 - Node 20 or newer, Vite 5 or newer (tested up to Vite 8), React 18 or 19.
+- macOS, Linux and Windows 10/11.
 - Chrome, Edge, Firefox and Safari.
 - Dev only: the plugin runs with `vite dev` and adds nothing to production builds.
 - Compare and Undo need a git repository; everything else works without one.
@@ -160,6 +161,7 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 
 - Everything runs on your machine. The bridge listens on `127.0.0.1` only, checks the page's origin, and requires a per-session token (stored in `.agent-hover/session.json`, which `init` adds to `.gitignore`).
 - No telemetry. The only outbound request is a once-a-day update check to the npm registry, with no project data; turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1`.
+- Voice uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple (you are told once, before the first use). Agent Hover never receives or stores audio. Turn the mic off in Settings › Voice.
 - Undo never runs `git reset`, `clean` or `checkout`; it restores the listed files one by one from the checkpoint.
 
 Details: [SECURITY.md](SECURITY.md) and the [bridge API](docs/bridge-api.md).

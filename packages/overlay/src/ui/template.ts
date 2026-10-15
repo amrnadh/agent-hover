@@ -51,6 +51,7 @@ ${uiCss}
           <textarea id="ah-comp-input" aria-label="What should change" placeholder="What should change? e.g. Make the amount larger and add a sparkline"></textarea>
           <div class="foot">
             <button class="ah-tbtn outline dest" id="ah-comp-dest" aria-haspopup="menu"><span class="ah-dot" id="ah-comp-dest-dot"></span><span id="ah-comp-dest-label"></span>${icon('chev-down', 14)}</button>
+            <button class="ah-ibtn mic" id="ah-comp-mic" title="Speak instead of typing" aria-label="Speak instead of typing" aria-pressed="false" hidden>${icon('mic')}</button>
             <button class="ah-tbtn" id="ah-comp-cancel">Cancel</button>
             <button class="ah-tbtn primary" id="ah-comp-send"><span id="ah-comp-send-label">Send</span><kbd id="ah-comp-kbd">⌘↵</kbd></button>
           </div>

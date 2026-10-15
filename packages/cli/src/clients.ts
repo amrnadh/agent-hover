@@ -12,26 +12,33 @@ export interface McpClient {
   projectConfig?: { file: string; format: 'json' | 'toml' };
   /** Rules file `init` adds the task instructions to. */
   rulesFile?: { file: string; kind: 'markdown' | 'cursor-rule' };
+  /** Project file that gives the agent a one-word way to start listening (`invoke`). */
+  commandFile?: { file: string; kind: CommandKind; invoke: string };
+  /** Global MCP config `init` writes after asking, relative to the home folder. The first is created if missing;
+   * the others are only updated when they already exist (older locations the agent may still read). */
+  globalConfig?: string[];
 }
 
-const serverArgs = ['-y', MCP_PACKAGE];
+export type CommandKind = 'claude-command' | 'cursor-command' | 'codex-skill' | 'workflow';
 
-const jsonSnippet = JSON.stringify(
-  { mcpServers: { [BRAND.mcpServerName]: { command: 'npx', args: serverArgs } } },
-  null,
-  2,
-);
-
-const tomlSnippet = [
-  `[mcp_servers.${BRAND.mcpServerName}]`,
-  'command = "npx"',
-  `args = [${serverArgs.map((a) => JSON.stringify(a)).join(', ')}]`,
-].join('\n');
-
-const addArgs = `${BRAND.mcpServerName} -- npx ${serverArgs.join(' ')}`;
+/** How agents start the MCP server. On Windows npx is a .cmd script, so agents need cmd /c to run it. */
+export function mcpServerEntry(platform: NodeJS.Platform = process.platform): { command: string; args: string[] } {
+  return platform === 'win32'
+    ? { command: 'cmd', args: ['/c', 'npx', '-y', MCP_PACKAGE] }
+    : { command: 'npx', args: ['-y', MCP_PACKAGE] };
+}
 
 // Mirrored in packages/overlay/src/lib/agents.ts (Settings › Agents); a test fails if they drift apart.
-export const MCP_CLIENTS: McpClient[] = [
+export function mcpClients(platform: NodeJS.Platform = process.platform): McpClient[] {
+  const server = mcpServerEntry(platform);
+  const jsonSnippet = JSON.stringify({ mcpServers: { [BRAND.mcpServerName]: server } }, null, 2);
+  const tomlSnippet = [
+    `[mcp_servers.${BRAND.mcpServerName}]`,
+    `command = "${server.command}"`,
+    `args = [${server.args.map((a) => JSON.stringify(a)).join(', ')}]`,
+  ].join('\n');
+  const addArgs = `${BRAND.mcpServerName} -- ${[server.command, ...server.args].join(' ')}`;
+  return [
   {
     id: 'claude',
     title: 'Claude Code',
@@ -40,6 +47,7 @@ export const MCP_CLIENTS: McpClient[] = [
     snippet: jsonSnippet,
     projectConfig: { file: '.mcp.json', format: 'json' },
     rulesFile: { file: 'CLAUDE.md', kind: 'markdown' },
+    commandFile: { file: '.claude/commands/agent-hover.md', kind: 'claude-command', invoke: '/agent-hover' },
   },
   {
     id: 'cursor',
@@ -48,6 +56,7 @@ export const MCP_CLIENTS: McpClient[] = [
     snippet: jsonSnippet,
     projectConfig: { file: '.cursor/mcp.json', format: 'json' },
     rulesFile: { file: '.cursor/rules/agent-hover.mdc', kind: 'cursor-rule' },
+    commandFile: { file: '.cursor/commands/agent-hover.md', kind: 'cursor-command', invoke: '/agent-hover' },
   },
   {
     id: 'codex',
@@ -57,12 +66,15 @@ export const MCP_CLIENTS: McpClient[] = [
     snippet: tomlSnippet,
     projectConfig: { file: '.codex/config.toml', format: 'toml' },
     rulesFile: { file: 'AGENTS.md', kind: 'markdown' },
+    commandFile: { file: '.agents/skills/agent-hover/SKILL.md', kind: 'codex-skill', invoke: '$agent-hover' },
   },
   {
     id: 'windsurf',
     title: 'Windsurf',
     configPath: '~/.codeium/windsurf/mcp_config.json',
     snippet: jsonSnippet,
+    commandFile: { file: '.windsurf/workflows/agent-hover.md', kind: 'workflow', invoke: '/agent-hover' },
+    globalConfig: ['.codeium/windsurf/mcp_config.json'],
   },
   {
     id: 'antigravity',
@@ -70,6 +82,8 @@ export const MCP_CLIENTS: McpClient[] = [
     command: `agy mcp add ${addArgs}`,
     configPath: '~/.gemini/config/mcp_config.json',
     snippet: jsonSnippet,
+    commandFile: { file: '.agent/workflows/agent-hover.md', kind: 'workflow', invoke: '/agent-hover' },
+    globalConfig: ['.gemini/config/mcp_config.json', '.gemini/antigravity/mcp_config.json'],
   },
   {
     id: 'claude-desktop',
@@ -78,6 +92,9 @@ export const MCP_CLIENTS: McpClient[] = [
     snippet: jsonSnippet,
   },
 ];
+}
+
+export const MCP_CLIENTS: McpClient[] = mcpClients();
 
 export function findClient(id: string): McpClient | undefined {
   const key = id.toLowerCase();

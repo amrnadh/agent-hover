@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { BRAND, DISPLAY_NAME, VITE_PACKAGE } from './brand.js';
 import { findClient, MCP_CLIENTS, type McpClient } from './clients.js';
 import { inspectProject, installCommand, type ProjectInfo } from './project.js';
-import { mergeGitignore, mergeJsonMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
+import { mergeCommandFile, mergeGitignore, mergeJsonMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
 import { addPluginToViteConfig, VITE_MANUAL_STEPS } from './vite-config.js';
 import type { Style } from './render.js';
 
@@ -12,6 +13,8 @@ export interface InitOptions {
   yes?: boolean;
   dryRun?: boolean;
   install?: boolean;
+  /** Home folder for global agent configs (tests point it at a temp folder). */
+  home?: string;
 }
 
 /** Side effects, injectable for tests. */
@@ -21,6 +24,8 @@ export interface InitIO {
   /** Run a command in the project; returns the exit code. */
   exec(cmd: string, args: string[], cwd: string): number;
   out(text: string): void;
+  /** Home folder for global agent configs; defaults to the real one. */
+  home?: string;
 }
 
 type StepState = 'done' | 'todo' | 'manual';
@@ -34,6 +39,8 @@ export interface Step {
   detail?: string;
   write?: FileWrite;
   command?: { cmd: string; args: string[]; display: string };
+  /** Changes a file in the home folder rather than the project. */
+  global?: boolean;
 }
 
 const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
@@ -49,14 +56,15 @@ export function detectAgents(root: string): string[] {
   return found;
 }
 
-/** `rewrites` marks merges that re-serialize the file (JSON); those keep a .bak. Appends do not need one. */
-function fileStep(root: string, title: string, rel: string, merge: (existing: string | null) => Merge, rewrites = false): Step {
+/** `rewrites` marks merges that re-serialize the file (JSON); those keep a .bak. Appends do not need one.
+ * `shown` is how the file is named in the plan (for a home-folder file, `~/…`). */
+function fileStep(root: string, title: string, rel: string, merge: (existing: string | null) => Merge, rewrites = false, shown = rel): Step {
   const file = path.join(root, rel);
   const existing = read(file);
   const result = merge(existing);
-  if (!result.ok) return { title, state: 'manual', detail: `${rel}: ${result.reason}. Add it by hand.` };
-  if (result.content === null) return { title, state: 'done', detail: rel };
-  return { title, state: 'todo', detail: `${existing === null ? 'create' : 'update'} ${rel}`, write: { file, content: result.content, backup: rewrites && !!existing?.trim() } };
+  if (!result.ok) return { title, state: 'manual', detail: `${shown}: ${result.reason}. Add it by hand.` };
+  if (result.content === null) return { title, state: 'done', detail: shown };
+  return { title, state: 'todo', detail: `${existing === null ? 'create' : 'update'} ${shown}`, write: { file, content: result.content, backup: rewrites && !!existing?.trim() } };
 }
 
 /** Everything `init` would do in this project, without doing any of it. */
@@ -79,10 +87,18 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
   else if (!edit.ok) steps.push({ title: `Add the plugin to ${configRel}`, state: 'manual', detail: `Not edited automatically (${edit.reason}). Add:\n${VITE_MANUAL_STEPS}` });
   else steps.push({ title: `Add the plugin to ${configRel}`, state: 'todo', detail: `import agentHover and add agentHover() to plugins`, write: { file: configFile, content: edit.code, backup: false } });
 
+  const home = opts.home ?? os.homedir();
   for (const agent of agents) {
     if (agent.projectConfig) {
       const { file, format } = agent.projectConfig;
-      steps.push(fileStep(root, `Connect ${agent.title} (MCP server)`, file, format === 'json' ? mergeJsonMcp : mergeTomlMcp, format === 'json'));
+      steps.push(fileStep(root, `Connect ${agent.title} (MCP server)`, file, format === 'json' ? (t) => mergeJsonMcp(t) : (t) => mergeTomlMcp(t), format === 'json'));
+    } else if (agent.globalConfig) {
+      // Global only: the first location is created when missing; older locations are updated only if present.
+      agent.globalConfig.forEach((rel, i) => {
+        if (i > 0 && !existsSync(path.join(home, rel))) return;
+        const shown = '~/' + rel.split(path.sep).join('/');
+        steps.push({ ...fileStep(home, `Connect ${agent.title} (MCP server, global config)`, rel, (t) => mergeJsonMcp(t), true, shown), global: true });
+      });
     } else {
       steps.push({
         title: `Connect ${agent.title} (MCP server)`,
@@ -93,6 +109,10 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
     if (agent.rulesFile) {
       const { file, kind } = agent.rulesFile;
       steps.push(fileStep(root, `Teach ${agent.title} to pick up tasks`, file, (t) => mergeRules(t, kind)));
+    }
+    if (agent.commandFile) {
+      const { file, kind, invoke } = agent.commandFile;
+      steps.push(fileStep(root, `Add ${invoke} to ${agent.title} (starts listening)`, file, (t) => mergeCommandFile(t, kind)));
     }
   }
 
@@ -146,7 +166,7 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
     if (!agents.includes(c)) agents.push(c);
   }
 
-  const steps = planInit(p, agents, opts);
+  const steps = planInit(p, agents, { ...opts, home: opts.home ?? io.home });
   const todo = steps.filter((x) => x.state === 'todo');
   io.out(`\n  ${s.bold(`Set up ${DISPLAY_NAME}`)} ${s.dim('in ' + root)}\n\n${renderPlan(steps, s)}\n`);
 
@@ -163,7 +183,9 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
       io.out(`\n  Run with --yes to apply these changes, or --dry-run to only show them.\n`);
       return 1;
     }
-    const answer = (await io.ask(`\n  Apply ${todo.length} change${todo.length === 1 ? '' : 's'}? [Y/n] `)).trim().toLowerCase();
+    const globals = todo.filter((x) => x.global).length;
+    const where = globals ? ` (${globals} in your home folder, for every project)` : '';
+    const answer = (await io.ask(`\n  Apply ${todo.length} change${todo.length === 1 ? '' : 's'}${where}? [Y/n] `)).trim().toLowerCase();
     if (answer && answer !== 'y' && answer !== 'yes') {
       io.out('  Nothing changed.\n');
       return 1;
@@ -186,12 +208,13 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
   }
 
   const agentName = agents[0]?.title || 'your agent';
+  const invoke = agents[0]?.commandFile?.invoke;
   io.out([
     '',
     `  ${s.bold('Next')}`,
     `  1. Start your dev server and open the app. Press ${s.bold('Alt')} (or the pointer in the dock) and click anything.`,
     `  2. Restart ${agentName} so it loads the MCP server${agents.some((a) => a.id === 'claude') ? ' (Claude Code asks you to approve .mcp.json once)' : ''}.`,
-    `  3. Tell it once: ${s.bold('"Listen for agent-hover tasks"')}. Then press Ask on any element and send.`,
+    `  3. ${invoke ? `Run ${s.bold(invoke)} in ${agentName} (or say ${s.bold('"Listen for agent-hover tasks"')})` : `Tell it once: ${s.bold('"Listen for agent-hover tasks"')}`}. Then press Ask on any element and send.`,
     '',
     s.dim(`  Check everything with: ${BRAND.cliName} doctor`),
     '',

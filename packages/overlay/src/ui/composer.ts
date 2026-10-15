@@ -31,20 +31,13 @@ export function setupComposer(app: OverlayApp) {
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   kbd.textContent = isMac ? '⌘↵' : 'Ctrl↵';
   const drafts = new Map<unknown, string>();
-  /** 'agent:<client>' or 'copy'. Null means: the first connected agent, else copy. */
-  let chosen: string | null = null;
 
   function agents(): string[] {
     return (state.connectedAgents || []).map((a: any) => a.client).filter(Boolean);
   }
 
-  function destination(): { kind: 'agent' | 'copy'; client?: string } {
-    const list = agents();
-    if (state.delivery === 'copy') return { kind: 'copy' };
-    if (chosen === 'copy') return { kind: 'copy' };
-    if (chosen?.startsWith('agent:') && list.includes(chosen.slice(6))) return { kind: 'agent', client: chosen.slice(6) };
-    return list.length ? { kind: 'agent', client: list[0] } : { kind: 'copy' };
-  }
+  /** The destination is shared (bridge/dispatch.ts), so comments and Batch go where Ask goes. */
+  const destination = (): { kind: 'agent' | 'copy'; client?: string } => api.destination();
 
   function renderDest() {
     const d = destination();
@@ -84,6 +77,8 @@ export function setupComposer(app: OverlayApp) {
     box.hidden = true;
     destMenu.hidden = true;
     followUp = null;
+    api.stopVoice?.();
+    box.querySelector('.ah-voice-note')?.remove();
   }
 
   function position() {
@@ -129,7 +124,7 @@ export function setupComposer(app: OverlayApp) {
       if (!built) return;
       const result = await api.dispatchToAgent(
         built.prompt,
-        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, ...(previous ? { followUpOf: previous.id } : {}) },
+        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, ...(dest.client ? { assignee: dest.client } : {}), ...(previous ? { followUpOf: previous.id } : {}) },
         { quiet: true, destination: dest.kind },
       );
       // The earlier change is now settled: this task carries it forward.
@@ -178,7 +173,7 @@ export function setupComposer(app: OverlayApp) {
     if (!b) return;
     destMenu.hidden = true;
     if (b.dataset.v === 'setup') { api.openSettings('agents'); return; }
-    chosen = b.dataset.v || null;
+    api.chooseDestination(b.dataset.v || null);
     renderDest();
   };
 

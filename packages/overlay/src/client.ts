@@ -10,6 +10,7 @@ import { setupOpenInEditor } from './features/open-in-editor.js';
 import { setupScreenshots } from './features/screenshots.js';
 import { setupActionPill } from './ui/action-pill.js';
 import { setupComposer } from './ui/composer.js';
+import { setupVoice } from './features/voice.js';
 import { setupTasks } from './ui/tasks.js';
 import { setupVerify } from './ui/verify.js';
 import { setupComments } from './features/comments.js';
@@ -43,6 +44,7 @@ export function bootstrapOverlay(config: OverlayConfig) {
   setupScreenshots(app);
   setupActionPill(app);
   setupComposer(app);
+  setupVoice(app);
   setupTasks(app);
   setupVerify(app);
   setupComments(app);

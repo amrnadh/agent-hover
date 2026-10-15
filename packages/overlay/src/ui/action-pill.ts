@@ -24,10 +24,12 @@ export function setupActionPill(app: OverlayApp) {
       nameEl.textContent = api.labelFor(state.selectedTarget);
       fileEl.textContent = '';
       const token = ++sourceToken;
-      api.sourceFor(state.currentStack, state.currentStackIndex).then((src: any) => {
+      Promise.all([api.sourceFor(state.currentStack, state.currentStackIndex), exactFor(state.selectedTarget)]).then(([src, exact]: any[]) => {
         if (token !== sourceToken || !src) return;
-        fileEl.textContent = src.file.split('/').pop() + ':' + src.line;
-        fileEl.title = src.file + ':' + src.line;
+        // Show the element's own line when React says where it is (React 19); the component's otherwise.
+        const at = exact || src;
+        fileEl.textContent = at.file.split('/').pop() + ':' + at.line;
+        fileEl.title = at.file + ':' + at.line;
         state.selectionSource = src;
         renderLock();
         api.requestLayout();
@@ -68,10 +70,16 @@ export function setupActionPill(app: OverlayApp) {
     api.toast(ok ? (built.tokens ? `Copied context · ${built.tokens.toLocaleString()} tokens` : 'Copied context') + ' · paste into any AI tool' : 'Clipboard blocked by the browser');
   }
 
+  /** The selected element's exact JSX location (React 19), or null. */
+  function exactFor(item: any): Promise<{ file: string; line: number } | null> {
+    return api.exactElementSource?.(item) ?? Promise.resolve(null);
+  }
+
   async function openSelectionInEditor() {
-    const src = await api.sourceFor(state.currentStack, state.currentStackIndex);
-    if (!src) { api.toast('No source file found for this element'); return; }
-    api.openInEditor({ file: src.file, line: src.line, component: src.component, text: (state.selectedElement?.textContent || '').trim().slice(0, 50) });
+    const [src, exact] = await Promise.all([api.sourceFor(state.currentStack, state.currentStackIndex), exactFor(state.selectedTarget)]);
+    if (!src && !exact) { api.toast('No source file found for this element'); return; }
+    const at = exact || src;
+    api.openInEditor({ file: at.file, line: at.line, component: src?.component, text: (state.selectedElement?.textContent || '').trim().slice(0, 50) });
   }
 
   async function toggleFreezeSelection() {

@@ -19,7 +19,7 @@ Then:
 1. Start your dev server (`npm run dev`) and open the app.
 2. Press **Alt** (or the pointer in the dock at the bottom of the page) and click any element.
 3. Press **Ask**, describe the change, and press **⌘/Ctrl + Enter**.
-4. Restart your agent once so it loads the MCP server, and tell it: **"Listen for agent-hover tasks."** It picks up each task you send, makes the change, reports back, and waits for the next one.
+4. Restart your agent once so it loads the MCP server, then run **`/agent-hover`** (**`$agent-hover`** in Codex) or tell it **"Listen for agent-hover tasks."** It picks up each task you send, makes the change, reports back, and waits for the next one.
 
 Check the whole setup at any time:
 
@@ -78,7 +78,7 @@ Then register the MCP server with your agent:
 
 ### Listen mode
 
-Tell your agent once: **"Listen for agent-hover tasks."** It calls `wait_for_agent_task`, which waits for the next task you send, claims it and returns the full prompt. The agent makes the change, calls `complete_agent_task` with a summary, and waits again. Tell it you're done to stop.
+Run **`/agent-hover`** (**`$agent-hover`** in Codex), or tell your agent **"Listen for agent-hover tasks."** It calls `wait_for_agent_task`, which waits for the next task you send, claims it and returns the full prompt. The agent makes the change, calls `complete_agent_task` with a summary, and waits again. Tell it you're done to stop.
 
 Prefer to trigger each task yourself? Send from the page, then tell the agent "I sent you an agent-hover task". `init` also adds a short note to `CLAUDE.md`, `AGENTS.md` or `.cursor/rules/` so agents know how to pick tasks up.
 
@@ -198,7 +198,7 @@ Start with `npx agent-hover doctor`: it checks each step and says how to fix it.
 
 - **No dock on the page.** The plugin only runs with `vite dev` (`npm run dev`), never in production builds. Check that `agentHover()` is in the `plugins` list.
 - **The agent isn't connected** (the dot on the logo isn't green). Make sure the dev server is running, the MCP server is registered, and the agent was restarted in your project folder. Agents find the dev server through `.agent-hover/session.json`; in a monorepo, start the agent in the app's folder or set `AGENT_HOVER_SESSION`.
-- **Tasks stay at "Sent".** The agent isn't listening. Tell it "Listen for agent-hover tasks".
+- **Tasks stay at "Sent".** The agent isn't listening. Run `/agent-hover`, or tell it "Listen for agent-hover tasks".
 - **Undo is unavailable.** Undo needs a git repository, and the task must have been picked up through Agent Hover (that's when the checkpoint is taken).
 - **The port is taken.** The bridge moves to the next free port and the page follows it; set `port` to choose one.
 
@@ -213,6 +213,7 @@ Remove `agentHover()` and its import from your Vite config, remove the `agent-ho
 ## Requirements
 
 - Node 20 or newer, Vite 5 or newer, React 18 or 19.
+- macOS, Linux and Windows 10/11.
 - Chrome, Edge, Firefox or Safari.
 - Compare and Undo need a git repository; everything else works without one.
 - Next.js support is planned.
@@ -222,6 +223,7 @@ Remove `agentHover()` and its import from your Vite config, remove the `agent-ho
 - Everything runs on your machine. The bridge listens on `127.0.0.1` only, accepts requests from your dev server's page only, and requires a token that changes on every dev server start.
 - File access is limited to your project folder.
 - No telemetry. The only outbound request is a once-a-day check of the npm registry for a newer version, with no project data. Turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1`.
+- Voice uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple (you are told once, before the first use). Agent Hover never receives or stores audio.
 - Undo never runs `git reset`, `git clean` or `git checkout`; it restores the listed files one by one.
 
 ## Packages

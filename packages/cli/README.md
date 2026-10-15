@@ -54,7 +54,7 @@ After `init`:
 
 1. Start your dev server and open the app. Press **Alt** (or the pointer in the dock) and click anything.
 2. Restart your agent so it loads the MCP server (Claude Code asks you to approve `.mcp.json` once).
-3. Tell it once: **"Listen for agent-hover tasks."** Then select an element, press **Ask**, and send.
+3. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** Then select an element, press **Ask**, and send.
 
 ## doctor
 

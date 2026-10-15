@@ -17,7 +17,7 @@ For each of **Claude Code**, **Cursor** and **Codex**:
 
 1. Register the MCP server (`npx agent-hover init --agent <claude|cursor|codex>` in the app, or `npx agent-hover mcp <agent>`), then restart the agent in the app folder.
 2. The dock's status dot turns green and the connection popover names the agent.
-3. Tell the agent: "Listen for agent-hover tasks."
+3. Run `/agent-hover` in the agent (or tell it "Listen for agent-hover tasks.")
 4. Select an element → Ask → "Make this button larger" → Send. The marker goes Sent → Seen → Working → Done; the card shows the agent's summary and the changed file.
 5. Open Compare (before/after), then Undo: the file is back exactly as before (`git diff` is empty).
 6. Send two comments with "Send N open" and a 3-element Batch: each arrives as one task with all the context.

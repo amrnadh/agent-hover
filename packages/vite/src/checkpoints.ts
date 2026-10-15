@@ -70,7 +70,7 @@ export class CheckpointStore {
   gitRoot(): Promise<string | null> {
     if (!this.gitRootPromise) {
       this.gitRootPromise = this.git(['rev-parse', '--show-toplevel'], this.projectRoot)
-        .then((s) => s.trim() || null)
+        .then((s) => (s.trim() ? path.resolve(s.trim()) : null)) // git prints C:/x on Windows
         .catch(() => null);
     }
     return this.gitRootPromise;

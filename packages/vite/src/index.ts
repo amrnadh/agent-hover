@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 import { BridgeServer } from './bridge-server.js';
+import { createLocationMapper } from './source-location.js';
 import { MODERN_SCREENSHOT_CODE } from './vendor/modern-screenshot.js';
 import { getOverlayBundle } from '@agent-hover/overlay';
 
@@ -57,6 +58,8 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
       }
       // Start bridge server when Vite dev server starts
       bridgeServer = new BridgeServer(projectRoot, port);
+      // React 19 has no _debugSource: element sources come from React's creation stack and this server's source maps.
+      bridgeServer.setLocationMapper(createLocationMapper(server, projectRoot));
       bridgeServer.start();
 
       const cleanup = () => {

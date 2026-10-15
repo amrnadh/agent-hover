@@ -12,9 +12,12 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { discoverSession, BRAND } from "@agent-hover/core";
+import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -24,18 +27,11 @@ const DEFAULT_BRIDGE_PORT = 9850;
 
 /**
  * Resolves the bridge server connection:
- * 1. Discover session file (.agent-hover/session.json)
- * 2. Fall back to COMPONENT_POINTER_PORT / AGENT_HOVER_PORT environment variables
- * 3. Fall back to DEFAULT_BRIDGE_PORT (9850)
+ * 1. An explicit port in COMPONENT_POINTER_PORT / AGENT_HOVER_PORT (with AGENT_HOVER_TOKEN): you asked for it
+ * 2. The session file (.agent-hover/session.json) of the dev server above the working directory
+ * 3. DEFAULT_BRIDGE_PORT (9850)
  */
 function resolveBridgeConnection(): { port: number; token?: string } {
-  try {
-    const session = discoverSession();
-    if (session) {
-      return { port: session.port, token: session.token };
-    }
-  } catch {}
-
   const envPort = process.env.COMPONENT_POINTER_PORT || process.env[`${BRAND.envPrefix}_PORT`];
   if (envPort) {
     const parsed = parseInt(envPort, 10);
@@ -43,6 +39,13 @@ function resolveBridgeConnection(): { port: number; token?: string } {
       return { port: parsed, token: process.env[`${BRAND.envPrefix}_TOKEN`] };
     }
   }
+
+  try {
+    const session = discoverSession();
+    if (session) {
+      return { port: session.port, token: session.token };
+    }
+  } catch {}
 
   return { port: DEFAULT_BRIDGE_PORT };
 }
@@ -257,6 +260,26 @@ const VERSION: string = (() => {
   }
 })();
 
+/** This server process, so the page can tell two sessions of the same agent apart and drop this one on exit. */
+const INSTANCE = randomUUID();
+
+/** What the agent should do with Agent Hover. Sent once on connect (MCP server instructions). */
+export const SERVER_INSTRUCTIONS = [
+  "Agent Hover connects you to the developer's running web app. They point at elements on the page and send change requests.",
+  "Each request is a task with the exact file and line, how the element looks now, and constraints. Components listed as locked must not be changed.",
+  "When the user asks you to listen for Agent Hover tasks (or runs /agent-hover), call wait_for_agent_task: it waits for the next task and claims it.",
+  "Make the change, then call complete_agent_task with the task id, a one-paragraph summary and filesChanged, and call wait_for_agent_task again.",
+  "Keep listening until the user tells you to stop. If it returns without a task, call it again.",
+].join(" ");
+
+/** The listen loop as a prompt; the same text as the /agent-hover command files `agent-hover init` writes. */
+export const LISTEN_PROMPT = [
+  "Listen for Agent Hover tasks.",
+  "",
+  "Call the agent-hover wait_for_agent_task tool. When it returns a task, make the change it describes, then call complete_agent_task with the task id, a one-paragraph summary and the files you changed.",
+  "Then call wait_for_agent_task again. Keep going until I tell you to stop. If it returns without a task, call it again.",
+].join("\n");
+
 /**
  * Initialize the Agent Hover MCP server instance.
  */
@@ -268,9 +291,36 @@ const server = new Server(
   {
     capabilities: {
       tools: {},
+      prompts: {},
     },
+    instructions: SERVER_INSTRUCTIONS,
   }
 );
+
+/** Prompts: Claude Code lists them as /mcp__agent-hover__listen and /mcp__agent-hover__status. */
+const PROMPTS = {
+  listen: {
+    description: "Listen for tasks sent from the page with Agent Hover, do each one and report back",
+    text: LISTEN_PROMPT,
+  },
+  status: {
+    description: "Show Agent Hover tasks that are waiting or in progress",
+    text: "Call the agent-hover list_agent_tasks tool and tell me, briefly, which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+  },
+} as const;
+
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+  prompts: Object.entries(PROMPTS).map(([name, p]) => ({ name, description: p.description })),
+}));
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const prompt = PROMPTS[request.params.name as keyof typeof PROMPTS];
+  if (!prompt) throw new Error(`Unknown prompt: ${request.params.name}`);
+  return {
+    description: prompt.description,
+    messages: [{ role: "user" as const, content: { type: "text" as const, text: prompt.text } }],
+  };
+});
 
 /**
  * Register available MCP tools.
@@ -726,6 +776,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         }
         // The agent has now seen these tasks: queued ones become "delivered" in the browser.
         params.set("deliver", "1");
+        // Only tasks for this agent, or for any agent (the page can send a task to one agent by name).
+        params.set("client", agentClientName());
         const result = await getFromBridge(`/api/agent/tasks?${params.toString()}`);
         return {
           content: [{ type: "text" as const, text: result }],
@@ -804,7 +856,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
           try {
             const { task } = await bridgeJson<{ task: { id: string; instruction?: string } | null }>(
               "GET",
-              `/api/agent/tasks/next?wait=${Math.min(LISTEN_POLL_SECONDS, remaining)}`,
+              `/api/agent/tasks/next?wait=${Math.min(LISTEN_POLL_SECONDS, remaining)}&client=${encodeURIComponent(agentClientName())}`,
               undefined,
               signal,
             );
@@ -888,7 +940,7 @@ async function main(): Promise<void> {
       const presence = await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ client: agentClientName(), version: VERSION }),
+        body: JSON.stringify({ client: agentClientName(), version: VERSION, instance: INSTANCE }),
       });
       // Legacy heartbeat only for bridges older than presence (P1-06); sending both would list the agent twice.
       if (presence.status === 404) {
@@ -910,6 +962,31 @@ async function main(): Promise<void> {
     if (server.getClientVersion()) sendHeartbeat();
   }, 10000);
   heartbeatTimer.unref();
+
+  // Say goodbye when the agent closes, so the page drops it at once instead of after the presence timeout.
+  let leaving = false;
+  const leave = async () => {
+    if (leaving) return;
+    leaving = true;
+    clearInterval(heartbeatTimer);
+    try {
+      const active = resolveBridgeConnection();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (active.token) headers['Authorization'] = `Bearer ${active.token}`;
+      await fetch(`http://127.0.0.1:${active.port}/api/agent/presence`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ instance: INSTANCE }),
+        signal: AbortSignal.timeout(500),
+      });
+    } catch (_) {
+      // Bridge gone or slow: the presence timeout covers it.
+    }
+    process.exit(0);
+  };
+  server.onclose = leave;
+  process.stdin.on('end', leave);
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) process.on(sig, leave);
 }
 
 // Start the server, logging any unhandled startup errors to stderr

@@ -33,17 +33,26 @@ export function setupSettingsPanel(app: OverlayApp) {
           ${agents.length
             ? agents.map((a: any) => `<div class="ah-agent"><span class="ah-dot ok"></span>${esc(prettyAgentName(a.client))}<span class="ah-muted">connected</span></div>`).join('')
             : `<p>${state.isBridgeConnected ? 'No agent is connected right now.' : 'The dev server is offline.'} Ask and Comment still work by copying prompts.</p>`}
-          <p>Works with any MCP coding agent. Add the server once, then tell your agent <b>“Listen for agent-hover tasks”</b>.</p>
+          <p>Works with any MCP coding agent. Add the server once, then run <b>/agent-hover</b> in your agent (<b>$agent-hover</b> in Codex) or tell it <b>“Listen for agent-hover tasks”</b>.</p>
           <div class="ah-chips" data-agents>${AGENT_SETUPS.map((a) => `<button data-agent="${a.id}" aria-pressed="${a.id === setup.id}">${esc(a.title)}</button>`).join('')}</div>
           ${setup.command ? `<pre class="ah-snippet" tabindex="0">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
           <pre class="ah-snippet" tabindex="0">${esc(setup.snippet)}</pre>
           <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-setup">${icon('copy', 14)}Copy</button><span class="ah-muted" style="font-size:12px">Or run <span class="ah-mono">npx agent-hover mcp</span> in your project.</span></div>
+          ${/Windows/.test(navigator.userAgent) ? '<p>On Windows, agents start the server through cmd: <span class="ah-mono">"command": "cmd", "args": ["/c", "npx", "-y", "@agent-hover/mcp"]</span>. <span class="ah-mono">npx agent-hover init</span> writes it that way for you.</p>' : ''}
           <p>Using ChatGPT, Claude.ai, v0, Lovable or Bolt? Use Copy: every prompt is self-contained.</p>
         </section>
         <section class="ah-set"><h4>When you press Send</h4>
           ${seg('delivery', [['auto', 'Send if an agent is connected, else copy'], ['copy', 'Always copy']], state.delivery)}
           <p>Context detail</p>
           ${seg('level', [['minimal', 'Compact'], ['standard', 'Standard'], ['full', 'Deep']], state.level)}
+        </section>
+        <section class="ah-set" id="ah-set-voice"><h4>Voice</h4>
+          ${api.voiceSupported()
+            ? `${seg('voice', [['on', 'Mic in Ask and comments'], ['off', 'Off']], api.voiceEnabled() ? 'on' : 'off')}
+               <div class="ah-field" style="padding:0"><label for="ah-voice-lang">Language</label><input id="ah-voice-lang" data-voice-lang value="${esc(api.voiceLanguage())}" placeholder="en-US"></div>
+               <p>Your browser turns speech into text: on the device when it can, otherwise Chrome and Edge send the audio to Google or Microsoft, Safari to Apple. Agent Hover never receives or stores audio.</p>`
+            : '<p>This browser has no speech recognition.</p>'}
+          <p>Your system's dictation works in any text box too: press Fn twice on macOS, or Windows + H.</p>
         </section>
         <section class="ah-set"><h4>Appearance</h4>
           <p>Theme</p>${seg('theme', [['system', 'System'], ['dark', 'Dark'], ['light', 'Light']], state.theme)}
@@ -80,6 +89,9 @@ export function setupSettingsPanel(app: OverlayApp) {
         state.side.settingsFocus = '';
       }
 
+      const lang = body.querySelector('[data-voice-lang]') as HTMLInputElement | null;
+      if (lang) lang.onchange = () => api.setVoiceLanguage(lang.value);
+
       body.onclick = async (e) => {
         const b = (e.target as Element).closest('button') as HTMLElement | null;
         if (!b) return;
@@ -91,6 +103,7 @@ export function setupSettingsPanel(app: OverlayApp) {
           if (name === 'level') api.setContextLevel(v);
           if (name === 'theme') api.setTheme(v);
           if (name === 'dock') api.setDockVertical(v === 'vertical');
+          if (name === 'voice') api.setVoiceEnabled(v === 'on');
           api.renderSidebar();
           return;
         }

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { run } from '../cli.js';
-import { MCP_CLIENTS } from '../clients.js';
+import { MCP_CLIENTS, mcpClients } from '../clients.js';
 import type { DoctorIO } from '../doctor.js';
 import type { InitIO } from '../init.js';
 import { PLAIN } from '../render.js';
@@ -32,10 +32,11 @@ export default defineConfig({
 `;
 
 /** A fake terminal: no prompts, records commands instead of running them. */
-function fakeIO(answers: string[] = []): InitIO & { commands: string[] } {
+function fakeIO(answers: string[] = [], home = mkdtempSync(path.join(tmpdir(), 'ah-home-'))): InitIO & { commands: string[] } {
   const commands: string[] = [];
   return {
     interactive: answers.length > 0,
+    home,
     commands,
     ask: async () => answers.shift() ?? '',
     exec: (cmd, args) => { commands.push([cmd, ...args].join(' ')); return 0; },
@@ -99,6 +100,14 @@ describe('setup file merges', () => {
     expect(mergeJsonMcp((r as any).content)).toEqual({ ok: true, content: null });
     expect(mergeJsonMcp('{ // comment\n}').ok).toBe(false);
     expect(JSON.parse((mergeJsonMcp(null) as any).content).mcpServers['agent-hover']).toBeTruthy();
+  });
+
+  it('starts the server through cmd on Windows, where npx is a script', () => {
+    const json = JSON.parse(mergeJsonMcp(null, 'win32').ok ? (mergeJsonMcp(null, 'win32') as any).content : '{}');
+    expect(json.mcpServers['agent-hover']).toEqual({ command: 'cmd', args: ['/c', 'npx', '-y', '@agent-hover/mcp'] });
+    expect((mergeTomlMcp(null, 'win32') as any).content).toContain('command = "cmd"');
+    expect(mcpClients('win32').find((c) => c.id === 'claude')!.command).toBe('claude mcp add agent-hover -- cmd /c npx -y @agent-hover/mcp');
+    expect(JSON.parse((mergeJsonMcp(null, 'darwin') as any).content).mcpServers['agent-hover'].command).toBe('npx');
   });
 
   it('appends a TOML table once', () => {
@@ -185,13 +194,47 @@ describe('agent-hover init', () => {
     expect(existsSync(path.join(dir, '.cursor/mcp.json'))).toBe(false);
   });
 
-  it('prints manual steps for global-only agents and unusual configs', async () => {
+  it('prints manual steps for unusual configs and plans global configs in the home folder', async () => {
     const dir = fixture({ 'package.json': '{}', 'vite.config.ts': 'export default getConfig();\n' });
     const r = await run(['init', '--dry-run', '--agent', 'windsurf'], dir, PLAIN, { init: fakeIO() });
     expect(r.stdout).toContain('! Add the plugin to vite.config.ts');
     expect(r.stdout).toContain("import agentHover from '@agent-hover/vite';");
-    expect(r.stdout).toContain('! Connect Windsurf (MCP server)');
-    expect(r.stdout).toContain('mcp_config.json');
+    expect(r.stdout).toContain('+ Connect Windsurf (MCP server, global config)');
+    expect(r.stdout).toContain('create ~/.codeium/windsurf/mcp_config.json');
+  });
+
+  it('adds a one-word listen command for each agent, in its own format, once', async () => {
+    const dir = app();
+    const io = fakeIO();
+    await run(['init', '--yes', '--no-install', '--agent=claude,cursor,codex,windsurf,antigravity'], dir, PLAIN, { init: io });
+    expect(read(dir, '.claude/commands/agent-hover.md')).toMatch(/^---\ndescription: .+\n---\n\nListen for Agent Hover tasks\./);
+    expect(read(dir, '.cursor/commands/agent-hover.md')).toMatch(/^Listen for Agent Hover tasks\./);
+    expect(read(dir, '.agents/skills/agent-hover/SKILL.md')).toMatch(/^---\nname: agent-hover\ndescription: /);
+    expect(read(dir, '.windsurf/workflows/agent-hover.md')).toContain('wait_for_agent_task');
+    expect(read(dir, '.agent/workflows/agent-hover.md')).toContain('wait_for_agent_task');
+    // Someone's own command with the same name is left alone.
+    const other = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, '.claude/commands/agent-hover.md': 'my own\n' });
+    const r = await run(['init', '--dry-run', '--no-install', '--agent', 'claude'], other, PLAIN, { init: fakeIO() });
+    expect(r.stdout).toContain('already exists with other content');
+    expect(read(other, '.claude/commands/agent-hover.md')).toBe('my own\n');
+  });
+
+  it('writes global configs for Antigravity and Windsurf, including an older Antigravity location only if it exists', async () => {
+    const home = mkdtempSync(path.join(tmpdir(), 'ah-home-'));
+    mkdirSync(path.join(home, '.gemini/antigravity'), { recursive: true });
+    writeFileSync(path.join(home, '.gemini/antigravity/mcp_config.json'), JSON.stringify({ mcpServers: { db: { command: 'db' } } }));
+    const dir = app();
+    let asked = '';
+    const io = { ...fakeIO(['', 'y'], home), ask: async (q: string) => { asked += q; return asked.includes('Apply') ? 'y' : ''; } };
+    await run(['init', '--no-install', '--agent=antigravity,windsurf'], dir, PLAIN, { init: io });
+    expect(asked).toContain('in your home folder');
+    expect(JSON.parse(read(home, '.gemini/config/mcp_config.json')).mcpServers['agent-hover']).toBeTruthy();
+    expect(JSON.parse(read(home, '.gemini/antigravity/mcp_config.json')).mcpServers).toMatchObject({ db: {}, 'agent-hover': {} });
+    expect(JSON.parse(read(home, '.codeium/windsurf/mcp_config.json')).mcpServers['agent-hover']).toBeTruthy();
+    // Without the older Antigravity file, only the current one is planned.
+    const fresh = await run(['init', '--dry-run', '--agent', 'antigravity'], app(), PLAIN, { init: fakeIO() });
+    expect(fresh.stdout).toContain('~/.gemini/config/mcp_config.json');
+    expect(fresh.stdout).not.toContain('~/.gemini/antigravity');
   });
 
   it('refuses non-Vite projects and unknown agents', async () => {
@@ -274,9 +317,18 @@ describe('agent-hover doctor', () => {
   });
 });
 
+describe('listen command', () => {
+  it('is the same text as the MCP server\'s listen prompt', async () => {
+    const { LISTEN_PROMPT } = await import('../setup-files.js');
+    const mcp = await import('../../../mcp/src/index.js');
+    expect(LISTEN_PROMPT).toBe(mcp.LISTEN_PROMPT);
+  });
+});
+
 describe('Settings › Agents', () => {
   it('shows the same setup as the CLI', () => {
-    const cli = MCP_CLIENTS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }));
+    // The overlay shows the macOS/Linux form; Windows gets a note there (cmd /c npx).
+    const cli = mcpClients('darwin').map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }));
     expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }))).toEqual(cli);
   });
 });

@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`/agent-hover` starts listening.**
+  - `agent-hover init` adds a one-word command for each agent: `.claude/commands/agent-hover.md` (Claude Code), `.cursor/commands/agent-hover.md` (Cursor), `.windsurf/workflows/` (Windsurf), `.agent/workflows/` (Antigravity), and a `$agent-hover` skill for Codex (`.agents/skills/`).
+  - The MCP server now tells agents how to listen when they connect, and offers `listen` and `status` prompts (`/mcp__agent-hover__listen` in Claude Code).
+- **Pick which agent gets a task.** With several agents connected, the agent you pick in Ask (or the first one) is the only one that receives the task. Comments and Batch go to the same agent. Two sessions of one agent show as one agent with a session count.
+- **Exact file and line on React 19.**
+  - React 19 dropped the source information Agent Hover read in React 18. The element's own creation stack is now mapped back through the dev server's source maps to the exact file and line, in Chrome, Firefox and Safari.
+  - This includes components that don't live in a file of their own name.
+  - An element drawn by a shared UI block (`ui/button.tsx`) points to where the block is used (`<Button>` in `Hero.tsx`).
+- **Voice.** A mic button in Ask and in new comments: speak instead of typing. It uses the browser's speech recognition, on the device when the browser can; otherwise it says once where the audio goes. It's hidden where the browser has no speech recognition (Firefox). Settings › Voice turns it off or sets the language.
+- **`init` writes global configs** for Antigravity (`~/.gemini/config/mcp_config.json`, plus the older `~/.gemini/antigravity/` file if you have one) and Windsurf, after showing them in the plan and asking.
+- **Windows support.**
+  - Agents start the MCP server through `cmd /c npx`.
+  - Open in editor uses the editor's own link, since the editors' command-line tools are `.cmd` scripts there.
+  - Paths are compared case-insensitively, git's `C:/` paths are understood, and CI runs the unit tests, a fresh-project setup and the browser tests on Windows.
 - **Review on the page.** A finished task that changed files now waits on its element until you decide, instead of its marker fading after 30 minutes.
   - The marker gets a ring, the timeline gains a last step (Review, then Kept, Undone or Followed up), and the dock's Tasks dot stays on, without pulsing.
   - The task card leads with **Keep**, then Compare, Undo and **Follow up**.
@@ -19,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- An agent that closes leaves the page at once. The MCP server says goodbye on exit, and the bridge also tells the page when an agent times out, instead of the page noticing up to 40 seconds later.
+- An explicit `AGENT_HOVER_PORT` / `AGENT_HOVER_TOKEN` now wins over a session file found above the working directory. This also fixes the MCP tests, which failed while the demo dev server was running.
+- CI uses the current GitHub Actions (checkout, setup-node and upload-artifact v7). The repository scripts (`typecheck`, `clean`, `screenshots`) run on Windows too.
 - The README, the `@agent-hover/vite` and `@agent-hover/mcp` npm descriptions, and the README GIF lead with what happens after you ask: the task on the element, review, Keep or Undo, and locks. The GIF is re-cut from the existing recording and starts at Send. `npm run record:demo` keeps this cut with a `gifStart` mark and a new caption at that moment.
 - Tests save screenshots to `test-results/` instead of rewriting the images in `docs/screenshots/` on every run; `npm run screenshots` refreshes the README images. Old 0.1-era screenshots and internal planning documents left the repository.
 - The repository moved to `github.com/amrnadh/agent-hover`. Every package's npm page now links to it (`repository`, `homepage`, `bugs`).

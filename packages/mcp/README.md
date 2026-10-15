@@ -36,7 +36,7 @@ Then restart the agent **in your project folder**, with the dev server running. 
 
 ## Listen mode
 
-Tell your agent once: **"Listen for agent-hover tasks."**
+Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex; `npx agent-hover init` adds the command), or tell it **"Listen for agent-hover tasks."** In Claude Code the server's own prompt works too: `/mcp__agent-hover__listen`.
 
 It calls `wait_for_agent_task`, which waits until you send a task from the page, claims it and returns the full prompt. The agent makes the change, calls `complete_agent_task` with a short summary, and waits for the next task. The page shows each step on the element. Tell the agent you're done to stop.
 
@@ -78,7 +78,7 @@ npm install -D @agent-hover/vite@latest
 `npx agent-hover doctor` (with the dev server running) checks the connection end to end.
 
 - **The page shows no agent connected.** Restart the agent in the project folder after registering the server, and make sure the dev server is running.
-- **Tasks stay at "Sent".** The agent isn't listening: tell it "Listen for agent-hover tasks".
+- **Tasks stay at "Sent".** The agent isn't listening: run `/agent-hover`, or tell it "Listen for agent-hover tasks".
 
 ## License
 

@@ -98,7 +98,7 @@ export async function runChecks(root: string, io: DoctorIO): Promise<Check[]> {
       else {
         const agents: any[] = presence.body?.agents || [];
         add(agents.length ? 'ok' : 'warn', agents.length ? `Agent connected: ${agents.map((a) => a.client).join(', ')}` : 'No agent connected right now',
-          agents.length ? undefined : 'Start your agent in this project. Tell it "Listen for agent-hover tasks" so it waits for what you send.');
+          agents.length ? undefined : 'Start your agent in this project. Run /agent-hover in it (or tell it "Listen for agent-hover tasks") so it waits for what you send.');
       }
     }
   }

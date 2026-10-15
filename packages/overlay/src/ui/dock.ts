@@ -93,8 +93,8 @@ export function setupDock(app: OverlayApp) {
   function renderConn() {
     const agents = state.connectedAgents || [];
     conn.innerHTML = agents.length
-      ? `${agents.map((a: any) => `<div class="row"><span class="ah-dot ok"></span><b>${esc(prettyAgentName(a.client))}</b><span class="ah-muted" style="margin-left:auto;font-size:12px">connected</span></div>`).join('')}
-         <p>Tasks you send go to ${esc(prettyAgentName(agents[0].client))}. Tip: tell it "Listen for agent-hover tasks" once and it picks up each one. Bridge on port ${port}.</p>
+      ? `${agents.map((a: any) => `<div class="row"><span class="ah-dot ok"></span><b>${esc(prettyAgentName(a.client))}</b><span class="ah-muted" style="margin-left:auto;font-size:12px">${a.sessions > 1 ? `${a.sessions} sessions` : 'connected'}</span></div>`).join('')}
+         <p>Tasks you send go to ${esc(prettyAgentName(api.destination?.().client || agents[0].client))}${agents.length > 1 ? ' (pick another in Ask)' : ''}. Tip: run <b>/agent-hover</b> in your agent, or tell it "Listen for agent-hover tasks", and it picks up each one. Bridge on port ${port}.</p>
          <button class="ah-tbtn outline" data-act="agents">Manage agents</button>`
       : state.isBridgeConnected
         ? `<div class="row"><span class="ah-dot warn"></span><b>No agent connected</b></div>

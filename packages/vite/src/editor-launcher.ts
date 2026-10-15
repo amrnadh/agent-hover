@@ -21,15 +21,30 @@ export interface LaunchCommand {
   fallback?: { bin: string; args: string[] };
 }
 
+/** An editor's own link for a file (`vscode://file/C:/app/a.tsx:3:1`), with forward slashes on every platform. */
+export function editorFileUrl(scheme: string, file: string, line: number, col: number): string {
+  const p = file.replace(/\\/g, '/');
+  return `${scheme}://file${p.startsWith('/') ? '' : '/'}${p}:${line}:${col}`;
+}
+
+/** Link schemes for editors that register one. On Windows their CLIs are .cmd shims, which Node won't run without a
+ * shell, so the link is opened instead (rundll32 hands it to the registered app; still no shell). */
+const URL_SCHEMES: Record<string, string> = { cursor: 'cursor', windsurf: 'windsurf', antigravity: 'antigravity-ide', code: 'vscode', vscode: 'vscode' };
+
 /**
  * Builds safe argument arrays without invoking a shell.
  * Prevents command injection by guaranteeing arguments are passed directly to execFile/spawn.
  */
-export function buildEditorLaunchPlan(options: EditorLaunchOptions): LaunchCommand {
+export function buildEditorLaunchPlan(options: EditorLaunchOptions, platform: NodeJS.Platform = process.platform): LaunchCommand {
   const line = Number.isInteger(options.targetLine) && options.targetLine! > 0 ? options.targetLine! : 1;
   const col = Number.isInteger(options.targetColumn) && options.targetColumn! > 0 ? options.targetColumn! : 1;
   const file = options.targetFile;
   const ed = options.editor.toLowerCase();
+
+  const scheme = URL_SCHEMES[ed] ?? (['webstorm', 'zed'].includes(ed) ? undefined : 'vscode');
+  if (platform === 'win32' && scheme) {
+    return { bin: 'rundll32.exe', args: ['url.dll,FileProtocolHandler', editorFileUrl(scheme, file, line, col)] };
+  }
 
   switch (ed) {
     case 'cursor':
@@ -79,10 +94,10 @@ export function buildEditorLaunchPlan(options: EditorLaunchOptions): LaunchComma
 /**
  * Builds safe argument array for opening a local folder without invoking a shell.
  */
-export function buildFolderLaunchPlan(folderPath: string): { bin: string; args: string[] } {
-  if (process.platform === 'win32') {
+export function buildFolderLaunchPlan(folderPath: string, platform: NodeJS.Platform = process.platform): { bin: string; args: string[] } {
+  if (platform === 'win32') {
     return { bin: 'explorer.exe', args: [folderPath] };
-  } else if (process.platform === 'linux') {
+  } else if (platform === 'linux') {
     return { bin: 'xdg-open', args: [folderPath] };
   }
   return { bin: 'open', args: [folderPath] };
@@ -94,7 +109,12 @@ export function buildFolderLaunchPlan(folderPath: string): { bin: string; args: 
 export async function launchFolderSafely(targetPath: string, projectRoot: string): Promise<void> {
   const safePath = validateSafePath(targetPath, projectRoot);
   const plan = buildFolderLaunchPlan(safePath);
-  await execFileAsync(plan.bin, plan.args, { windowsHide: true });
+  try {
+    await execFileAsync(plan.bin, plan.args, { windowsHide: true });
+  } catch (err: any) {
+    // explorer.exe exits with 1 even when the window opened.
+    if (!(process.platform === 'win32' && err?.code === 1)) throw err;
+  }
 }
 
 /**

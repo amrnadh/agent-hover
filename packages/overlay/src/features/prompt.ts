@@ -118,13 +118,16 @@ export function setupPrompt(app: OverlayApp) {
     const item = stack[index];
     if (!item?.element) return null;
     const element = elementFacts(item);
-    const src = await api.sourceFor(stack, index);
+    // React 19: the exact line of this element's JSX. The component around that line is the one that wrote it.
+    const exact = await api.exactElementSource?.(item);
+    if (exact) element.source = { file: exact.file, line: exact.line };
+    const src = exact ? { file: exact.file, line: exact.line, component: '' } : await api.sourceFor(stack, index);
     let component: ComponentFacts | undefined;
     let tokens: number | undefined;
     if (src) {
       let loaded = await loadComponent(src);
       // The nearest component does not contain the element's JSX: use the component that wrote it.
-      if (item.isDomElement && loaded.component.code && locate(loaded.component, element) === undefined) {
+      if (!exact && item.isDomElement && loaded.component.code && locate(loaded.component, element) === undefined) {
         for (const alt of await ownerSources(stack, index)) {
           if (alt.file === src.file && alt.line === src.line) continue;
           const other = await loadComponent(alt);
@@ -137,7 +140,7 @@ export function setupPrompt(app: OverlayApp) {
         state.lastCopiedContext = loaded.ctx;
         state.lastResolved = { file: loaded.src.file, line: loaded.src.line };
       }
-      const owner = stack.find((s: any) => !s.isDomElement && s.name === loaded.src.component);
+      const owner = stack.find((s: any) => !s.isDomElement && s.name === (loaded.src.component || loaded.component.name));
       const props = owner?.fiber?.memoizedProps;
       if (props && typeof props === 'object') {
         component.propValues = Object.keys(props)
