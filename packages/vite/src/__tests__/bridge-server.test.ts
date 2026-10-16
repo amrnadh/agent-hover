@@ -564,7 +564,7 @@ describe('BridgeServer Integration Tests', () => {
   });
 
   it('requires auth for the listen endpoint', async () => {
-    const testPort = 49000 + Math.floor(Math.random() * 2000);
+    const testPort = 29000 + Math.floor(Math.random() * 2000); // below Windows' dynamic range (49152+), often reserved
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
     const res = await fetch(`http://localhost:${activePort}/api/agent/tasks/next`);

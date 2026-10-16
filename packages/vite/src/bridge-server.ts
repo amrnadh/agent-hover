@@ -78,6 +78,8 @@ export class BridgeServer {
   /** Connected agents by MCP server instance (one per agent session); older servers without an instance by client name. */
   private agentPresence: Map<string, { client: string; version?: string; lastSeen: number }> = new Map();
   private presenceTimer: ReturnType<typeof setInterval> | null = null;
+  /** Ports tried after the first one (busy or reserved), at most 10. */
+  private portAttempts = 0;
   /** Set by the Vite plugin: maps a browser stack frame to the original file and line (React 19 sources). */
   private mapLocation: LocationMapper | null = null;
   private cleanupExitHandler?: () => void;
@@ -1589,11 +1591,15 @@ export class BridgeServer {
       const errorHandler = (err: any) => {
         server.removeListener('listening', listenHandler);
         server.on('error', () => {});
-        if (err.code === 'EADDRINUSE' && this.port < this.initialPort + 10) {
+        // Busy: try the next port. Blocked (EACCES: Windows reserves ports in blocks of about 100, e.g. for
+        // Hyper-V): jump past the block. Ten tries in all.
+        if ((err.code === 'EADDRINUSE' || err.code === 'EACCES') && this.portAttempts < 10) {
+          const next = this.port + (err.code === 'EACCES' ? 100 : 1);
           console.warn(
-            `[agent-hover] Port ${this.port} is already in use. Retrying on port ${this.port + 1}...`
+            `[agent-hover] Port ${this.port} is ${err.code === 'EACCES' ? 'reserved by the system' : 'already in use'}. Retrying on port ${next}...`
           );
-          this.port++;
+          this.portAttempts++;
+          this.port = next;
           this.start().then(resolve, reject);
         } else {
           console.error('[agent-hover] Failed to start bridge server:', err);

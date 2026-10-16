@@ -56,7 +56,8 @@ export class SourceEditor {
   public async editSourceText(options: EditSourceTextOptions): Promise<EditSourceResult> {
     const { file, component, originalText, newText, line, occurrenceIndex } = options;
     const absolutePath = path.isAbsolute(file) ? file : path.join(this.projectRoot, file);
-    const relativeFile = path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file;
+    // Forward slashes on every platform: this path goes into prompts and back to the page.
+    const relativeFile = (path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file).split(path.sep).join('/');
 
     let code: string;
     try {
@@ -345,7 +346,8 @@ export class SourceEditor {
   public async saveComponentSource(options: SaveComponentSourceOptions): Promise<{ success: boolean; file: string; error?: string }> {
     const { file, component, newSource, startLine, endLine } = options;
     const absolutePath = path.isAbsolute(file) ? file : path.join(this.projectRoot, file);
-    const relativeFile = path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file;
+    // Forward slashes on every platform: this path goes into prompts and back to the page.
+    const relativeFile = (path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file).split(path.sep).join('/');
 
     let code: string;
     try {
