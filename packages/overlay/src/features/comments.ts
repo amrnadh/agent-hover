@@ -159,6 +159,7 @@ export function setupComments(app: OverlayApp) {
   }
 
   function closeCommentCard() {
+    api.stopVoice?.();
     if (draft) draft = null;
     openId = null;
     card.hidden = true;
@@ -178,7 +179,7 @@ export function setupComments(app: OverlayApp) {
     card.innerHTML = c.draft
       ? `<div class="head"><b>${esc(label)}</b><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
          <textarea id="ah-comment-input" aria-label="Comment" placeholder="Leave a note for yourself or your agent"></textarea>
-         <div class="ah-actions" style="justify-content:flex-end"><button class="ah-tbtn" data-act="close">Discard</button><button class="ah-tbtn primary" data-act="save">Comment</button></div>`
+         <div class="ah-actions" style="justify-content:flex-end"><button class="ah-ibtn mic" data-act="mic" style="margin-right:auto" title="Speak instead of typing" aria-label="Speak instead of typing" hidden>${icon('mic')}</button><button class="ah-tbtn" data-act="close">Discard</button><button class="ah-tbtn primary" data-act="save">Comment</button></div>`
       : `<div class="head"><span class="ah-dot ${c.resolved ? 'ok' : ''}"></span><b>#${numberOf(c)} ${esc(label)}</b><span class="ah-muted" style="font-size:12px;white-space:nowrap">${esc(timeAgo(c.createdAt))}</span><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
          <div class="body">${esc(c.text)}</div>
          <div class="ah-actions"><button class="ah-tbtn outline" data-act="resolve">${c.resolved ? 'Reopen' : 'Resolve'}</button><button class="ah-tbtn outline" data-act="send">${icon('send', 14)}Send to agent</button><button class="ah-tbtn danger" data-act="delete">Delete</button></div>`;
@@ -186,6 +187,8 @@ export function setupComments(app: OverlayApp) {
     positionCard();
     const ta = card.querySelector('textarea') as HTMLTextAreaElement | null;
     if (ta) {
+      const mic = card.querySelector('[data-act=mic]') as HTMLElement | null;
+      if (mic) api.attachVoice?.(ta, mic);
       ta.focus();
       ta.onkeydown = (e) => {
         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); (card.querySelector('[data-act=save]') as HTMLElement).click(); }

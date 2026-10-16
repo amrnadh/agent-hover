@@ -1,13 +1,11 @@
-import { BRAND, MCP_PACKAGE } from './brand.js';
-import { RULES_SNIPPET } from './clients.js';
+import { BRAND } from './brand.js';
+import { mcpServerEntry, RULES_SNIPPET, type CommandKind } from './clients.js';
 
 /** Result of merging our entry into an existing (or missing) file. `content` is null when nothing changes. */
 export type Merge = { ok: true; content: string | null } | { ok: false; reason: string };
 
-const SERVER = { command: 'npx', args: ['-y', MCP_PACKAGE] };
-
 /** Add the MCP server to a JSON config (`.mcp.json`, `.cursor/mcp.json`), keeping every other entry. */
-export function mergeJsonMcp(existing: string | null): Merge {
+export function mergeJsonMcp(existing: string | null, platform: NodeJS.Platform = process.platform): Merge {
   let config: any = {};
   if (existing && existing.trim()) {
     try {
@@ -21,12 +19,13 @@ export function mergeJsonMcp(existing: string | null): Merge {
   if (config.mcpServers !== undefined && (typeof config.mcpServers !== 'object' || Array.isArray(config.mcpServers))) {
     return { ok: false, reason: '`mcpServers` is not an object' };
   }
-  config.mcpServers = { ...config.mcpServers, [BRAND.mcpServerName]: SERVER };
+  config.mcpServers = { ...config.mcpServers, [BRAND.mcpServerName]: mcpServerEntry(platform) };
   return { ok: true, content: JSON.stringify(config, null, 2) + '\n' };
 }
 
 /** Add the MCP server to a Codex TOML config. Appends a table; never rewrites what is there. */
-export function mergeTomlMcp(existing: string | null): Merge {
+export function mergeTomlMcp(existing: string | null, platform: NodeJS.Platform = process.platform): Merge {
+  const SERVER = mcpServerEntry(platform);
   const header = `[mcp_servers.${BRAND.mcpServerName}]`;
   const text = existing || '';
   if (text.split('\n').some((l) => l.trim() === header || l.trim() === `[mcp_servers."${BRAND.mcpServerName}"]`)) return { ok: true, content: null };
@@ -76,4 +75,28 @@ export function mergeGitignore(existing: string | null): Merge {
 export function gitignoreCoversSession(existing: string | null): boolean {
   const lines = (existing || '').split('\n').map((l) => l.trim());
   return ignoresWholeDir(lines) || lines.includes(GITIGNORE_ENTRIES[0]) || lines.includes('/' + GITIGNORE_ENTRIES[0]);
+}
+
+/** The listen loop; the same text as the MCP server's `listen` prompt (packages/mcp/src/index.ts, LISTEN_PROMPT). */
+export const LISTEN_PROMPT = [
+  'Listen for Agent Hover tasks.',
+  '',
+  'Call the agent-hover wait_for_agent_task tool. When it returns a task, make the change it describes, then call complete_agent_task with the task id, a one-paragraph summary and the files you changed.',
+  'Then call wait_for_agent_task again. Keep going until I tell you to stop. If it returns without a task, call it again.',
+].join('\n');
+
+const COMMAND_DESCRIPTION = `Listen for UI tasks sent from the page with ${BRAND.name}`;
+
+/** The /agent-hover command (or $agent-hover skill) for each agent's own format. */
+export function commandFileContent(kind: CommandKind): string {
+  if (kind === 'cursor-command') return LISTEN_PROMPT + '\n';
+  if (kind === 'codex-skill') return `---\nname: agent-hover\ndescription: ${COMMAND_DESCRIPTION}. Use when the user asks to listen for ${BRAND.name} tasks.\n---\n\n${LISTEN_PROMPT}\n`;
+  return `---\ndescription: ${COMMAND_DESCRIPTION}\n---\n\n${LISTEN_PROMPT}\n`;
+}
+
+/** Create the command file; leave one that is already there (ours, or the user's own with the same name). */
+export function mergeCommandFile(existing: string | null, kind: CommandKind): Merge {
+  if (existing === null) return { ok: true, content: commandFileContent(kind) };
+  if (existing.includes(LISTEN_PROMPT.split('\n')[0])) return { ok: true, content: null };
+  return { ok: false, reason: 'already exists with other content, so it was left alone' };
 }

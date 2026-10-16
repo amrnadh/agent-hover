@@ -16,6 +16,12 @@ export interface PathValidationOptions {
  * - Symlink escapes outside projectRoot
  * - Files exceeding max size limits
  */
+/** Whether `child` is `root` or inside it. Windows paths are case-insensitive (C:\\App and c:\\app are the same). */
+function isInside(child: string, root: string): boolean {
+  const [c, r] = process.platform === 'win32' ? [child.toLowerCase(), root.toLowerCase()] : [child, root];
+  return c === r || c.startsWith(r.endsWith(path.sep) ? r : r + path.sep);
+}
+
 export function validateSafePath(
   filePath: string,
   projectRoot: string,
@@ -34,7 +40,7 @@ export function validateSafePath(
     : path.resolve(normalizedRoot, filePath);
 
   // Verify prefix containment
-  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+  if (!isInside(resolved, normalizedRoot)) {
     throw new Error(`Path traversal denied: '${filePath}' escapes project root`);
   }
 
@@ -61,7 +67,7 @@ export function validateSafePath(
     try {
       const real = realpathSync(resolved);
 
-      if (real !== realRoot && !real.startsWith(realRoot + path.sep)) {
+      if (!isInside(real, realRoot)) {
         throw new Error(`Symlink escape denied: '${filePath}' targets outside project root`);
       }
 

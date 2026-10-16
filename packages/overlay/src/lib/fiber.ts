@@ -28,6 +28,44 @@ function describeElement(el) {
   return desc;
 }
 
+/** React 19: the stack where this fiber's element was created (its JSX line), as text; '' before React 19. */
+export function debugStackOf(fiber) {
+  const s = fiber && fiber._debugStack;
+  if (!s) return '';
+  return typeof s === 'string' ? s : s.stack || '';
+}
+
+/**
+ * React 19: where this element was written, then where the component that wrote it was used, and so on up the owner
+ * chain (each is a creation stack). The first is the element's own JSX line.
+ */
+export function creationStacksOf(fiber) {
+  const out = [];
+  for (let f = fiber, n = 0; f && n < 4; n++, f = f._debugOwner) {
+    const s = debugStackOf(f);
+    if (s) out.push(s);
+  }
+  return out;
+}
+
+/**
+ * React 19: a creation stack from inside `component`'s own render, taken from the first fiber it rendered (whose
+ * owner is the component). Its first app frame is a line in the component's own file.
+ */
+export function renderStackOf(component) {
+  if (!component) return '';
+  const owners = new Set([component, component.alternate].filter(Boolean));
+  const queue = [component.child];
+  for (let n = 0; queue.length && n < 300; n++) {
+    const f = queue.shift();
+    if (!f) continue;
+    if (owners.has(f._debugOwner) && f._debugStack) return debugStackOf(f);
+    if (f.child) queue.push(f.child);
+    if (f.sibling) queue.push(f.sibling);
+  }
+  return '';
+}
+
 export function buildHierarchyStack(el) {
   if (!el) return [];
   const stack = [];
@@ -52,6 +90,8 @@ export function buildHierarchyStack(el) {
     tagName: el.tagName.toLowerCase(),
     textPreview: textSnippet,
     source: leafSource,
+    // React 19: where this element's JSX was written, and up the owner chain (mapped to files by the bridge).
+    creationStacks: () => creationStacksOf(fiber),
     fiber: fiber
   });
 
@@ -76,7 +116,9 @@ export function buildHierarchyStack(el) {
         const key = name + ':' + (source ? source.fileName + ':' + source.lineNumber : 'null');
         if (!seen.has(key)) {
           seen.add(key);
-          stack.push({ name, source, fiber: curr, isDomElement: false, element: el });
+          const owner = curr;
+          // React 19: found lazily (it walks the component's children) and only when the item is resolved.
+          stack.push({ name, source, fiber: curr, isDomElement: false, element: el, renderStack: () => renderStackOf(owner) });
         }
       }
       curr = curr.return;

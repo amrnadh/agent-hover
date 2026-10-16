@@ -19,6 +19,8 @@ export interface ElementFacts {
   attributes?: Array<[string, string]>;
   size?: { width: number; height: number };
   styles?: Record<string, string>;
+  /** Where the element's JSX is, exactly (React 19 creation stack, mapped by the bridge). */
+  source?: { file: string; line: number };
 }
 
 export interface ComponentFacts {
@@ -112,10 +114,16 @@ function describeTarget(f: PromptFacts): string {
   return `<${el.tag}>${text}${where}`;
 }
 
+const sameFile = (a: string, b: string) => {
+  const x = a.replace(/\\/g, '/'), y = b.replace(/\\/g, '/');
+  return x === y || x.endsWith('/' + y) || y.endsWith('/' + x);
+};
+
 function elementLine(f: PromptFacts): number | undefined {
   const c = f.component;
   if (!c) return undefined;
   const el = f.element;
+  if (el.source && c.file && sameFile(el.source.file, c.file)) return el.source.line;
   return findElementLine(c.code, c.startLine || 1, { selector: el.selector, text: el.text, classes: el.classes, tag: el.tag, id: el.selector.match(/#([\w-]+)$/)?.[1] });
 }
 
@@ -136,7 +144,8 @@ export function formatElementSections(f: PromptFacts, h = 2): string {
     where.push(`- Rendered by: ${code(`<${c.name} />`)} in ${code(c.file)}${range}`);
     const line = elementLine(f);
     if (line && !el.isComponent) {
-      where.push(`- In the source, the element is around line ${line}`);
+      const exact = !!el.source && sameFile(el.source.file, c.file) && el.source.line === line;
+      where.push(`- In the source, the element is ${exact ? 'at' : 'around'} line ${line}`);
       const jsx = jsxTagAt(c.code, c.startLine || 1, line, el.tag);
       if (jsx && jsx.tag !== c.name) {
         where.push(`- It is rendered through ${code(`<${jsx.tag}>`)} (line ${jsx.line}), a shared component: change this usage (className or props) rather than ${code(`<${jsx.tag}>`)} itself, unless the request is about every ${jsx.tag}.`);

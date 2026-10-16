@@ -26,7 +26,8 @@ export class ContextBuilder {
 
   async getContext(file: string, line: number, level: ContextLevel): Promise<ComponentContext> {
     const absolutePath = path.isAbsolute(file) ? file : path.join(this.projectRoot, file);
-    const relativeFile = path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file;
+    // Forward slashes on every platform: this path goes into prompts and back to the page.
+    const relativeFile = (path.isAbsolute(file) ? path.relative(this.projectRoot, file) : file).split(path.sep).join('/');
 
     let code: string;
     try {

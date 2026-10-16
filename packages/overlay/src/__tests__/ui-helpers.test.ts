@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AGENT_SETUPS } from '../lib/agents.js';
-import { MCP_CLIENTS } from '../../../cli/src/clients.js';
+import { mcpClients } from '../../../cli/src/clients.js';
 import { previewValue } from '../lib/value-preview.js';
 import { timeAgo, esc } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
@@ -8,7 +8,8 @@ import { icon } from '../lib/icon.js';
 describe('agent setup table', () => {
   it('matches the CLI table so Settings and `npx agent-hover mcp` never disagree', () => {
     expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }))).toEqual(
-      MCP_CLIENTS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet })),
+      // The overlay shows the macOS/Linux form; on Windows Settings adds a note about cmd /c npx.
+      mcpClients('darwin').map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet })),
     );
   });
 });

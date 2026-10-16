@@ -30,7 +30,7 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
         targetFile: hostilePath,
         targetLine: 10,
         projectRoot: '/project',
-      });
+      }, 'darwin');
 
       // The binary is strictly the editor binary, never sh, bash, or cmd
       expect(plan.bin).toBe('cursor');
@@ -41,6 +41,12 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
         expect(plan.fallback.bin).toBe('open');
         expect(plan.fallback.args[0]).toBe(`cursor://file${hostilePath}:10:1`);
       }
+
+      // On Windows the path travels inside one link argument to rundll32, still without a shell.
+      const win = buildEditorLaunchPlan({ editor: 'cursor', targetFile: hostilePath, targetLine: 10, projectRoot: '/project' }, 'win32');
+      expect(win.bin).toBe('rundll32.exe');
+      expect(win.args).toHaveLength(2);
+      expect(win.args[1]).toContain(hostilePath.replace(/\\/g, '/'));
     }
   });
 
@@ -51,7 +57,7 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
       targetLine: -5,
       targetColumn: 0,
       projectRoot: '/project',
-    });
+    }, 'darwin');
 
     expect(plan.args).toEqual(['-g', '/project/src/Card.tsx:1:1']);
   });
@@ -60,5 +66,13 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
     const folderPlan = buildFolderLaunchPlan('/project/.agent-hover/screenshots');
     expect(folderPlan.bin).toBeDefined();
     expect(folderPlan.args).toEqual(['/project/.agent-hover/screenshots']);
+  });
+
+  it('opens files through the editor\'s own link on Windows, where its CLI is a .cmd shim', () => {
+    const plan = buildEditorLaunchPlan({ editor: 'cursor', targetFile: 'C:\\Users\\me\\app\\src\\a & b.tsx', targetLine: 3, targetColumn: 2, projectRoot: 'C:\\Users\\me\\app' }, 'win32');
+    expect(plan).toEqual({ bin: 'rundll32.exe', args: ['url.dll,FileProtocolHandler', 'cursor://file/C:/Users/me/app/src/a & b.tsx:3:2'] });
+    expect(buildEditorLaunchPlan({ editor: 'vscode', targetFile: 'C:\\a.tsx', projectRoot: 'C:\\' }, 'win32').args[1]).toBe('vscode://file/C:/a.tsx:1:1');
+    expect(buildEditorLaunchPlan({ editor: 'zed', targetFile: 'C:\\a.tsx', projectRoot: 'C:\\' }, 'win32').bin).toBe('zed');
+    expect(buildEditorLaunchPlan({ editor: 'cursor', targetFile: '/app/a.tsx', projectRoot: '/app' }, 'darwin').bin).toBe('cursor');
   });
 });

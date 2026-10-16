@@ -275,6 +275,8 @@ export interface AgentTask {
   payload: AgentTaskPayload;
   tokenEstimate?: number;
   claimedBy?: string;
+  /** The agent the page sent this task to (its MCP client name); unset means any agent may take it. */
+  assignee?: string;
   checkpointId?: string;
   result?: AgentTaskResult;
   review?: TaskReview;

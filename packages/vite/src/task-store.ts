@@ -27,6 +27,8 @@ export interface CreateTaskOptions {
   supersedesKey?: string;
   tokenEstimate?: number;
   ttlMs?: number;
+  /** Send to one agent by its MCP client name. */
+  assignee?: string;
 }
 
 export interface ClaimTaskOptions {
@@ -140,6 +142,7 @@ export class TaskStore extends EventEmitter {
       target: options.target || {},
       payload: options.payload || {},
       tokenEstimate: options.tokenEstimate,
+      ...(typeof options.assignee === 'string' && options.assignee ? { assignee: options.assignee } : {}),
     };
 
     this.tasks.set(id, task);

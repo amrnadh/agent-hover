@@ -70,7 +70,11 @@ export function setupSelector(app: OverlayApp) {
     let ref: SourceRef | null = null;
     if (item.source?.fileName && !item.source.fileName.includes('node_modules')) {
       ref = { file: item.source.fileName, line: item.source.lineNumber, component: item.name };
-    } else {
+    }
+    // React 19: a line inside the component's own render, from React's creation stack and the dev server's maps.
+    const exact = !ref && item.renderStack ? await api.exactSource?.(item.renderStack()) : null;
+    if (exact) ref = { file: exact.file, line: exact.line, component: item.name };
+    else if (!ref) {
       const prev = state.currentStack;
       state.currentStack = stack; // resolveComponent reads ancestors from the current stack
       try {

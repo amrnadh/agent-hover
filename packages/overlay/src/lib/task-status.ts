@@ -40,6 +40,8 @@ export interface StatusView {
 export interface TaskLike {
   status: string;
   claimedBy?: string;
+  /** The agent the task was sent to by name. */
+  assignee?: string;
   result?: { summary?: string; filesChanged?: string[]; error?: string };
 }
 
@@ -48,7 +50,7 @@ export interface TaskLike {
  * Delivery outcomes without a task ("copied", "queued without agent") are rendered by the caller.
  */
 export function describeTaskStatus(task: TaskLike, agent?: string | null): StatusView {
-  const who = prettyAgentName(task.claimedBy || agent);
+  const who = prettyAgentName(task.claimedBy || task.assignee || agent);
   switch (task.status) {
     case 'queued':
       return agent ? { text: `Sent to ${who}`, tone: 'neutral' } : { text: 'Queued · no agent connected', tone: 'neutral' };

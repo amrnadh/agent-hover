@@ -10,6 +10,7 @@ import { checkForUpdate, packageVersion, type UpdateInfo } from './update-check.
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync, unlinkSync } from 'fs';
+import type { LocationMapper } from './source-location.js';
 import {
   ContextBuilder,
   RelationshipResolver,
@@ -58,6 +59,11 @@ export function isSafeOrigin(originHeader?: string): boolean {
   }
 }
 
+/** Whether `client` may take `task`: tasks sent to one agent by name go only to that agent. */
+function forClient(task: AgentTask, client: string): boolean {
+  return !task.assignee || !client || task.assignee === client;
+}
+
 export class BridgeServer {
   private app: express.Express;
   private httpServer: HttpServer | null = null;
@@ -69,7 +75,13 @@ export class BridgeServer {
   private startedAt: string = '';
   private taskStore: TaskStore;
   private checkpoints: CheckpointStore;
+  /** Connected agents by MCP server instance (one per agent session); older servers without an instance by client name. */
   private agentPresence: Map<string, { client: string; version?: string; lastSeen: number }> = new Map();
+  private presenceTimer: ReturnType<typeof setInterval> | null = null;
+  /** Ports tried after the first one (busy or reserved), at most 10. */
+  private portAttempts = 0;
+  /** Set by the Vite plugin: maps a browser stack frame to the original file and line (React 19 sources). */
+  private mapLocation: LocationMapper | null = null;
   private cleanupExitHandler?: () => void;
   private lastMcpHello = 0;
   private latestAgentTask: any = null;
@@ -392,6 +404,27 @@ export class BridgeServer {
           error instanceof Error ? error.message : 'Failed to resolve';
         console.error('[agent-hover] Resolve error:', message);
         res.status(500).json({ error: message });
+      }
+    });
+
+    // Exact source of an element on React 19: a frame from React's creation stack, mapped through Vite's source
+    // map (POST /api/source-location { url, line, column } → { file, line, column }).
+    this.app.post('/api/source-location', async (req, res) => {
+      const { url, line, column } = req.body || {};
+      if (typeof url !== 'string' || typeof line !== 'number' || typeof column !== 'number') {
+        res.status(400).json({ error: 'Missing url, line or column' });
+        return;
+      }
+      if (!this.mapLocation) {
+        res.status(404).json({ error: 'Source maps are not available' });
+        return;
+      }
+      try {
+        const location = await this.mapLocation(url, line, column);
+        if (!location) res.status(404).json({ error: 'Not a project file' });
+        else res.json(location);
+      } catch (err: any) {
+        res.status(500).json({ error: err.message || 'Could not map the location' });
       }
     });
 
@@ -867,7 +900,7 @@ export class BridgeServer {
         const filePath = path.join(screenshotsDir, fileNameWithExt);
         await fs.writeFile(filePath, buffer);
 
-        const relPath = path.relative(this.projectRoot, filePath);
+        const relPath = path.relative(this.projectRoot, filePath).split(path.sep).join('/');
         console.log(`[agent-hover] 📸 Screenshot saved to ${relPath}`);
         res.json({ success: true, path: relPath, filename: fileNameWithExt, fullPath: filePath });
       } catch (error: unknown) {
@@ -946,11 +979,20 @@ export class BridgeServer {
 
     // Presence endpoints (P1-06)
     this.app.post('/api/agent/presence', (req, res) => {
-      const { client = 'agent', version } = req.body || {};
-      this.agentPresence.set(client, { client, version, lastSeen: Date.now() });
+      const { client = 'agent', version, instance } = req.body || {};
+      this.agentPresence.set(typeof instance === 'string' && instance ? instance : client, { client, version, lastSeen: Date.now() });
       this.lastMcpHello = Date.now();
       this.broadcastPresence();
       res.json({ ok: true, registered: true });
+    });
+
+    // An agent closed (the MCP server says goodbye on exit): drop it now instead of after the timeout.
+    this.app.delete('/api/agent/presence', (req, res) => {
+      const { instance, client } = req.body || {};
+      const key = typeof instance === 'string' && instance ? instance : typeof client === 'string' ? client : '';
+      const removed = !!key && this.agentPresence.delete(key);
+      if (removed) this.broadcastPresence();
+      res.json({ ok: true, removed });
     });
 
     this.app.get('/api/agent/presence', (_req, res) => {
@@ -994,6 +1036,11 @@ export class BridgeServer {
         ? (statusParam.split(',').map((s) => s.trim()) as TaskStatus[])
         : undefined;
       let tasks = this.taskStore.listTasks({ status: statusFilter, limit: limitParam });
+      // An agent asking with ?client= only sees tasks sent to it by name, or to any agent.
+      if (typeof req.query.client === 'string') {
+        const client = req.query.client;
+        tasks = tasks.filter((t) => forClient(t, client));
+      }
       if (req.query.deliver === '1') {
         tasks = await Promise.all(
           tasks.map((t) => (t.status === 'queued' ? this.taskStore.markDelivered(t.id) : t)),
@@ -1009,8 +1056,10 @@ export class BridgeServer {
     this.app.get('/api/agent/tasks/next', async (req, res) => {
       const waitSeconds = Math.min(Math.max(parseInt(req.query.wait as string, 10) || 0, 0), 30);
 
+      // ?client= is the asking agent: it gets tasks sent to it by name, or to any agent.
+      const client = typeof req.query.client === 'string' ? req.query.client : '';
       const takeOldestQueued = async () => {
-        const queued = this.taskStore.listTasks({ status: ['queued'] });
+        const queued = this.taskStore.listTasks({ status: ['queued'] }).filter((t) => forClient(t, client));
         const oldest = queued[queued.length - 1];
         return oldest ? this.taskStore.markDelivered(oldest.id) : null;
       };
@@ -1524,7 +1573,17 @@ export class BridgeServer {
     return this.port;
   }
 
+  /** The Vite plugin passes its dev server's source maps in (see source-location.ts). */
+  public setLocationMapper(mapper: LocationMapper | null) {
+    this.mapLocation = mapper;
+  }
+
   public start(): Promise<number> {
+    // Tell the page when an agent times out, so it doesn't wait for its own slow refresh.
+    if (!this.presenceTimer) {
+      this.presenceTimer = setInterval(() => { if (this.prunePresence()) this.broadcastPresence(); }, 5000);
+      this.presenceTimer.unref?.();
+    }
     return new Promise((resolve, reject) => {
       const server = createServer(this.app);
       this.httpServer = server;
@@ -1532,11 +1591,15 @@ export class BridgeServer {
       const errorHandler = (err: any) => {
         server.removeListener('listening', listenHandler);
         server.on('error', () => {});
-        if (err.code === 'EADDRINUSE' && this.port < this.initialPort + 10) {
+        // Busy: try the next port. Blocked (EACCES: Windows reserves ports in blocks of about 100, e.g. for
+        // Hyper-V): jump past the block. Ten tries in all.
+        if ((err.code === 'EADDRINUSE' || err.code === 'EACCES') && this.portAttempts < 10) {
+          const next = this.port + (err.code === 'EACCES' ? 100 : 1);
           console.warn(
-            `[agent-hover] Port ${this.port} is already in use. Retrying on port ${this.port + 1}...`
+            `[agent-hover] Port ${this.port} is ${err.code === 'EACCES' ? 'reserved by the system' : 'already in use'}. Retrying on port ${next}...`
           );
-          this.port++;
+          this.portAttempts++;
+          this.port = next;
           this.start().then(resolve, reject);
         } else {
           console.error('[agent-hover] Failed to start bridge server:', err);
@@ -1668,6 +1731,8 @@ export class BridgeServer {
 
   public async stop(): Promise<void> {
     console.log('[agent-hover] Stopping bridge server...');
+    if (this.presenceTimer) clearInterval(this.presenceTimer);
+    this.presenceTimer = null;
 
     // Clean up session file
     await removeSessionFile(this.projectRoot);
@@ -1700,21 +1765,35 @@ export class BridgeServer {
     }
   }
 
-  private prunePresence() {
+  /** Drop agents not heard from in 25 s (a crash, or a server too old to say goodbye). True if any were dropped. */
+  private prunePresence(): boolean {
     const cutoff = Date.now() - 25000;
+    let removed = false;
     for (const [key, val] of this.agentPresence.entries()) {
       if (val.lastSeen < cutoff) {
         this.agentPresence.delete(key);
+        removed = true;
       }
     }
+    return removed;
   }
 
-  /** Connected agents, most recently active first (the overlay sends to the first one by default). */
+  /** Connected agents, one entry per agent with its number of sessions, most recently active first
+   * (the overlay sends to the first one by default). */
   private presenceList() {
     this.prunePresence();
-    return Array.from(this.agentPresence.values())
+    const byClient = new Map<string, { client: string; version?: string; lastSeen: number; sessions: number }>();
+    for (const a of this.agentPresence.values()) {
+      const seen = byClient.get(a.client);
+      if (!seen) byClient.set(a.client, { ...a, sessions: 1 });
+      else {
+        seen.sessions++;
+        if (a.lastSeen > seen.lastSeen) Object.assign(seen, { lastSeen: a.lastSeen, version: a.version });
+      }
+    }
+    return Array.from(byClient.values())
       .sort((a, b) => b.lastSeen - a.lastSeen)
-      .map((a) => ({ client: a.client, version: a.version, lastSeen: new Date(a.lastSeen).toISOString() }));
+      .map((a) => ({ client: a.client, version: a.version, sessions: a.sessions, lastSeen: new Date(a.lastSeen).toISOString() }));
   }
 
   private broadcastPresence() {

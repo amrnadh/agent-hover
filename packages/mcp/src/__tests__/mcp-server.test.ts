@@ -78,6 +78,32 @@ describe('Agent Hover MCP Server', () => {
       expect(conn.port).toBeGreaterThan(0);
     });
 
+    it('an explicit port and token beat a discovered session; the session is used otherwise', async () => {
+      const fs = await import('fs');
+      const os = await import('os');
+      const path = await import('path');
+      const { resolveBridgeConnection } = await import('../index.js');
+      const file = path.join(os.tmpdir(), `ah-session-${process.pid}-${Date.now()}.json`);
+      fs.writeFileSync(file, JSON.stringify({ port: 41111, token: 'session-token', pid: process.pid }));
+      const saved = { s: process.env.AGENT_HOVER_SESSION, p: process.env.AGENT_HOVER_PORT, c: process.env.COMPONENT_POINTER_PORT, t: process.env.AGENT_HOVER_TOKEN };
+      const restore = (k: string, v?: string) => { if (v === undefined) delete process.env[k]; else process.env[k] = v; };
+      try {
+        process.env.AGENT_HOVER_SESSION = file;
+        delete process.env.COMPONENT_POINTER_PORT;
+        process.env.AGENT_HOVER_PORT = '42222';
+        process.env.AGENT_HOVER_TOKEN = 'env-token';
+        expect(resolveBridgeConnection()).toEqual({ port: 42222, token: 'env-token' });
+        delete process.env.AGENT_HOVER_PORT;
+        expect(resolveBridgeConnection()).toEqual({ port: 41111, token: 'session-token' });
+      } finally {
+        restore('AGENT_HOVER_SESSION', saved.s);
+        restore('AGENT_HOVER_PORT', saved.p);
+        restore('COMPONENT_POINTER_PORT', saved.c);
+        restore('AGENT_HOVER_TOKEN', saved.t);
+        fs.rmSync(file, { force: true });
+      }
+    });
+
     it('handles list_agent_tasks, claim_agent_task, and complete_agent_task lifecycle', async () => {
       const http = await import('http');
       const testPort = 38000 + Math.floor(Math.random() * 2000);

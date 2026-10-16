@@ -11,6 +11,8 @@ export interface DispatchExtra {
   selector?: string;
   hierarchy?: string[];
   label?: string;
+  /** Send to this agent only (its MCP client name). Defaults to the current destination. */
+  assignee?: string;
   [key: string]: unknown;
 }
 
@@ -29,7 +31,26 @@ export interface DispatchResult {
 /** Send a prompt to the agent queue (or the clipboard). Shared by the composer, comments and batch. */
 export function setupAgentDispatch(app: OverlayApp) {
   const { BRIDGE, fetch, state, api } = app;
-  Object.assign(api, { dispatchToAgent, copyText });
+  Object.assign(api, { dispatchToAgent, copyText, destination, chooseDestination });
+
+  /** 'agent:<client>' or 'copy', picked in the composer. Null means: the first connected agent, else copy. */
+  let chosen: string | null = null;
+
+  function agents(): string[] {
+    return (state.connectedAgents || []).map((a: any) => a.client).filter(Boolean);
+  }
+
+  /** Where tasks go: the agent you picked if it's still connected, else the first connected agent, else the clipboard. */
+  function destination(): { kind: 'agent' | 'copy'; client?: string } {
+    const list = agents();
+    if (state.delivery === 'copy' || chosen === 'copy') return { kind: 'copy' };
+    if (chosen?.startsWith('agent:') && list.includes(chosen.slice(6))) return { kind: 'agent', client: chosen.slice(6) };
+    return list.length ? { kind: 'agent', client: list[0] } : { kind: 'copy' };
+  }
+
+  function chooseDestination(value: string | null) {
+    chosen = value;
+  }
 
   async function copyText(text: string): Promise<boolean> {
     try {
@@ -51,7 +72,9 @@ export function setupAgentDispatch(app: OverlayApp) {
     }
 
     const hasAgent = Array.isArray(state.connectedAgents) && state.connectedAgents.length > 0;
-    const agentName = hasAgent ? prettyAgentName(state.connectedAgents[0].client) : null;
+    // The task goes to the chosen agent by name, so another listening agent doesn't take it.
+    const assignee = extra.assignee || (hasAgent ? destination().client : undefined);
+    const agentName = hasAgent ? prettyAgentName(assignee || state.connectedAgents[0].client) : null;
     // D-06: copy as well when no agent would pick the task up.
     const copied = !hasAgent ? await copyText(promptText) : false;
 
@@ -70,6 +93,7 @@ export function setupAgentDispatch(app: OverlayApp) {
             hierarchy: extra.hierarchy,
           },
           payload: { prompt: promptText, ...extra },
+          ...(assignee ? { assignee } : {}),
         }),
       });
       const data = await res.json();

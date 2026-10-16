@@ -20,7 +20,7 @@ export function setupListPanels(app: OverlayApp) {
       const agent = state.connectedAgents?.[0]?.client;
       if (!tasks.length) {
         body.innerHTML = `<div class="ah-empty"><b>No tasks yet</b>Select an element, choose Ask, and describe the change. Tasks you send show up here with live status.
-          ${agent ? `<span>Sending to <b style="font-size:13px">${esc(prettyAgentName(agent))}</b>. Tell it “Listen for agent-hover tasks” once and it picks up each task.</span>` : '<span>No agent connected, so prompts go to your clipboard.</span><button class="ah-tbtn primary" data-act="connect">Connect an agent</button>'}</div>`;
+          ${agent ? `<span>Sending to <b style="font-size:13px">${esc(prettyAgentName(agent))}</b>. Run /agent-hover in it (or say “Listen for agent-hover tasks”) and it picks up each task.</span>` : '<span>No agent connected, so prompts go to your clipboard.</span><button class="ah-tbtn primary" data-act="connect">Connect an agent</button>'}</div>`;
         body.onclick = (e) => { if ((e.target as Element).closest('[data-act=connect]')) api.openSettings('agents'); };
         return;
       }

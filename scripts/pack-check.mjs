@@ -15,7 +15,7 @@ const problems = [];
 for (const dir of PACKAGES) {
   const cwd = path.join(root, 'packages', dir);
   const pkg = JSON.parse(readFileSync(path.join(cwd, 'package.json'), 'utf8'));
-  const [info] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+  const [info] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], shell: process.platform === 'win32' }));
   const files = info.files.map((f) => f.path);
   const fail = (msg) => problems.push(`${pkg.name}: ${msg}`);
 

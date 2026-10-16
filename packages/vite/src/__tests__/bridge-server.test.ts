@@ -428,6 +428,43 @@ describe('BridgeServer Integration Tests', () => {
     expect((await call('POST', '/agent/tasks/task_missing/review', { action: 'keep' })).status).toBe(404);
   });
 
+  it('groups agent sessions, drops one at once when it says goodbye, and routes tasks sent to one agent', async () => {
+    const testPort = 41000 + Math.floor(Math.random() * 2000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+    const call = async (method: string, url: string, body?: unknown) => {
+      const res = await fetch(`http://localhost:${activePort}/api${url}`, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return res.json();
+    };
+
+    // Two Claude Code sessions and one Cursor: two agents, Claude Code with 2 sessions.
+    await call('POST', '/agent/presence', { client: 'claude-code', instance: 'a' });
+    await call('POST', '/agent/presence', { client: 'claude-code', instance: 'b' });
+    await call('POST', '/agent/presence', { client: 'cursor', instance: 'c' });
+    let { agents } = await call('GET', '/agent/presence');
+    expect(agents.map((a: any) => `${a.client}:${a.sessions}`).sort()).toEqual(['claude-code:2', 'cursor:1']);
+
+    // One session closes: the other keeps Claude Code connected. Then Cursor closes.
+    expect((await call('DELETE', '/agent/presence', { instance: 'a' })).removed).toBe(true);
+    expect((await call('DELETE', '/agent/presence', { instance: 'c' })).removed).toBe(true);
+    ({ agents } = await call('GET', '/agent/presence'));
+    expect(agents.map((a: any) => `${a.client}:${a.sessions}`)).toEqual(['claude-code:1']);
+
+    // A task sent to Cursor is invisible to Claude Code; a task for any agent goes to whoever asks.
+    const forCursor = (await call('POST', '/agent/tasks', { instruction: 'For Cursor', assignee: 'cursor' })).task;
+    expect(forCursor.assignee).toBe('cursor');
+    expect((await call('GET', '/agent/tasks/next?client=claude-code')).task).toBeNull();
+    expect((await call('GET', '/agent/tasks?deliver=1&client=claude-code')).tasks).toEqual([]);
+    const forAny = (await call('POST', '/agent/tasks', { instruction: 'For anyone' })).task;
+    expect((await call('GET', '/agent/tasks/next?client=claude-code')).task.id).toBe(forAny.id);
+    expect((await call('GET', '/agent/tasks/next?client=cursor')).task.id).toBe(forCursor.id);
+  });
+
   it('records agent presence and reports connected agents (P1-06)', async () => {
     const testPort = 43000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
@@ -527,7 +564,7 @@ describe('BridgeServer Integration Tests', () => {
   });
 
   it('requires auth for the listen endpoint', async () => {
-    const testPort = 49000 + Math.floor(Math.random() * 2000);
+    const testPort = 29000 + Math.floor(Math.random() * 2000); // below Windows' dynamic range (49152+), often reserved
     server = new BridgeServer(tempDir, testPort);
     activePort = await server.start();
     const res = await fetch(`http://localhost:${activePort}/api/agent/tasks/next`);

@@ -61,7 +61,7 @@ export function renderOverview(p: ProjectInfo, s: Style): string {
   out.push(indent(s.dim(`Other agents: ${BRAND.cliName} mcp <${MCP_CLIENTS.map((c) => c.id).join('|')}>`)), '');
   out.push(s.bold('  4. Use it'));
   out.push(indent('Run your dev server, hold Alt, and click a component.'));
-  out.push(indent('Type what to change and press Send. Tell your agent once:'));
+  out.push(indent('Type what to change and press Send. In your agent, run /agent-hover ($agent-hover in Codex) or say:'));
   out.push(indent(s.dim('"Listen for agent-hover tasks."')));
   out.push(indent('It picks up each task you send, does it, and waits for the next.'), '');
   out.push(s.dim(`  ${BRAND.cliName} doctor  check the setup and the agent connection`));

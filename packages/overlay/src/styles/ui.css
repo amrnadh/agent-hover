@@ -139,6 +139,10 @@
 #ah-composer .target { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ui-fg-3); min-width: 0; }
 #ah-composer .target b { font: 600 12px var(--ui-mono); color: var(--ui-fg); white-space: nowrap; }
 #ah-composer .target span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ah-composer .mic, #ah-comment-card .mic { color: var(--ui-fg-3); }
+.ah-ibtn.mic.rec { color: var(--ui-bad); background: color-mix(in srgb, var(--ui-bad) 12%, transparent); } /* listening */
+.ah-voice-note { font-size: 12px; line-height: 1.5; color: var(--ui-fg-2); background: var(--ui-bg-2); border-radius: 8px; padding: 9px 10px; display: grid; gap: 8px; }
+.ah-voice-note p { margin: 0; }
 #ah-composer .follow { font-size: 12px; color: var(--ui-fg-2); background: var(--ui-bg-2); border-radius: 8px; padding: 6px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #ah-composer textarea { width: 100%; min-height: 64px; max-height: 200px; resize: none; border: 1px solid var(--ui-line-2); border-radius: 10px; padding: 9px 10px; font: 14px/1.5 var(--ui-font); color: var(--ui-fg); background: var(--ui-bg-2); outline: none; }
 #ah-composer textarea:focus { border-color: var(--ui-fg-3); }
