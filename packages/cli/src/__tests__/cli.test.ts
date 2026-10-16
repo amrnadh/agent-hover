@@ -27,7 +27,7 @@ describe('agent-hover CLI', () => {
     const r = await run([], fixture({}), PLAIN);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('npm install -D @agent-hover/vite');
-    expect(r.stdout).toContain('claude mcp add agent-hover -- npx -y @agent-hover/mcp');
+    expect(r.stdout).toContain(MCP_CLIENTS[0].command!); // claude mcp add agent-hover -- npx -y … (cmd /c npx on Windows)
     expect(r.stdout).not.toContain('This project');
   });
 

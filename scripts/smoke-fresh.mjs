@@ -5,14 +5,15 @@
 // Needs the packages built (npm run build) and network access for React and Vite. Runs on macOS, Linux and Windows.
 // Usage: node scripts/smoke-fresh.mjs [--keep]
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
 const keep = process.argv.includes('--keep');
 const win = process.platform === 'win32';
-const tmp = mkdtempSync(path.join(os.tmpdir(), 'ah-smoke-'));
+// The real path: Windows CI's temp folder is C:\Users\RUNNER~1\…, a short name Vite won't serve files from.
+const tmp = realpathSync.native(mkdtempSync(path.join(os.tmpdir(), 'ah-smoke-')));
 const tarballs = path.join(tmp, 'tarballs');
 const app = path.join(tmp, 'app');
 const home = path.join(tmp, 'home');
@@ -76,8 +77,10 @@ try {
   const sessionFile = path.join(app, '.agent-hover', 'session.json');
   for (let i = 0; i < 120 && !existsSync(sessionFile); i++) await new Promise((r) => setTimeout(r, 500));
   check(existsSync(sessionFile), 'the bridge wrote its session file');
-  const page = await fetch('http://localhost:5199/').then((r) => r.text());
-  check(page.includes('__AGENT_HOVER_BOOTSTRAP__') || page.includes('agent-hover'), 'the page loads the overlay');
+  const res = await fetch('http://localhost:5199/');
+  const page = await res.text();
+  if (!page.includes('__AGENT_HOVER_BOOTSTRAP__')) console.error(`  page (${res.status}): ${page.slice(0, 400)}`);
+  check(page.includes('__AGENT_HOVER_BOOTSTRAP__'), 'the page loads the overlay');
   const doctor = spawnSync('npx', ['agent-hover', 'doctor'], { cwd: app, env, encoding: 'utf8', shell: win });
   check(doctor.status === 0 && doctor.stdout.includes('Bridge running'), 'doctor passes');
 

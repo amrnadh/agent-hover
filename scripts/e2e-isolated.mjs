@@ -3,7 +3,7 @@
 // files (the Undo test changes a component and restores it) or collides with a dev server you have running.
 // Usage: npm run test:e2e:isolated [-- <playwright args>]   (add --keep to keep the copy for debugging,
 // --screenshots to write the README images)
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, existsSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,7 +16,9 @@ const keep = args.includes('--keep');
 const screenshots = args.includes('--screenshots');
 const playwrightArgs = args.filter((a) => a !== '--keep' && a !== '--screenshots');
 
-const dir = mkdtempSync(path.join(os.tmpdir(), 'ah-e2e-'));
+// The real path: Windows CI's temp folder is C:\Users\RUNNER~1\…, and Vite refuses to serve files from a short
+// name it doesn't recognise ("outside of Vite serving allow list").
+const dir = realpathSync.native(mkdtempSync(path.join(os.tmpdir(), 'ah-e2e-')));
 const skip = new Set(['node_modules', '.agent-hover', 'dist']);
 cpSync(demo, dir, { recursive: true, filter: (src) => !skip.has(path.basename(src)) || path.dirname(src) !== demo });
 

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { run } from '../cli.js';
-import { MCP_CLIENTS, mcpClients } from '../clients.js';
+import { MCP_CLIENTS, mcpClients, mcpServerEntry } from '../clients.js';
 import type { DoctorIO } from '../doctor.js';
 import type { InitIO } from '../init.js';
 import { PLAIN } from '../render.js';
@@ -95,7 +95,7 @@ describe('setup file merges', () => {
     expect(r.ok).toBe(true);
     const json = JSON.parse((r as any).content);
     expect(json.mcpServers.other).toEqual({ command: 'x' });
-    expect(json.mcpServers['agent-hover']).toEqual({ command: 'npx', args: ['-y', '@agent-hover/mcp'] });
+    expect(json.mcpServers['agent-hover']).toEqual(mcpServerEntry()); // npx, or cmd /c npx on Windows
     expect(json.keep).toBe(true);
     expect(mergeJsonMcp((r as any).content)).toEqual({ ok: true, content: null });
     expect(mergeJsonMcp('{ // comment\n}').ok).toBe(false);
@@ -111,9 +111,9 @@ describe('setup file merges', () => {
   });
 
   it('appends a TOML table once', () => {
-    const r = mergeTomlMcp('model = "o3"\n');
+    const r = mergeTomlMcp('model = "o3"\n', 'darwin');
     expect((r as any).content).toBe('model = "o3"\n\n[mcp_servers.agent-hover]\ncommand = "npx"\nargs = ["-y", "@agent-hover/mcp"]\n');
-    expect(mergeTomlMcp((r as any).content)).toEqual({ ok: true, content: null });
+    expect(mergeTomlMcp((r as any).content, 'darwin')).toEqual({ ok: true, content: null });
   });
 
   it('appends rules once and creates Cursor rules with frontmatter', () => {

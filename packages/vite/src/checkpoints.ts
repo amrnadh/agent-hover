@@ -1,7 +1,14 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
+import { realpathSync } from 'fs';
 import path from 'path';
+
+/** The real, full path: on Windows a temp folder can be C:\\Users\\RUNNER~1\\… while git reports the long name. */
+function canonical(p: string): string {
+  try { return realpathSync.native(p); } catch { return path.resolve(p); }
+}
+const posix = (p: string) => p.split(path.sep).join('/');
 
 const run = promisify(execFile);
 
@@ -70,7 +77,7 @@ export class CheckpointStore {
   gitRoot(): Promise<string | null> {
     if (!this.gitRootPromise) {
       this.gitRootPromise = this.git(['rev-parse', '--show-toplevel'], this.projectRoot)
-        .then((s) => (s.trim() ? path.resolve(s.trim()) : null)) // git prints C:/x on Windows
+        .then((s) => (s.trim() ? canonical(s.trim()) : null)) // git prints C:/x on Windows
         .catch(() => null);
     }
     return this.gitRootPromise;
@@ -141,11 +148,14 @@ export class CheckpointStore {
     if (!cp) return { available: false, reason: 'No checkpoint: the agent did not claim this task through Agent Hover.', files: [] };
 
     const norm = (p: string) => p.replace(/^\.\//, '');
+    // Paths as git writes them (forward slashes), relative to the project for display.
+    const project = canonical(this.projectRoot);
     const display = (p: string) => {
-      const rel = path.relative(this.projectRoot, path.join(root, p));
+      const rel = posix(path.relative(project, path.join(root, p)));
       return rel.startsWith('..') ? p : rel;
     };
-    const reportedSet = new Set(reported.map((r) => norm(path.isAbsolute(r) ? path.relative(root, r) : path.relative(root, path.resolve(this.projectRoot, r)))));
+    const fromRoot = (r: string) => posix(path.relative(root, path.isAbsolute(r) ? canonical(r) : path.resolve(project, r)));
+    const reportedSet = new Set(reported.map((r) => norm(fromRoot(norm(r.replace(/\\/g, '/'))))));
     const files: FileChange[] = [];
 
     const numstat = await this.git(['diff', '--numstat', '-z', cp.base, '--'], root).catch(() => '');

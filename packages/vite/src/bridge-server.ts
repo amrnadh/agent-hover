@@ -898,7 +898,7 @@ export class BridgeServer {
         const filePath = path.join(screenshotsDir, fileNameWithExt);
         await fs.writeFile(filePath, buffer);
 
-        const relPath = path.relative(this.projectRoot, filePath);
+        const relPath = path.relative(this.projectRoot, filePath).split(path.sep).join('/');
         console.log(`[agent-hover] 📸 Screenshot saved to ${relPath}`);
         res.json({ success: true, path: relPath, filename: fileNameWithExt, fullPath: filePath });
       } catch (error: unknown) {

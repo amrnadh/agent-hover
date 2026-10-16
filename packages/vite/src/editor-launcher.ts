@@ -51,21 +51,21 @@ export function buildEditorLaunchPlan(options: EditorLaunchOptions, platform: No
       return {
         bin: 'cursor',
         args: ['-g', `${file}:${line}:${col}`],
-        fallback: process.platform === 'darwin' ? { bin: 'open', args: [`cursor://file${file}:${line}:${col}`] } : undefined,
+        fallback: platform === 'darwin' ? { bin: 'open', args: [`cursor://file${file}:${line}:${col}`] } : undefined,
       };
 
     case 'windsurf':
       return {
         bin: 'windsurf',
         args: ['-g', `${file}:${line}:${col}`],
-        fallback: process.platform === 'darwin' ? { bin: 'open', args: [`windsurf://file${file}:${line}:${col}`] } : undefined,
+        fallback: platform === 'darwin' ? { bin: 'open', args: [`windsurf://file${file}:${line}:${col}`] } : undefined,
       };
 
     case 'antigravity':
       return {
         bin: 'agy',
         args: [options.projectRoot, file],
-        fallback: process.platform === 'darwin' ? { bin: 'open', args: [`antigravity-ide://file${file}:${line}:${col}`] } : undefined,
+        fallback: platform === 'darwin' ? { bin: 'open', args: [`antigravity-ide://file${file}:${line}:${col}`] } : undefined,
       };
 
     case 'webstorm':
@@ -86,7 +86,7 @@ export function buildEditorLaunchPlan(options: EditorLaunchOptions, platform: No
       return {
         bin: 'code',
         args: ['-g', `${file}:${line}:${col}`],
-        fallback: process.platform === 'darwin' ? { bin: 'open', args: [`vscode://file${file}:${line}:${col}`] } : undefined,
+        fallback: platform === 'darwin' ? { bin: 'open', args: [`vscode://file${file}:${line}:${col}`] } : undefined,
       };
   }
 }

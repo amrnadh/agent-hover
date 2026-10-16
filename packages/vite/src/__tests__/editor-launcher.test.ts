@@ -30,7 +30,7 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
         targetFile: hostilePath,
         targetLine: 10,
         projectRoot: '/project',
-      });
+      }, 'darwin');
 
       // The binary is strictly the editor binary, never sh, bash, or cmd
       expect(plan.bin).toBe('cursor');
@@ -41,6 +41,12 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
         expect(plan.fallback.bin).toBe('open');
         expect(plan.fallback.args[0]).toBe(`cursor://file${hostilePath}:10:1`);
       }
+
+      // On Windows the path travels inside one link argument to rundll32, still without a shell.
+      const win = buildEditorLaunchPlan({ editor: 'cursor', targetFile: hostilePath, targetLine: 10, projectRoot: '/project' }, 'win32');
+      expect(win.bin).toBe('rundll32.exe');
+      expect(win.args).toHaveLength(2);
+      expect(win.args[1]).toContain(hostilePath.replace(/\\/g, '/'));
     }
   });
 
@@ -51,7 +57,7 @@ describe('Editor Launcher Security Tests (F-01 / P-03)', () => {
       targetLine: -5,
       targetColumn: 0,
       projectRoot: '/project',
-    });
+    }, 'darwin');
 
     expect(plan.args).toEqual(['-g', '/project/src/Card.tsx:1:1']);
   });
