@@ -2,6 +2,7 @@ import { buildHierarchyStack, getComponentBoundingRect, getComponentInfo } from 
 import { CaptureLayer } from '../ui/capture-layer.js';
 import { placeBox } from '../lib/ui.js';
 import { cursorCss, type CursorKind } from '../lib/cursor.js';
+import { isWrapperName, plainLabel } from '../lib/labels.js';
 import type { OverlayApp } from '../app/context.js';
 
 export type Mode = 'inspect' | 'comment' | null;
@@ -19,7 +20,7 @@ export interface SourceRef { file: string; line: number; component: string; }
 export function setupSelector(app: OverlayApp) {
   const { shadow, state, api } = app;
   Object.assign(api, {
-    setMode, renderCursor, select, selectElement, selectIndex, deselect, describe, labelFor, selectionRect, rectOf,
+    setMode, renderCursor, nameFor, select, selectElement, selectIndex, deselect, describe, labelFor, selectionRect, rectOf,
     sourceFor, ownerOf, projectOwner, isFrozen, onLayout, requestLayout, insets, onSelectionChange, findComponentElement,
   });
 
@@ -47,6 +48,34 @@ export function setupSelector(app: OverlayApp) {
     if (el.id) return `${tag}#${el.id}`;
     const cls = (el.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean)[0];
     return cls ? `${tag}.${cls}` : tag;
+  }
+
+  /** The plain name for cards and lists: “Book a demo” button, <StatCard />. A library wrapper (motion.a) is named
+   * by the element it draws. The code name from labelFor stays in the hover tag, prompts and Details. */
+  function nameFor(item: any): string {
+    if (!item) return '';
+    if (!item.isDomElement) {
+      if (!isWrapperName(item.name)) return `<${item.name} />`;
+      const host = hostOf(item.fiber);
+      return host ? nameOfElement(host) : `<${item.name} />`;
+    }
+    return nameOfElement(item.element as Element);
+  }
+
+  function nameOfElement(el: Element): string {
+    const a = (n: string) => el.getAttribute(n) || undefined;
+    return plainLabel({
+      tag: el.tagName.toLowerCase(),
+      // innerText keeps the spaces layout puts between pieces (“New” badge + “Recurring…”), textContent doesn't.
+      text: ((el as HTMLElement).innerText ?? el.textContent ?? '').slice(0, 200),
+      ariaLabel: a('aria-label'), alt: a('alt'), title: a('title'), placeholder: a('placeholder'), type: a('type'), role: a('role'),
+    });
+  }
+
+  /** The first DOM element a component renders. */
+  function hostOf(fiber: any): Element | null {
+    for (let f = fiber?.child, n = 0; f && n < 20; f = f.child, n++) if (f.stateNode instanceof Element) return f.stateNode;
+    return null;
   }
 
   function rectOf(item: any): Rect | null {

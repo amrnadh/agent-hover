@@ -21,7 +21,7 @@ export function setupActionPill(app: OverlayApp) {
     if (!state.selectedTarget) { pill.hidden = true; menu.hidden = true; return; }
     if (changed) {
       menu.hidden = true;
-      nameEl.textContent = api.labelFor(state.selectedTarget);
+      nameEl.textContent = api.nameFor(state.selectedTarget);
       fileEl.textContent = '';
       const token = ++sourceToken;
       Promise.all([api.sourceFor(state.currentStack, state.currentStackIndex), exactFor(state.selectedTarget)]).then(([src, exact]: any[]) => {
@@ -43,7 +43,8 @@ export function setupActionPill(app: OverlayApp) {
     const owner = api.projectOwner(state.currentStack, state.currentStackIndex);
     const frozen = !!owner && api.isFrozen(owner.name, state.selectionSource?.file);
     nameEl.classList.toggle('lock', frozen);
-    nameEl.title = frozen ? 'Agents are told not to change this component' : '';
+    const code = state.selectedTarget ? api.labelFor(state.selectedTarget) : '';
+    nameEl.title = frozen ? `${code} · agents are told not to change this component` : code;
   }
 
   api.onLayout(() => {

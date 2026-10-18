@@ -87,6 +87,11 @@ export class CheckpointStore {
     return path.join(this.dir, taskId.replace(/[^\w.-]/g, '_') + '.json');
   }
 
+  /** Forget a task's checkpoint (the task was removed from the list). */
+  async remove(taskId: string): Promise<void> {
+    await fs.rm(this.file(taskId), { force: true });
+  }
+
   async get(taskId: string): Promise<Checkpoint | null> {
     try {
       return JSON.parse(await fs.readFile(this.file(taskId), 'utf8'));

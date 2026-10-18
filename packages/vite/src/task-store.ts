@@ -276,6 +276,27 @@ export class TaskStore extends EventEmitter {
     return task;
   }
 
+  /**
+   * Remove tasks from the list. A task an agent is working on can't be removed, and one that is waiting is
+   * cancelled first. Returns the ids that were removed.
+   */
+  public async removeTasks(ids: string[]): Promise<string[]> {
+    const removed: string[] = [];
+    for (const id of ids) {
+      const task = this.tasks.get(id);
+      if (!task) continue;
+      if (task.status === 'in_progress') throw new Error('The agent is working on this task; it can be removed once it finishes');
+      if (task.status === 'queued' || task.status === 'delivered') throw new Error('Cancel the task before removing it');
+      this.tasks.delete(id);
+      removed.push(id);
+    }
+    if (removed.length) {
+      await this.saveToDisk();
+      this.emit('task:removed', removed);
+    }
+    return removed;
+  }
+
   public async cancelTask(id: string): Promise<AgentTask> {
     this.expireOldTasks();
     const task = this.tasks.get(id);

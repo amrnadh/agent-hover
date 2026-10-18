@@ -15,20 +15,22 @@ const MARKER_TTL_MS = 30 * 60 * 1000;
  */
 export function setupTasks(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
-  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status), reviewTask, followUpTask, awaitingReview, lockedFor, renderReviewActions });
+  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status), reviewTask, followUpTask, awaitingReview, lockedFor, renderReviewActions, removeTasks, clearFinished, onTasksRemoved, isRemovable });
 
   const markersLayer = shadow.getElementById('ah-layer-markers') as HTMLElement;
   const card = shadow.getElementById('ah-task-card') as HTMLElement;
   state.tasks = new Map<string, any>();
   const elements = new Map<string, Element>();
   let openId: string | null = null;
+  let menuOpen = false;
+  let confirmRemove: string | null = null;
 
   function taskList(): any[] {
     return [...state.tasks.values()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   }
 
   function taskLabel(t: any): string {
-    return t.payload?.label || (t.target?.component ? `<${t.target.component} />` : t.type === 'pinned-stack' || t.type === 'batch' ? 'Batch' : 'Task');
+    return t.payload?.display || t.payload?.label || (t.target?.component ? `<${t.target.component} />` : t.type === 'pinned-stack' || t.type === 'batch' ? 'Batch' : 'Task');
   }
 
   const hasBox = (el: Element) => { const r = el.getBoundingClientRect(); return r.width > 0 || r.height > 0; };
@@ -137,13 +139,60 @@ export function setupTasks(app: OverlayApp) {
     api.openComposer({ followUp: t });
   }
 
-  /** Keep, then Compare and Undo (verify.ts), then Follow up. Shared by the task card and the Tasks tab. */
-  function renderReviewActions(t: any): string {
-    const verify = api.renderTaskVerifyActions ? api.renderTaskVerifyActions(t) : '';
-    if (t.status !== 'done') return verify;
-    const keep = needsReview(t) ? `<button class="ah-tbtn primary" data-act="keep">${icon('check', 14)}Keep</button>` : '';
-    const follow = t.review?.state !== 'undone' && elementForTask(t) ? '<button class="ah-tbtn outline" data-act="follow-up">Follow up</button>' : '';
-    return keep + verify + follow;
+  /**
+   * Keep and Undo first (the decision), Compare and Follow up quieter. The card puts them on one row; the Tasks tab
+   * (narrower) asks for `part` 'decide' and 'more' separately and stacks them.
+   */
+  function renderReviewActions(t: any, part: 'all' | 'decide' | 'more' = 'all'): string {
+    const undo = api.renderUndoAction?.(t, 'outline') || '';
+    const compare = api.renderCompareAction?.(t, 'quiet') || '';
+    const keep = t.status === 'done' && needsReview(t) ? `<button class="ah-tbtn primary" data-act="keep">${icon('check', 14)}Keep</button>` : '';
+    const follow = t.status === 'done' && t.review?.state !== 'undone' && elementForTask(t) ? `<button class="ah-tbtn quiet" data-act="follow-up">${icon('follow-up', 14)}Follow up</button>` : '';
+    if (part === 'decide') return keep + undo;
+    if (part === 'more') return compare + follow;
+    if (!keep && !undo && !compare && !follow) return '';
+    return `${keep}${undo}<span class="grow"></span>${compare}${follow}`;
+  }
+
+  /** Finished, failed, cancelled or expired: it can leave the list. Waiting tasks are cancelled first; running ones can't. */
+  function isRemovable(t: any): boolean {
+    return !ACTIVE.has(t.status);
+  }
+
+  async function removeTasks(ids: string[]) {
+    try {
+      const res = await fetch(BRIDGE + '/api/agent/tasks/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not remove');
+      onTasksRemoved(data.removed);
+      api.toast(data.removed.length === 1 ? 'Removed from the list' : `Removed ${data.removed.length} tasks`);
+    } catch (err: any) {
+      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message);
+    }
+  }
+
+  /** Every finished task with nothing left to decide; changes waiting for your review stay. */
+  async function clearFinished() {
+    try {
+      const res = await fetch(BRIDGE + '/api/agent/tasks/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ finished: true }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not clear');
+      onTasksRemoved(data.removed);
+      api.toast(data.removed.length ? `Cleared ${data.removed.length} finished task${data.removed.length === 1 ? '' : 's'}` : 'Nothing to clear');
+    } catch (err: any) {
+      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message);
+    }
+  }
+
+  /** Called for the bridge's task.removed event too (another tab, or an agent). */
+  function onTasksRemoved(ids: string[]) {
+    let any = false;
+    for (const id of ids) {
+      any = state.tasks.delete(id) || any;
+      elements.delete(id);
+      if (openId === id) closeTaskCard();
+    }
+    if (any) changed();
   }
 
   async function cancelTask(id: string) {
@@ -240,6 +289,7 @@ export function setupTasks(app: OverlayApp) {
 
   // ---------- task card ----------
   function openTaskCard(id: string) {
+    if (openId !== id) { menuOpen = false; confirmRemove = null; }
     openId = id;
     api.closeComposer?.();
     api.closeCommentCard?.();
@@ -248,6 +298,8 @@ export function setupTasks(app: OverlayApp) {
 
   function closeTaskCard() {
     openId = null;
+    menuOpen = false;
+    confirmRemove = null;
     card.hidden = true;
   }
 
@@ -264,21 +316,29 @@ export function setupTasks(app: OverlayApp) {
     const tone = view.tone === 'success' ? 'ok' : view.tone === 'error' ? 'bad' : view.tone === 'working' ? 'warn pulse' : '';
     const cancellable = t.status === 'queued' || t.status === 'delivered';
     const el = elementForTask(t);
+    const file = (t.target?.file || '').split('/').pop();
+    const head = t.claimedBy && t.status === 'in_progress' ? view.text : t.status === 'done' && needsReview(t) ? `${view.text} · waiting for you` : view.text;
+    const removable = isRemovable(t);
+    const losesUndo = needsReview(t) && !!t.checkpointId;
     card.innerHTML = `
-      <div class="head"><span class="ah-dot ${tone}"></span><b>${esc(taskLabel(t))}</b><span class="ah-muted" style="font-size:12px;white-space:nowrap">${esc(t.claimedBy ? prettyAgentName(t.claimedBy) : view.text)}</span><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
-      <div class="body">${esc(t.instruction || '')}</div>
-      ${reached >= 0 ? `<div class="ah-timeline">${steps.map((s, i) => `<span class="${i <= reached ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 12))}</div>` : `<div class="ah-timeline"><span class="on">${esc(view.text)}</span></div>`}
-      ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
+      <div class="head"><span class="ah-dot ${tone}"></span><span class="status">${esc(head)}</span><span class="time">${esc(timeAgo(t.createdAt))}</span>
+        <button class="ah-ibtn" data-act="menu" aria-label="More" aria-haspopup="menu" aria-expanded="${menuOpen}">${icon('more')}</button><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
+      <div class="title">${esc(t.instruction || taskLabel(t))}</div>
+      <div class="sub">${esc(taskLabel(t))}${file ? ` · <span class="ah-mono">${esc(file)}</span>` : ''}</div>
+      ${reached >= 0 ? `<div class="ah-timeline">${steps.map((s, i) => `<span class="${i <= reached ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 12))}</div>` : ''}
       ${locked.length && t.review?.state !== 'undone' ? `<div class="ah-lockwarn">${icon('lock', 14)}<span>Changed ${locked.map((c) => `<b>&lt;${esc(c)} /&gt;</b>`).join(', ')}, which ${locked.length === 1 ? 'is' : 'are'} locked. Undo it, or unlock it if you meant to allow this.</span></div>` : ''}
-      ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}" title="Open in editor">${icon('file', 14)}${esc(f)}</button>`).join('')}</div>` : ''}
+      ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
+      ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}" title="Open in editor">${icon('file', 14)}<span>${esc(f)}</span></button>`).join('')}</div>` : ''}
       ${api.renderTaskVerifyPanel ? api.renderTaskVerifyPanel(t) : ''}
-      <div class="ah-actions">
-        ${renderReviewActions(t)}
-        ${cancellable ? '<button class="ah-tbtn outline" data-act="cancel">Cancel task</button>' : ''}
-        ${!el || needsReview(t) ? '' : '<button class="ah-tbtn" data-act="show">Show on page</button>'}
-        <button class="ah-tbtn" data-act="tasks">View in Tasks</button>
-      </div>
-      <div class="ah-muted" style="font-size:11.5px">${esc(timeAgo(t.createdAt))}${t.review ? ` · ${esc(reviewText(t))} ${esc(timeAgo(t.review.at))}` : ''}</div>`;
+      ${cancellable ? '<div class="ah-actions"><button class="ah-tbtn outline" data-act="cancel">Cancel task</button></div>' : (() => { const a = renderReviewActions(t); return a ? `<div class="ah-actions">${a}</div>` : ''; })()}
+      ${menuOpen ? `<div class="ah-card-menu ah-menu ah-surface" role="menu">
+        <button role="menuitem" data-act="tasks">${icon('tasks', 14)}View in Tasks</button>
+        ${el ? `<button role="menuitem" data-act="show">${icon('target', 14)}Show on page</button>` : ''}
+        ${cancellable ? `<button role="menuitem" data-act="cancel">${icon('x', 14)}Cancel task</button>` : ''}
+        ${removable ? (confirmRemove === t.id
+          ? `<button role="menuitem" class="danger" data-act="remove-confirm">${icon('trash', 14)}Remove · Undo won't be possible</button>`
+          : `<button role="menuitem" class="danger" data-act="${losesUndo ? 'remove-ask' : 'remove'}">${icon('trash', 14)}Remove from list</button>`) : ''}
+      </div>` : ''}`;
     card.hidden = false;
     positionCard();
   }
@@ -289,9 +349,15 @@ export function setupTasks(app: OverlayApp) {
     const el = t && elementForTask(t);
     const ins = api.insets();
     if (el) {
-      // Next to the whole element (right-aligned with it) so the card never covers what it is about.
-      const r = el.getBoundingClientRect();
-      anchorTo(card, { left: Math.max(12, r.right - card.offsetWidth), top: r.top, width: Math.min(r.width, card.offsetWidth), height: r.height }, ins, 10);
+      // Next to the whole element (right-aligned with it) so the card never covers what it is about, nor the action
+      // pill when the element is selected.
+      let r: { left: number; top: number; right: number; bottom: number } = el.getBoundingClientRect();
+      const pill = shadow.getElementById('ah-pill') as HTMLElement | null;
+      if (pill && !pill.hidden) {
+        const p = pill.getBoundingClientRect();
+        r = { left: Math.min(r.left, p.left), top: Math.min(r.top, p.top), right: Math.max(r.right, p.right), bottom: Math.max(r.bottom, p.bottom) };
+      }
+      anchorTo(card, { left: Math.max(12, r.right - card.offsetWidth), top: r.top, width: Math.min(r.right - r.left, card.offsetWidth), height: r.bottom - r.top }, ins, 10);
     } else {
       anchorTo(card, { left: window.innerWidth - ins.right - card.offsetWidth - 12, top: 12, width: 1, height: 1 }, ins, 4);
     }
@@ -304,6 +370,10 @@ export function setupTasks(app: OverlayApp) {
     const t = state.tasks.get(openId);
     if (b.dataset.file) { api.openInEditor({ file: b.dataset.file, line: 1 }); return; }
     const act = b.dataset.act;
+    if (act === 'menu') { menuOpen = !menuOpen; confirmRemove = null; renderCard(); return; }
+    if (act === 'remove-ask') { confirmRemove = openId; renderCard(); return; }
+    if (act === 'remove' || act === 'remove-confirm') { removeTasks([openId]); return; }
+    if (menuOpen && act !== 'compare' && act !== 'undo') menuOpen = false;
     if (act === 'close') closeTaskCard();
     if (act === 'cancel') cancelTask(openId);
     if (act === 'tasks') { closeTaskCard(); api.openSidebar('tasks'); }

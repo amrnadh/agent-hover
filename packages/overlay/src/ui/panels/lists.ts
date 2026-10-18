@@ -12,6 +12,9 @@ export function setupListPanels(app: OverlayApp) {
   let expanded: string | null = null;
   let commentFilter: 'all' | 'open' | 'resolved' = 'all';
   let batchGoal = '';
+  let taskFilter: 'all' | 'review' | 'active' | 'done' = 'all';
+  let confirmClear = false;
+  let confirmRemove: string | null = null;
 
   // ---------- Tasks ----------
   api.registerPanel('tasks', {
@@ -27,33 +30,58 @@ export function setupListPanels(app: OverlayApp) {
       const active = tasks.filter((t) => api.isTaskActive(t));
       const review = tasks.filter((t) => needsReview(t));
       const done = tasks.filter((t) => !api.isTaskActive(t) && !needsReview(t));
+      const clearable = done.length;
       const row = (t: any) => {
         const view = describeTaskStatus(t, agent);
         const files: string[] = t.result?.filesChanged || [];
         const status = t.review ? `${view.text} · ${reviewText(t)}` : view.text;
         const open = expanded === t.id;
-        return `<div class="ah-li" data-id="${esc(t.id)}" role="button" tabindex="0" aria-expanded="${open}">
-          <span class="ah-dot ${TONE[view.tone]}"></span><div class="t">${esc(t.instruction || api.taskLabel(t))}</div><span class="time">${esc(timeAgo(t.createdAt))}</span>
-          <div class="s"><span class="ah-mono">${esc(api.taskLabel(t))}</span><span>${esc(status)}</span></div>
+        const decide = api.renderReviewActions(t, 'decide');
+        const more = api.renderReviewActions(t, 'more');
+        return `<div class="ah-li task" data-id="${esc(t.id)}" role="button" tabindex="0" aria-expanded="${open}">
+          <span class="ah-dot ${TONE[view.tone]}"></span><div class="t">${esc(t.instruction || api.taskLabel(t))}</div>
+          <span class="end"><span class="time">${esc(timeAgo(t.createdAt))}</span>${api.isRemovable(t) ? `<button class="ah-ibtn rm" data-act="remove" title="Remove from list" aria-label="Remove from list">${icon('trash', 14)}</button>` : ''}</span>
+          <div class="s"><span>${esc(api.taskLabel(t))}</span><span>${esc(status)}</span></div>
           ${open ? `<div class="more">
             ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
-            ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}">${icon('file', 14)}${esc(f)}</button>`).join('')}</div>` : ''}
-            <div class="ah-actions">
-              ${api.renderReviewActions(t)}
-              ${api.elementForTask(t) ? '<button class="ah-tbtn outline" data-act="show">Show on page</button>' : ''}
-              ${t.status === 'queued' || t.status === 'delivered' ? '<button class="ah-tbtn outline" data-act="cancel">Cancel</button>' : ''}
+            ${files.length ? `<div class="ah-files">${files.map((f) => `<button data-file="${esc(f)}">${icon('file', 14)}<span>${esc(f)}</span></button>`).join('')}</div>` : ''}
+            ${decide ? `<div class="ah-actions">${decide}</div>` : ''}
+            <div class="ah-actions tight">
+              ${more}
+              ${api.elementForTask(t) ? `<button class="ah-tbtn quiet" data-act="show">${icon('target', 14)}Show on page</button>` : ''}
+              ${t.status === 'queued' || t.status === 'delivered' ? '<button class="ah-tbtn outline" data-act="cancel">Cancel task</button>' : ''}
             </div></div>` : ''}
         </div>`;
       };
-      body.innerHTML = (active.length ? `<div class="ah-group">Active</div><div class="ah-list">${active.map(row).join('')}</div>` : '')
-        + (review.length ? `<div class="ah-group">To review</div><div class="ah-list">${review.map(row).join('')}</div>` : '')
-        + (done.length ? `<div class="ah-group">Done</div><div class="ah-list">${done.map(row).join('')}</div>` : '');
+      const shown = taskFilter === 'review' ? review : taskFilter === 'active' ? active : taskFilter === 'done' ? done : null;
+      const counts: Record<string, number> = { all: tasks.length, review: review.length, active: active.length, done: done.length };
+      const bar = `<div class="ah-filters">
+          <div class="ah-seg" role="radiogroup" aria-label="Show">${([['all', 'All'], ['review', 'To review'], ['active', 'Active'], ['done', 'Done']] as const).map(([v, l]) => `<button data-filter="${v}" aria-pressed="${taskFilter === v}">${l}${counts[v] && v !== 'all' ? ` <span class="n">${counts[v]}</span>` : ''}</button>`).join('')}</div>
+          <button class="ah-tbtn quiet" data-act="clear" style="margin-left:auto" ${clearable ? '' : 'disabled'} title="Remove finished tasks that have nothing left to decide">${confirmClear ? `Clear ${clearable}?` : 'Clear finished'}</button>
+          ${confirmClear ? '<button class="ah-tbtn primary" data-act="clear-yes">Clear</button>' : ''}
+        </div>`;
+      const group = (title: string, list: any[]) => (list.length ? `<div class="ah-group">${title}</div><div class="ah-list">${list.map(row).join('')}</div>` : '');
+      body.innerHTML = bar + (shown
+        ? (shown.length ? `<div class="ah-list">${shown.map(row).join('')}</div>` : '<div class="ah-empty">Nothing here.</div>')
+        : group('To review', review) + group('Active', active) + group('Done', done));
       body.onclick = (e) => {
+        const f = (e.target as Element).closest('[data-filter]') as HTMLElement | null;
+        if (f) { taskFilter = f.dataset.filter as any; confirmClear = false; api.renderSidebar('tasks'); return; }
+        const top = (e.target as Element).closest('[data-act=clear], [data-act=clear-yes]') as HTMLElement | null;
+        if (top?.dataset.act === 'clear') { confirmClear = !confirmClear; api.renderSidebar('tasks'); return; }
+        if (top?.dataset.act === 'clear-yes') { confirmClear = false; api.clearFinished(); return; }
         const li = (e.target as Element).closest('.ah-li') as HTMLElement | null;
         if (!li) return;
         const t = state.tasks.get(li.dataset.id);
         const b = (e.target as Element).closest('button') as HTMLElement | null;
         if (b?.dataset.file) { api.openInEditor({ file: b.dataset.file, line: 1 }); return; }
+        if (b?.dataset.act === 'remove') {
+          // A change you haven't kept or undone loses its Undo when removed: ask once, on the row.
+          if (needsReview(t) && t.checkpointId && confirmRemove !== t.id) { confirmRemove = t.id; b.classList.add('confirm'); b.title = "Click again to remove. Undo won't be possible"; api.toast("Click again to remove. Undo won't be possible for this change"); return; }
+          confirmRemove = null;
+          api.removeTasks([t.id]);
+          return;
+        }
         if (b?.dataset.act === 'show') {
           const el = api.elementForTask(t);
           el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -87,8 +115,8 @@ export function setupListPanels(app: OverlayApp) {
         </div>
         <div class="ah-list">${shown.map((c) => {
           const el = api.commentElement(c);
-          const label = el ? api.labelFor({ isDomElement: true, element: el }) : c.component ? `<${c.component} />` : 'Not on this page';
-          return `<div class="ah-li" data-id="${esc(c.id)}" role="button" tabindex="0"><span class="ah-dot ${c.resolved ? 'ok' : ''}"></span><div class="t">${esc(c.text)}</div><span class="time">#${list.indexOf(c) + 1}</span><div class="s"><span class="ah-mono">${esc(label)}</span><span>${esc(timeAgo(c.createdAt))}</span></div></div>`;
+          const label = el ? api.nameFor({ isDomElement: true, element: el }) : c.component ? `<${c.component} />` : 'Not on this page';
+          return `<div class="ah-li" data-id="${esc(c.id)}" role="button" tabindex="0"><span class="ah-dot ${c.resolved ? 'ok' : ''}"></span><div class="t">${esc(c.text)}</div><span class="ah-cnum" aria-label="Comment ${list.indexOf(c) + 1}">${list.indexOf(c) + 1}</span><div class="s"><span>${esc(label)}</span><span>${esc(timeAgo(c.createdAt))}</span></div></div>`;
         }).join('') || '<div class="ah-empty">Nothing here.</div>'}</div>`;
       body.onclick = (e) => {
         const f = (e.target as Element).closest('[data-filter]') as HTMLElement | null;
@@ -107,43 +135,49 @@ export function setupListPanels(app: OverlayApp) {
 
   // ---------- Batch ----------
   api.registerPanel('batch', {
-    render(body: HTMLElement) {
+    render(body: HTMLElement, foot: HTMLElement) {
       const items: any[] = api.batchItems();
       if (!items.length) {
         body.innerHTML = `<div class="ah-empty"><b>Batch is empty</b>Select elements and press <kbd>B</kbd> (or + Batch in the pill), or click them in Inspect while this tab is open, to collect several pieces of UI into one task, for example “make these three cards consistent”.</div>`;
         return;
       }
-      const agent = state.connectedAgents?.[0]?.client;
-      body.innerHTML = `<div class="ah-list">${items.map((b, i) => `
-          <div class="ah-li" style="cursor:default" data-id="${b.id}">
+      const dest = api.destination?.() || { kind: 'copy' };
+      const roles = [['change', 'Change'], ['reference', 'Reference'], ['keep', "Don't touch"]];
+      body.innerHTML = `<p class="ah-hint-line">${items.length} element${items.length === 1 ? '' : 's'} · say what each one is for, then describe the goal.</p>
+        <div class="ah-bitems">${items.map((b, i) => `
+          <div class="ah-bitem" data-id="${b.id}">
             <span class="ah-batch-num" style="position:static;box-shadow:none">${i + 1}</span>
-            <div class="t ah-mono" style="font-size:12.5px">${esc(b.label)}</div>
-            <select class="ah-role" data-role="${b.id}" aria-label="Role for ${esc(b.label)}">
-              ${[['change', 'Change'], ['reference', 'Reference'], ['keep', "Don't touch"]].map(([v, l]) => `<option value="${v}" ${b.role === v ? 'selected' : ''}>${l}</option>`).join('')}
-            </select>
-            <div class="s"><button class="ah-tbtn" data-up="${b.id}" ${i ? '' : 'disabled'} style="height:22px;padding:0 6px" aria-label="Move up">${icon('up', 13)}</button><button class="ah-tbtn" data-down="${b.id}" ${i < items.length - 1 ? '' : 'disabled'} style="height:22px;padding:0 6px" aria-label="Move down">${icon('down', 13)}</button><button class="ah-tbtn" data-rm="${b.id}" style="height:22px;padding:0 6px">Remove</button></div>
-          </div>`).join('')}</div>
-        <div class="ah-field" style="padding-top:14px"><label for="ah-batch-goal">Goal</label><textarea id="ah-batch-goal" rows="3" placeholder="e.g. Make these cards use the same padding and heading size"></textarea></div>
-        <div class="ah-actions" style="padding:0 16px 16px"><button class="ah-tbtn outline" data-act="copy">${icon('copy', 14)}Copy</button><button class="ah-tbtn primary" data-act="send" style="margin-left:auto">${icon('send', 14)}${agent ? 'Send to ' + esc(prettyAgentName(agent)) : 'Copy prompt'}</button></div>`;
-      const goal = body.querySelector('#ah-batch-goal') as HTMLTextAreaElement;
+            <div class="who"><div class="t">${esc(b.name || b.label)}</div>${b.name ? `<div class="s ah-mono">${esc(b.label)}</div>` : ''}</div>
+            <span class="tools">
+              <button class="ah-ibtn" data-up="${b.id}" ${i ? '' : 'disabled'} aria-label="Move up">${icon('up', 14)}</button>
+              <button class="ah-ibtn" data-down="${b.id}" ${i < items.length - 1 ? '' : 'disabled'} aria-label="Move down">${icon('down', 14)}</button>
+              <button class="ah-ibtn rm" data-rm="${b.id}" aria-label="Remove from batch">${icon('x', 14)}</button>
+            </span>
+            <div class="ah-seg ah-roles" role="radiogroup" aria-label="Role for ${esc(b.name || b.label)}">${roles.map(([v, l]) => `<button data-role="${b.id}" data-v="${v}" aria-pressed="${b.role === v}">${l}</button>`).join('')}</div>
+          </div>`).join('')}</div>`;
+      foot.hidden = false;
+      foot.classList.add('batch');
+      foot.innerHTML = `<div class="ah-field" style="padding:0"><label for="ah-batch-goal">Goal</label><textarea id="ah-batch-goal" rows="2" placeholder="e.g. Make these cards use the same padding and heading size"></textarea></div>
+        <div class="ah-actions"><button class="ah-tbtn quiet" data-act="copy">${icon('copy', 14)}Copy prompt</button><span class="grow"></span><button class="ah-tbtn primary" data-act="send">${icon('send', 14)}${dest.kind === 'agent' ? 'Send to ' + esc(prettyAgentName(dest.client)) : 'Copy prompt'}</button></div>`;
+      const goal = foot.querySelector('#ah-batch-goal') as HTMLTextAreaElement;
       goal.value = batchGoal;
       goal.oninput = () => { batchGoal = goal.value; };
-      body.onchange = (e) => {
-        const s = e.target as HTMLSelectElement;
-        if (s.dataset.role) api.setBatchRole(Number(s.dataset.role), s.value);
-      };
-      body.onclick = async (e) => {
+      goal.onkeydown = (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); (foot.querySelector('[data-act=send]') as HTMLElement).click(); } };
+      body.onclick = (e) => {
         const b = (e.target as Element).closest('button') as HTMLElement | null;
         if (!b) return;
+        if (b.dataset.role) { api.setBatchRole(Number(b.dataset.role), b.dataset.v); api.renderSidebar('batch'); return; }
         if (b.dataset.rm) api.removeFromBatch(Number(b.dataset.rm));
         if (b.dataset.up) api.moveBatchItem(Number(b.dataset.up), -1);
         if (b.dataset.down) api.moveBatchItem(Number(b.dataset.down), 1);
-        if (b.dataset.act === 'copy' || b.dataset.act === 'send') {
-          const text = goal.value.trim();
-          if (!text) { goal.placeholder = 'Describe the goal first'; goal.focus(); return; }
-          const result = await api.sendBatch(text, b.dataset.act === 'copy' || !agent ? 'copy' : 'agent');
-          if (result?.task) { batchGoal = ''; api.openSidebar('tasks'); }
-        }
+      };
+      foot.onclick = async (e) => {
+        const b = (e.target as Element).closest('button') as HTMLElement | null;
+        if (!b || (b.dataset.act !== 'copy' && b.dataset.act !== 'send')) return;
+        const text = goal.value.trim();
+        if (!text) { goal.placeholder = 'Describe the goal first'; goal.classList.add('invalid'); goal.focus(); return; }
+        const result = await api.sendBatch(text, b.dataset.act === 'copy' || dest.kind !== 'agent' ? 'copy' : 'agent');
+        if (result?.task) { batchGoal = ''; api.openSidebar('tasks'); }
       };
     },
   });

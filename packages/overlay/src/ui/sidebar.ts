@@ -80,6 +80,14 @@ export function setupSidebar(app: OverlayApp) {
     floatBtn.setAttribute('aria-label', floatBtn.title);
     gear.setAttribute('aria-pressed', String(state.side.settings));
     tabs.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(!state.side.settings && b.dataset.tab === state.side.tab)));
+    // On a narrow sidebar the tab row scrolls: keep the open tab in view.
+    const cur = tabs.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (cur) {
+      const row = tabs.getBoundingClientRect();
+      const r = cur.getBoundingClientRect();
+      if (r.left < row.left) tabs.scrollLeft -= row.left - r.left + 4;
+      else if (r.right > row.right) tabs.scrollLeft += r.right - row.right + 4;
+    }
     updateCounts();
     api.renderDock?.();
     api.renderCursor?.();
@@ -89,6 +97,8 @@ export function setupSidebar(app: OverlayApp) {
     const key = state.side.settings ? 'settings' : state.side.tab;
     foot.hidden = true;
     foot.innerHTML = '';
+    foot.onclick = null;
+    foot.classList.remove('batch');
     panels.get(key)?.render(body, foot);
     if (body.dataset.panel === key) body.scrollTop = scroll;
     body.dataset.panel = key;

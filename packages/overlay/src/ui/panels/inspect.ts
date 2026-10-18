@@ -68,7 +68,8 @@ export function setupInspectPanel(app: OverlayApp) {
 
       body.innerHTML = `
         <div class="ah-ident">
-          <div class="name">${esc(api.labelFor(item))}</div>
+          <div class="name">${esc(api.nameFor(item))}</div>
+          <div class="code ah-mono">${esc(api.labelFor(item))}</div>
           <div class="file">${icon('file', 14)}${src ? `<button data-act="open" title="Open in editor">${esc(src.file)}:${src.line}</button>` : `<span>${data === undefined ? 'Finding source…' : 'No source file found'}</span>`}</div>
         </div>
         <div class="ah-crumbs">${crumbs}</div>

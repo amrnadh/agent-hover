@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Remove tasks.**
+  - Finished, failed and cancelled tasks can leave the list: from the task card's ⋯ menu, or the trash icon on a row in the Tasks tab. A change you haven't kept or undone asks first, because its Undo goes with it.
+  - **Clear finished** removes every task with nothing left to decide; changes waiting for review stay.
+  - The Tasks tab can show All, To review, Active or Done.
+  - Bridge: `POST /api/agent/tasks/remove` with `{ ids }` or `{ finished: true }`, which also deletes the tasks' Undo checkpoints. Running tasks can't be removed, and waiting ones are cancelled first.
 - **`/agent-hover` starts listening.**
   - `agent-hover init` adds a one-word command for each agent: `.claude/commands/agent-hover.md` (Claude Code), `.cursor/commands/agent-hover.md` (Cursor), `.windsurf/workflows/` (Windsurf), `.agent/workflows/` (Antigravity), and a `$agent-hover` skill for Codex (`.agents/skills/`).
   - The MCP server now tells agents how to listen when they connect, and offers `listen` and `status` prompts (`/mcp__agent-hover__listen` in Claude Code).
@@ -33,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- **Plain names.** Cards and lists say what you selected in words: “Book a demo” button, “Pricing” link, `<StatCard />`. A library wrapper such as `motion.a` is named by the element it draws. The code name (`button#hero-primary-cta`) stays in the hover tag, in prompts, under the name in Inspect, and in the pill's tooltip.
+- **Task card.**
+  - It leads with your request, with the element and file underneath and the status and time on one line.
+  - Keep and Undo come first; Compare and Follow up are quieter.
+  - View in Tasks, Show on page, Cancel and Remove moved to a ⋯ menu.
+  - The card no longer covers the action pill.
+- **Batch.**
+  - Each element is a small card with its name and code name.
+  - Its role (Change, Reference, Don't touch) is a three-way toggle instead of a dropdown.
+  - Move and remove appear on hover.
+  - The goal and Send stay at the bottom of the sidebar.
+- **Sidebar.** The tab row fits without cutting off Inspect, counts are small badges, and the open tab stays in view. Comment numbers in the list look like the pins on the page.
+- **Focus.** Keyboard focus rings are graphite (blue is only for the on-page selector), and text boxes show focus with their border.
 - An agent that closes leaves the page at once. The MCP server says goodbye on exit, and the bridge also tells the page when an agent times out, instead of the page noticing up to 40 seconds later.
 - An explicit `AGENT_HOVER_PORT` / `AGENT_HOVER_TOKEN` now wins over a session file found above the working directory. This also fixes the MCP tests, which failed while the demo dev server was running.
 - CI uses the current GitHub Actions (checkout, setup-node and upload-artifact v7). The repository scripts (`typecheck`, `clean`, `screenshots`) run on Windows too.

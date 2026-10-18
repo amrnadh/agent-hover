@@ -142,6 +142,9 @@ export class BridgeServer {
       this.broadcast({ type: 'task.created', data: task });
       this.broadcast({ type: 'agent-task-dispatched', data: task });
     });
+    this.taskStore.on('task:removed', (ids: string[]) => {
+      this.broadcast({ type: 'task.removed', data: { ids } });
+    });
     this.taskStore.on('task:updated', (task: AgentTask) => {
       this.broadcast({ type: 'task.updated', data: task });
     });
@@ -1198,6 +1201,27 @@ export class BridgeServer {
         res.json({ task });
       } catch (err: any) {
         res.status(err.message?.includes('not found') ? 404 : 409).json({ error: err.message });
+      }
+    });
+
+    // Remove tasks from the list, with their Undo checkpoints (POST /api/agent/tasks/remove { ids } or
+    // { finished: true } for every finished task that has nothing left to decide: changes waiting for review stay).
+    this.app.post('/api/agent/tasks/remove', async (req, res) => {
+      const { ids, finished } = req.body || {};
+      let wanted: string[] = Array.isArray(ids) ? ids.filter((x: unknown) => typeof x === 'string') : [];
+      if (finished === true) {
+        wanted = this.taskStore.listTasks().filter((t) => {
+          if (['failed', 'cancelled', 'expired', 'superseded'].includes(t.status)) return true;
+          if (t.status !== 'done') return false;
+          return !!t.review || !(t.result?.filesChanged && t.result.filesChanged.length);
+        }).map((t) => t.id);
+      }
+      try {
+        const removed = await this.taskStore.removeTasks(wanted);
+        await Promise.all(removed.map((id) => this.checkpoints.remove(id).catch(() => {})));
+        res.json({ removed });
+      } catch (err: any) {
+        res.status(409).json({ error: err.message });
       }
     });
 

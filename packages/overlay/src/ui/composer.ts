@@ -57,7 +57,7 @@ export function setupComposer(app: OverlayApp) {
     // One card at a time: the composer replaces an open comment or task card.
     api.closeCommentCard?.();
     api.closeTaskCard?.();
-    nameEl.textContent = api.labelFor(state.selectedTarget);
+    nameEl.textContent = api.nameFor(state.selectedTarget);
     fileEl.textContent = state.selectionSource ? state.selectionSource.file.split('/').pop() + ':' + state.selectionSource.line : '';
     input.value = drafts.get(state.selectedTarget) || '';
     input.classList.remove('invalid');
@@ -124,7 +124,7 @@ export function setupComposer(app: OverlayApp) {
       if (!built) return;
       const result = await api.dispatchToAgent(
         built.prompt,
-        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, ...(dest.client ? { assignee: dest.client } : {}), ...(previous ? { followUpOf: previous.id } : {}) },
+        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, display: api.nameFor(target), ...(dest.client ? { assignee: dest.client } : {}), ...(previous ? { followUpOf: previous.id } : {}) },
         { quiet: true, destination: dest.kind },
       );
       // The earlier change is now settled: this task carries it forward.

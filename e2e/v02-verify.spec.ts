@@ -134,4 +134,53 @@ test.describe('0.2 compare and undo', () => {
       await api.post('/freeze', { action: 'remove', ...lock });
     }
   });
+
+  test('tasks leave the list: from the card menu (asking first when Undo would go), or with Clear finished', async ({ page, request }) => {
+    test.setTimeout(60000);
+    const api = bridge(request);
+    await api.post('/agent/tasks/remove', { finished: true });
+    await openDemo(page);
+    await api.post('/agent/presence', { client: 'claude-code' });
+    const send = async (text: string) => {
+      await selectHost(page, '#hero-primary-cta');
+      await page.locator('#ah-pill-ask').click();
+      await page.locator('#ah-comp-input').fill(text);
+      await page.keyboard.press('ControlOrMeta+Enter');
+      let id = '';
+      await expect.poll(async () => (id = (await api.get('/agent/tasks?limit=20')).tasks.find((x: any) => x.instruction === text)?.id || '')).not.toBe('');
+      expect(await api.takeTask(id)).toBeTruthy();
+      await api.post(`/agent/tasks/${id}/claim`, { client: 'claude-code' });
+      await api.post(`/agent/tasks/${id}/complete`, { summary: 'Done.', filesChanged: ['src/components/Hero.tsx'] });
+      await page.keyboard.press('Escape');
+      return id;
+    };
+    const exists = async (id: string) => (await api.get('/agent/tasks?limit=50')).tasks.some((t: any) => t.id === id);
+
+    const keptText = `Keep me ${Date.now()}`;
+    const kept = await send(keptText);
+    await api.post(`/agent/tasks/${kept}/review`, { action: 'keep' });
+    const pending = await send(`Remove me ${Date.now()}`);
+
+    // Waiting for review: removing would lose Undo, so the menu asks once more.
+    await page.locator('.ah-marker.review').click();
+    const card = page.locator('#ah-task-card');
+    await card.locator('[data-act=menu]').click();
+    await card.locator('[data-act=remove-ask]').click();
+    await expect(card.locator('[data-act=remove-confirm]')).toContainText("Undo won't be possible");
+    await card.locator('[data-act=remove-confirm]').click();
+    await expect(card).toBeHidden();
+    await expect.poll(() => exists(pending)).toBe(false);
+    await expect(page.locator('.ah-marker.review')).toHaveCount(0);
+
+    // Clear finished takes the kept one.
+    await page.keyboard.press('t');
+    const side = page.locator('#ah-side');
+    // Other specs leave active tasks and changes to review; Clear finished leaves those, and takes the kept one.
+    const keptRow = side.locator('.ah-li.task', { hasText: keptText });
+    await expect(keptRow).toHaveCount(1);
+    await side.locator('[data-act=clear]').click();
+    await side.locator('[data-act=clear-yes]').click();
+    await expect(keptRow).toHaveCount(0);
+    await expect.poll(() => exists(kept)).toBe(false);
+  });
 });

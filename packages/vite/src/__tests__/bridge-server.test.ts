@@ -465,6 +465,45 @@ describe('BridgeServer Integration Tests', () => {
     expect((await call('GET', '/agent/tasks/next?client=cursor')).task.id).toBe(forCursor.id);
   });
 
+  it('removes finished tasks from the list, never running ones, and Clear finished keeps changes waiting for review', async () => {
+    const testPort = 33500 + Math.floor(Math.random() * 400);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+    const call = async (method: string, url: string, body?: unknown) => {
+      const res = await fetch(`http://localhost:${activePort}/api${url}`, {
+        method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return { status: res.status, data: await res.json() };
+    };
+    const make = async (instruction: string, finish?: { files?: string[]; keep?: boolean }) => {
+      const { task } = (await call('POST', '/agent/tasks', { instruction })).data;
+      if (finish) {
+        await call('POST', `/agent/tasks/${task.id}/claim`, { client: 'claude-code' });
+        await call('POST', `/agent/tasks/${task.id}/complete`, { summary: 'ok', filesChanged: finish.files || [] });
+        if (finish.keep) await call('POST', `/agent/tasks/${task.id}/review`, { action: 'keep' });
+      }
+      return task.id as string;
+    };
+    const waiting = await make('still queued');
+    const kept = await make('kept change', { files: ['src/a.tsx'], keep: true });
+    const toReview = await make('change to review', { files: ['src/b.tsx'] });
+    const noChange = await make('answered a question', {});
+    const running = (await call('POST', '/agent/tasks', { instruction: 'running' })).data.task.id;
+    await call('POST', `/agent/tasks/${running}/claim`, { client: 'claude-code' });
+
+    expect((await call('POST', '/agent/tasks/remove', { ids: [running] })).status).toBe(409);
+    expect((await call('POST', '/agent/tasks/remove', { ids: [waiting] })).status).toBe(409);
+    const cleared = await call('POST', '/agent/tasks/remove', { finished: true });
+    expect(cleared.data.removed.sort()).toEqual([kept, noChange].sort());
+    const left = (await call('GET', '/agent/tasks?limit=50')).data.tasks.map((t: any) => t.id).sort();
+    expect(left).toEqual([waiting, toReview, running].sort());
+    // One task by id, its checkpoint goes with it.
+    expect((await call('POST', '/agent/tasks/remove', { ids: [toReview] })).data.removed).toEqual([toReview]);
+    expect((await call('GET', `/agent/tasks/${toReview}`)).status).toBe(404);
+  });
+
   it('records agent presence and reports connected agents (P1-06)', async () => {
     const testPort = 43000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);

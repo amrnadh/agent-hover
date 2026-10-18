@@ -65,7 +65,8 @@ test.describe('0.2 batch', () => {
     await expect(page.locator('#ah-d-batch-count')).toHaveText('2');
     await page.locator('#ah-d-batch').click();
     const side = page.locator('#ah-side');
-    await side.locator('select.ah-role').nth(1).selectOption('reference');
+    await side.locator('.ah-roles').nth(1).locator('[data-v=reference]').click();
+    await expect(side.locator('.ah-roles').nth(1).locator('[data-v=reference]')).toHaveAttribute('aria-pressed', 'true');
     const goal = `Match the badge style ${Date.now()}`;
     await side.locator('#ah-batch-goal').fill(goal);
     await side.locator('[data-act=send]').click();
@@ -91,7 +92,7 @@ test.describe('0.2 cursor', () => {
     await clickHost(page, '#hero-primary-cta');
     await clickHost(page, '#hero-badge');
     await expect(marks).toHaveCount(2);
-    await expect(page.locator('#ah-side .ah-li')).toHaveCount(2);
+    await expect(page.locator('#ah-side .ah-bitem')).toHaveCount(2);
     // Clicking an element that is already in the batch takes it out again.
     await clickHost(page, '#hero-primary-cta');
     await expect(marks).toHaveCount(1);

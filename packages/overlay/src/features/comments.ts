@@ -175,7 +175,7 @@ export function setupComments(app: OverlayApp) {
     const c = current();
     if (!c) { card.hidden = true; return; }
     const el = commentElement(c);
-    const label = el ? api.labelFor({ isDomElement: true, element: el }) : c.component ? `<${c.component} />` : 'Element no longer on page';
+    const label = el ? api.nameFor({ isDomElement: true, element: el }) : c.component ? `<${c.component} />` : 'Element no longer on page';
     card.innerHTML = c.draft
       ? `<div class="head"><b>${esc(label)}</b><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
          <textarea id="ah-comment-input" aria-label="Comment" placeholder="Leave a note for yourself or your agent"></textarea>
@@ -253,7 +253,7 @@ export function setupComments(app: OverlayApp) {
     const instruction = items.length === 1 ? items[0].text : `Address ${items.length} comments left on the page`;
     const result = await api.dispatchToAgent(
       prompt,
-      { type: 'note', instruction, component: f?.component?.name, file: f?.component?.file, line: f?.component?.startLine, selector: f?.element.selector, hierarchy: f?.hierarchy, label: items.length === 1 ? f?.element.label : `${items.length} comments` },
+      { type: 'note', instruction, component: f?.component?.name, file: f?.component?.file, line: f?.component?.startLine, selector: f?.element.selector, hierarchy: f?.hierarchy, label: items.length === 1 ? f?.element.label : `${items.length} comments`, display: items.length === 1 && first?.el ? api.nameFor({ isDomElement: true, element: first.el }) : `${items.length} comments` },
       { quiet: true },
     );
     if (result.task) {

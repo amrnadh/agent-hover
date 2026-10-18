@@ -8,7 +8,10 @@ export interface BatchItem {
   id: number;
   stack: any[];
   index: number;
+  /** Code name (button#cta), for prompts. */
   label: string;
+  /** Plain name (“Book a demo” button), for the Batch tab. */
+  name?: string;
   role: BatchRole;
 }
 
@@ -49,7 +52,7 @@ export function setupBatch(app: OverlayApp) {
       state.batch.splice(existing, 1);
       api.toast('Removed from batch');
     } else {
-      state.batch.push({ id: nextId++, stack, index: stack.indexOf(item), label: api.labelFor(item), role: 'change' });
+      state.batch.push({ id: nextId++, stack, index: stack.indexOf(item), label: api.labelFor(item), name: api.nameFor(item), role: 'change' });
       api.toast(`Added to batch · ${state.batch.length}`, { action: 'Open', onAction: () => api.openSidebar('batch') });
     }
     changed();
@@ -127,6 +130,7 @@ export function setupBatch(app: OverlayApp) {
         line: first.component?.startLine,
         selector: first.element.selector,
         label: `${items.length} elements`,
+        display: `Batch · ${items.length} elements`,
         pins: entries.map((e) => ({ component: e.facts.component?.name || e.facts.element.label, file: e.facts.component?.file || '', role: e.role === 'change' ? 'TARGET' : e.role === 'reference' ? 'REFERENCE' : 'FROZEN' })),
       },
       { quiet: true, destination },
