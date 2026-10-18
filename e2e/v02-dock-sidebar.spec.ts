@@ -115,7 +115,9 @@ test.describe('0.2 sidebar', () => {
     await page.keyboard.press('d');
     const side = page.locator('#ah-side');
     await expect(side).toBeVisible();
-    await expect(side.locator('.ah-ident .name')).toHaveText('button#hero-primary-cta');
+    // Plain name first, the code name under it.
+    await expect(side.locator('.ah-ident .name')).toHaveText('“Book a demo” button');
+    await expect(side.locator('.ah-ident .code')).toHaveText('button#hero-primary-cta');
     await expect(side.locator('.ah-ident .file')).toContainText('Hero.tsx');
     await expect(side.locator('.ah-crumbs button.cur')).toHaveText('button#hero-primary-cta');
     await expect(side.locator('details.ah-sec', { hasText: 'Layout' })).toContainText('display');

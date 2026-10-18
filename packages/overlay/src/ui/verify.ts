@@ -19,7 +19,7 @@ const STORE_KEY = 'agent-hover-shots:';
  */
 export function setupVerify(app: OverlayApp) {
   const { BRIDGE, fetch, api } = app;
-  Object.assign(api, { captureBefore, precaptureBefore, renderTaskVerifyActions, renderTaskVerifyPanel, onTaskCardAction });
+  Object.assign(api, { captureBefore, precaptureBefore, renderTaskVerifyActions, renderCompareAction, renderUndoAction, renderTaskVerifyPanel, onTaskCardAction });
 
   const shots = new Map<string, Shots>();
   const changes = new Map<string, Changes>();
@@ -113,12 +113,20 @@ export function setupVerify(app: OverlayApp) {
 
   // ---------- task card / Tasks tab ----------
   function renderTaskVerifyActions(t: any): string {
+    return renderCompareAction(t) + renderUndoAction(t);
+  }
+
+  /** Compare, when there is a before image. `cls` sets the button style (the card makes it quiet). */
+  function renderCompareAction(t: any, cls = 'outline'): string {
     if (t.status !== 'done' && t.status !== 'failed') return '';
-    const s = load(t.id);
+    return load(t.id).before ? `<button class="ah-tbtn ${cls}" data-act="compare" aria-pressed="${isPanel(t.id, 'compare')}">${icon('panel', 14)}Compare</button>` : '';
+  }
+
+  /** Undo, while the checkpoint can still restore the files. */
+  function renderUndoAction(t: any, cls = 'outline'): string {
+    if (t.status !== 'done' && t.status !== 'failed') return '';
     const ch = changes.get(t.id);
-    const compare = s.before ? `<button class="ah-tbtn outline" data-act="compare" aria-pressed="${isPanel(t.id, 'compare')}">${icon('panel', 14)}Compare</button>` : '';
-    const undo = t.checkpointId && !ch?.undoneAt && t.review?.state !== 'undone' ? `<button class="ah-tbtn outline" data-act="undo" aria-pressed="${isPanel(t.id, 'undo')}">Undo</button>` : '';
-    return compare + undo;
+    return t.checkpointId && !ch?.undoneAt && t.review?.state !== 'undone' ? `<button class="ah-tbtn ${cls}" data-act="undo" aria-pressed="${isPanel(t.id, 'undo')}">${icon('undo', 14)}Undo</button>` : '';
   }
 
   function renderTaskVerifyPanel(t: any): string {

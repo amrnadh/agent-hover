@@ -20,7 +20,9 @@ test.describe('0.2 main flow', () => {
     await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2);
     await expect(page.locator('#ah-sel-frame')).toBeVisible();
     await expect(page.locator('#ah-pill')).toBeVisible();
-    await expect(page.locator('#ah-pill-name')).toHaveText('button#hero-primary-cta');
+    // The pill says what it is in plain words; the code name is its tooltip.
+    await expect(page.locator('#ah-pill-name')).toHaveText('“Book a demo” button');
+    await expect(page.locator('#ah-pill-name')).toHaveAttribute('title', 'button#hero-primary-cta');
     await expect(page.locator('#ah-pill-file')).toHaveText(/Hero\.tsx:\d+/);
     await expect(page.locator('#ah-composer')).toBeHidden();
     await expect(page.locator('#ah-side')).toBeHidden();
@@ -145,9 +147,9 @@ test.describe('0.2 main flow', () => {
     await openDemo(page);
     await selectHost(page, '#hero-primary-cta');
     await page.keyboard.press('ArrowUp');
-    await expect(page.locator('#ah-pill-name')).not.toHaveText('button#hero-primary-cta');
+    await expect(page.locator('#ah-pill-name')).not.toHaveText('“Book a demo” button');
     await page.keyboard.press('ArrowDown');
-    await expect(page.locator('#ah-pill-name')).toHaveText('button#hero-primary-cta');
+    await expect(page.locator('#ah-pill-name')).toHaveText('“Book a demo” button');
     await page.locator('#ah-pill-more').click();
     await page.locator('#ah-pill-menu [data-act=details]').click();
     await expect(page.locator('#ah-side')).toBeVisible();

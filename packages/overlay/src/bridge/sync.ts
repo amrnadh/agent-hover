@@ -37,6 +37,8 @@ export function setupStateSync(app: OverlayApp) {
           api.setConnectedAgents(payload.data?.agents || []);
         } else if (payload.type === 'task.created' || payload.type === 'task.updated') {
           api.onTaskEvent(payload.data);
+        } else if (payload.type === 'task.removed') {
+          api.onTasksRemoved?.(payload.data?.ids || []);
         } else if (payload.type === 'source-updated') {
           // HMR follows; markers and frames re-measure on the next layout.
           setTimeout(() => api.requestLayout(), 300);

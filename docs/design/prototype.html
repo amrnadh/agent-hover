@@ -188,7 +188,7 @@ svg.i.sm { width: 14px; height: 14px; }
 .marker .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin 0.8s linear infinite; }
 .card-pop { position: fixed; z-index: 62; width: 320px; max-width: calc(100vw - 24px); border-radius: 14px; padding: 14px; display: grid; gap: 10px; font-size: 13px; }
 .card-pop .head { display: flex; align-items: center; gap: 8px; }
-.card-pop .head b { font: 600 12px var(--font-mono); }
+.card-pop .head b { font: 600 12.5px var(--font-ui); }
 .card-pop .head .ibtn { margin-left: auto; }
 .timeline { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ov-fg-3); flex-wrap: wrap; }
 .timeline span.on { color: var(--ov-fg); font-weight: 500; }
@@ -196,7 +196,36 @@ svg.i.sm { width: 14px; height: 14px; }
 .files button { border: 0; background: var(--ov-bg-2); border-radius: 6px; padding: 5px 8px; font: 12px var(--font-mono); text-align: left; cursor: pointer; display: flex; gap: 8px; align-items: center; }
 .files button:hover { background: var(--ov-bg-3); }
 .summary { background: var(--ov-bg-2); border-radius: 8px; padding: 9px 10px; color: var(--ov-fg-2); line-height: 1.5; }
-.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.actions .grow { flex: 1; }
+.actions.tight { gap: 0; margin-left: -7px; }
+.tbtn.quiet { color: var(--ov-fg-2); padding: 0 7px; }
+.tbtn.quiet:hover { color: var(--ov-fg); background: var(--ov-hover); }
+/* Task card: status line, the request as the title, what and where underneath; Keep and Undo first. */
+#taskCard { width: 360px; gap: 12px; }
+#taskCard .head { gap: 6px; }
+#taskCard .head .status { font-size: 12px; color: var(--ov-fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#taskCard .head .time { font-size: 11.5px; color: var(--ov-fg-3); margin-left: auto; white-space: nowrap; }
+#taskCard .head .ibtn { margin-left: 0; width: 26px; height: 26px; }
+#taskCard .title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+#taskCard .sub { font-size: 12px; color: var(--ov-fg-3); margin-top: -6px; }
+.card-menu { position: absolute; top: 44px; right: 12px; z-index: 2; }
+.card-menu .danger, .li .rm:hover { color: var(--bad); }
+.li .end { display: flex; align-items: center; gap: 2px; }
+.li .rm { width: 24px; height: 24px; margin: -3px -6px -3px 0; opacity: 0; color: var(--ov-fg-3); }
+.li:hover .rm { opacity: 1; }
+.seg .n { font-size: 11px; color: var(--ov-fg-3); margin-left: 2px; }
+.cnum { width: 20px; height: 20px; border-radius: 50% 50% 50% 4px; background: var(--ov-ink); color: var(--ov-on-ink); font: 600 10.5px/20px var(--font-ui); text-align: center; }
+/* Batch: one card per element, its role as a three-way toggle, the goal pinned at the bottom. */
+.hint-line { margin: 0; padding: 12px 16px 4px; font-size: 12px; color: var(--ov-fg-3); }
+.bitems { display: grid; gap: 8px; padding: 8px 12px 16px; }
+.bitem { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; padding: 10px 10px 10px 12px; border: 1px solid var(--ov-line); border-radius: 10px; }
+.bitem .who .t { font-weight: 500; }
+.bitem .who .s { font-size: 11.5px; color: var(--ov-fg-3); }
+.bitem .tools { display: flex; opacity: 0; } .bitem:hover .tools { opacity: 1; }
+.bitem .tools .ibtn { width: 24px; height: 24px; color: var(--ov-fg-3); }
+.bitem .seg { grid-column: 2 / 4; justify-self: start; }
+#sFoot.batch { display: grid; gap: 10px; padding: 12px 14px 14px; }
 
 /* ---------- Comments ---------- */
 .cpin { position: fixed; z-index: 57; width: 26px; height: 26px; border-radius: 50% 50% 50% 4px; border: 0; background: var(--ov-ink); color: var(--ov-on-ink); font: 600 11px var(--font-ui); cursor: pointer; display: grid; place-items: center; transform: translate(0, -100%); box-shadow: 0 0 0 2px var(--sel-halo), 0 3px 8px rgba(0,0,0,.25); }
@@ -477,6 +506,9 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
     <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 16.5h.01"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-follow-up" viewBox="0 0 24 24"><path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></symbol>
   </defs>
 </svg>
@@ -514,7 +546,15 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
     const label = isComp ? `<${el.dataset.c} />` : tag + (cls ? '.' + cls : '');
     const file = owner ? owner.dataset.f : '';
     const short = file ? file.split('/').slice(-1)[0] : '';
-    return { isComp, label, name: isComp ? el.dataset.c : label, file, short, owner };
+    return { isComp, label, name: isComp ? el.dataset.c : label, plain: isComp ? label : plainName(el), file, short, owner };
+  }
+  // Plain names for cards and lists (“Book a demo” button); the code name stays in the hover tag and Details.
+  const NOUNS = { a: 'link', button: 'button', img: 'image', svg: 'graphic', h1: 'heading', h2: 'heading', h3: 'heading', p: 'paragraph', span: 'text', li: 'list item', section: 'section', div: 'box', input: 'field' };
+  function plainName(el) {
+    const noun = NOUNS[el.tagName.toLowerCase()] || 'element';
+    const text = (el.getAttribute('aria-label') || el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 80) return noun[0].toUpperCase() + noun.slice(1);
+    return `“${text.length > 32 ? text.slice(0, 31).trimEnd() + '…' : text}” ${noun}`;
   }
   const hierarchy = (el) => { const out = []; for (let n = el; n && n !== host; n = n.parentElement) if (n.dataset && n.dataset.c || n === el) out.unshift(n); return out; };
   function place(node, r, pad = 0) { Object.assign(node.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); }
@@ -741,21 +781,31 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
     const c = $('taskCard');
     const steps = ['queued', 'delivered', 'working', 'done'];
     const idx = steps.indexOf(t.status);
+    const review = t.status === 'done' && !t.reviewed;
+    const head = t.status === 'done' ? (review ? `Done · ${t.files.length} file${t.files.length === 1 ? '' : 's'} · waiting for you` : `Done · ${t.reviewed}`) : `${AGENTS[t.agent]} · ${STATUS[t.status][0]}`;
     c.innerHTML = `
-      <div class="head"><span class="dot ${STATUS[t.status][1]}"></span><b>${esc(t.label)}</b><span class="muted" style="font-size:12px">${AGENTS[t.agent]}</span><button class="ibtn" data-x aria-label="Close">${icon('x')}</button></div>
-      <div style="line-height:1.5">${esc(t.text)}</div>
-      <div class="timeline">${['Sent', 'Seen', 'Working', 'Done'].map((s, i) => `<span class="${i <= idx ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 'i sm'))}</div>
+      <div class="head"><span class="dot ${STATUS[t.status][1]}"></span><span class="status">${esc(head)}</span><span class="time">${ago(t.created)}</span>
+        <button class="ibtn" data-a="menu" aria-label="More">${icon('more')}</button><button class="ibtn" data-x aria-label="Close">${icon('x')}</button></div>
+      <div class="title">${esc(t.text)}</div>
+      <div class="sub">${esc(describe(t.el).plain)} · <span class="mono">${esc(describe(t.el).short)}</span></div>
+      <div class="timeline">${['Sent', 'Seen', 'Working', 'Done', ...(t.status === 'done' ? [t.reviewed || 'Review'] : [])].map((s, i) => `<span class="${i <= idx || (i === 4 && t.reviewed) ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 'i sm'))}</div>
       ${t.status === 'done' ? `<div class="summary">${esc(t.summary)}</div><div class="files">${t.files.map((f) => `<button>${icon('file', 'i sm')}${esc(f)}</button>`).join('')}</div>
-      <div class="actions"><button class="tbtn outline" data-a="compare">Compare before / after</button><button class="tbtn outline" data-a="undo">Undo</button><button class="tbtn" data-a="tasks">View in Tasks</button></div>`
-        : `<div class="actions"><button class="tbtn outline" data-a="cancel">Cancel task</button><button class="tbtn" data-a="tasks">View in Tasks</button></div>`}`;
+      <div class="actions">${review ? `<button class="tbtn primary" data-a="keep">${icon('check', 'i sm')}Keep</button>` : ''}<button class="tbtn outline" data-a="undo">${icon('undo', 'i sm')}Undo</button><span class="grow"></span><button class="tbtn quiet" data-a="compare">${icon('panel', 'i sm')}Compare</button><button class="tbtn quiet" data-a="follow">${icon('follow-up', 'i sm')}Follow up</button></div>`
+        : `<div class="actions"><button class="tbtn outline" data-a="cancel">Cancel task</button></div>`}
+      ${S.taskMenu ? `<div class="menu surface card-menu" role="menu"><button data-a="tasks">${icon('tasks', 'i sm')}View in Tasks</button>${t.status === 'done' || t.status === 'failed' ? `<button class="danger" data-a="remove">${icon('trash', 'i sm')}Remove from list</button>` : ''}</div>` : ''}`;
     const r = t.el.getBoundingClientRect();
-    anchor(c, { left: r.right - 320, right: r.right, top: r.top, bottom: r.top + 12, width: 0, height: 0 }, 6);
+    anchor(c, { left: r.right - 360, right: r.right, top: r.top, bottom: r.top + 12, width: 0, height: 0 }, 6);
     c.onclick = (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      if (b.hasAttribute('data-x')) { c.hidden = true; S.openTask = null; return; }
+      if (b.hasAttribute('data-x')) { c.hidden = true; S.openTask = null; S.taskMenu = false; return; }
+      if (b.dataset.a === 'menu') { S.taskMenu = !S.taskMenu; openTask(t); return; }
+      S.taskMenu = false;
+      if (b.dataset.a === 'keep') { t.reviewed = 'Kept'; openTask(t); renderSide(); toast('Kept'); return; }
+      if (b.dataset.a === 'follow') { toast('Follow up opens Ask on the same element, with this change in the prompt'); return; }
+      if (b.dataset.a === 'remove') { S.tasks.splice(S.tasks.indexOf(t), 1); c.hidden = true; layout(); renderDock(); renderSide(); toast('Removed from the list'); return; }
       if (b.dataset.a === 'tasks') { c.hidden = true; openSide('tasks'); }
-      if (b.dataset.a === 'compare') toast('Before / after compare arrives in P3-01');
-      if (b.dataset.a === 'undo') toast('Undo restores the 2 changed files (P3-01)');
+      if (b.dataset.a === 'compare') toast('Shows the element before and after');
+      if (b.dataset.a === 'undo') { t.reviewed = 'Undone'; openTask(t); renderSide(); toast(`Undid ${t.files.length} file${t.files.length === 1 ? '' : 's'}`); }
       if (b.dataset.a === 'cancel') { t.status = 'failed'; t.summary = 'Cancelled by you.'; c.hidden = true; layout(); renderDock(); renderSide(); toast('Task cancelled'); }
       if (b.closest('.files')) toast(`Opened ${b.textContent.trim()} in Cursor`);
     };
@@ -922,7 +972,7 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
     $('nBatch').textContent = S.batch.length || '';
     if (!S.side.open) return;
     const body = $('sBody'), foot = $('sFoot');
-    foot.hidden = true; foot.innerHTML = '';
+    foot.hidden = true; foot.innerHTML = ''; foot.classList.remove('batch');
     if (S.side.settings) { body.innerHTML = settingsHTML(); wireSettings(); return; }
     if (S.side.tab === 'inspect') { body.innerHTML = inspectHTML(); wireInspect(); }
     if (S.side.tab === 'tasks') { body.innerHTML = tasksHTML(); wireTasks(); }
@@ -967,22 +1017,41 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
 
   function tasksHTML() {
     if (!S.tasks.length) return `<div class="empty"><b>No tasks yet</b>Select an element, choose Ask, and describe the change. Tasks you send show up here with live status.<br>${S.agent ? `Sending to <b style="font-size:13px">${AGENTS[S.agent]}</b>. Tip: tell it "Listen for agent-hover tasks" once.` : 'No agent connected, so prompts go to your clipboard.'}${S.agent ? '' : '<button class="tbtn primary" id="tConnect">Connect an agent</button>'}</div>`;
-    const active = S.tasks.filter((t) => t.status !== 'done' && t.status !== 'failed'), done = S.tasks.filter((t) => !active.includes(t));
-    const row = (t) => `<div class="li" data-id="${t.id}"><span class="dot ${STATUS[t.status][1]}"></span><div class="t">${esc(t.text)}</div><span class="time">${ago(t.created)}</span>
-      <div class="s"><span class="mono">${esc(t.label)}</span><span>${AGENTS[t.agent]} · ${STATUS[t.status][0]}</span></div>
+    const active = S.tasks.filter((t) => t.status !== 'done' && t.status !== 'failed');
+    const review = S.tasks.filter((t) => t.status === 'done' && !t.reviewed);
+    const done = S.tasks.filter((t) => !active.includes(t) && !review.includes(t));
+    const f = S.side.taskFilter || 'all';
+    const row = (t) => `<div class="li" data-id="${t.id}"><span class="dot ${STATUS[t.status][1]}"></span><div class="t">${esc(t.text)}</div>
+      <span class="end"><span class="time">${ago(t.created)}</span>${active.includes(t) ? '' : `<button class="ibtn rm" data-a="remove" aria-label="Remove from list">${icon('trash', 'i sm')}</button>`}</span>
+      <div class="s"><span>${esc(describe(t.el).plain)}</span><span>${AGENTS[t.agent]} · ${STATUS[t.status][0]}${t.reviewed ? ' · ' + t.reviewed : ''}</span></div>
       ${S.expandedTask === t.id ? `<div class="more">${t.summary ? `<div class="summary">${esc(t.summary)}</div>` : ''}${t.files.length ? `<div class="files">${t.files.map((f) => `<button data-file>${icon('file', 'i sm')}${esc(f)}</button>`).join('')}</div>` : ''}
-        <div class="actions"><button class="tbtn outline" data-a="show">Show on page</button>${t.status === 'done' ? '<button class="tbtn outline" data-a="compare">Compare</button><button class="tbtn outline" data-a="undo">Undo</button>' : '<button class="tbtn outline" data-a="cancel">Cancel</button>'}</div></div>` : ''}</div>`;
-    return (active.length ? `<div class="group">Active</div><div class="list">${active.map(row).join('')}</div>` : '') + (done.length ? `<div class="group">Done</div><div class="list">${done.map(row).join('')}</div>` : '');
+        ${review.includes(t) ? `<div class="actions"><button class="tbtn primary" data-a="keep">${icon('check', 'i sm')}Keep</button><button class="tbtn outline" data-a="undo">${icon('undo', 'i sm')}Undo</button></div>` : ''}
+        <div class="actions tight">${t.status === 'done' ? `<button class="tbtn quiet" data-a="compare">${icon('panel', 'i sm')}Compare</button><button class="tbtn quiet" data-a="follow">${icon('follow-up', 'i sm')}Follow up</button>` : ''}<button class="tbtn quiet" data-a="show">${icon('target', 'i sm')}Show on page</button>${active.includes(t) ? '<button class="tbtn outline" data-a="cancel">Cancel task</button>' : ''}</div></div>` : ''}</div>`;
+    const bar = `<div class="filters"><div class="seg" id="tFilter">${[['all', 'All'], ['review', 'To review', review], ['active', 'Active', active], ['done', 'Done', done]].map(([v, l, list]) => `<button data-v="${v}" aria-pressed="${f === v}">${l}${list && list.length ? ` <span class="n">${list.length}</span>` : ''}</button>`).join('')}</div>
+      <button class="tbtn quiet" id="tClear" style="margin-left:auto" ${done.length ? '' : 'disabled'}>Clear finished</button></div>`;
+    const group = (title, list) => (list.length ? `<div class="group">${title}</div><div class="list">${list.map(row).join('')}</div>` : '');
+    const shown = { review, active, done }[f];
+    return bar + (shown ? (shown.length ? `<div class="list">${shown.map(row).join('')}</div>` : '<div class="empty">Nothing here.</div>') : group('To review', review) + group('Active', active) + group('Done', done));
   }
   function wireTasks() {
     if ($('tConnect')) $('tConnect').onclick = () => openSide('tasks', true);
+    if ($('tFilter')) $('tFilter').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S.side.taskFilter = b.dataset.v; renderSide(); };
+    if ($('tClear')) $('tClear').onclick = (e) => {
+      e.stopPropagation();
+      const finished = S.tasks.filter((t) => t.status === 'failed' || (t.status === 'done' && t.reviewed));
+      S.tasks = S.tasks.filter((t) => !finished.includes(t)); layout(); renderDock(); renderSide();
+      toast(finished.length ? `Cleared ${finished.length} finished task${finished.length === 1 ? '' : 's'}` : 'Nothing to clear');
+    };
     $('sBody').onclick = (e) => {
       const li = e.target.closest('.li'); if (!li) return;
       const t = S.tasks.find((x) => x.id === +li.dataset.id);
       const b = e.target.closest('button');
       if (b && b.dataset.a === 'show') { t.el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => { select(t.el); openTask(t); }, 350); return; }
       if (b && b.dataset.a === 'cancel') { t.status = 'failed'; t.summary = 'Cancelled by you.'; layout(); renderDock(); renderSide(); return; }
-      if (b && (b.dataset.a === 'compare' || b.dataset.a === 'undo')) { toast('Compare and Undo arrive in P3-01'); return; }
+      if (b && b.dataset.a === 'remove') { S.tasks.splice(S.tasks.indexOf(t), 1); layout(); renderDock(); renderSide(); toast('Removed from the list'); return; }
+      if (b && b.dataset.a === 'keep') { t.reviewed = 'Kept'; renderSide(); toast('Kept'); return; }
+      if (b && b.dataset.a === 'undo') { t.reviewed = 'Undone'; renderSide(); toast('Undid the change'); return; }
+      if (b && (b.dataset.a === 'compare' || b.dataset.a === 'follow')) { toast(b.dataset.a === 'compare' ? 'Shows the element before and after' : 'Follow up opens Ask on the same element'); return; }
       if (b && b.hasAttribute('data-file')) { toast(`Opened ${b.textContent.trim()} in Cursor`); return; }
       if (e.target.closest('.more')) return;
       S.expandedTask = S.expandedTask === t.id ? null : t.id; renderSide();
@@ -997,7 +1066,7 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
     const head = `<div class="filters"><div class="seg" id="cFilter">${['all', 'open', 'resolved'].map((v) => `<button data-v="${v}" aria-pressed="${f === v}">${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</div>
       <button class="tbtn outline" id="cSendAll" style="margin-left:auto" ${open.length ? '' : 'disabled'}>${icon('send', 'i sm')}Send ${open.length || ''} open</button></div>`;
     if (!list.length) return `<div class="empty"><b>No comments yet</b>Press <kbd>C</kbd> or the comment button in the dock, then click anywhere on the page to leave a note. Send them to your agent one by one or all at once.</div>`;
-    return head + `<div class="list">${shown.map((c) => `<div class="li" data-id="${c.id}"><span class="dot ${c.resolved ? 'ok' : ''}"></span><div class="t">${esc(c.text)}</div><span class="time">#${S.comments.indexOf(c) + 1}</span><div class="s"><span class="mono">${esc(describe(c.el).label)}</span><span>${ago(c.created)}</span></div></div>`).join('') || '<div class="empty">Nothing here.</div>'}</div>`;
+    return head + `<div class="list">${shown.map((c) => `<div class="li" data-id="${c.id}"><span class="dot ${c.resolved ? 'ok' : ''}"></span><div class="t">${esc(c.text)}</div><span class="cnum">${S.comments.indexOf(c) + 1}</span><div class="s"><span>${esc(describe(c.el).plain)}</span><span>${ago(c.created)}</span></div></div>`).join('') || '<div class="empty">Nothing here.</div>'}</div>`;
   }
   function wireComments() {
     if ($('cFilter')) $('cFilter').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S.side.commentFilter = b.dataset.v; renderSide(); };
@@ -1011,15 +1080,22 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
 
   function batchHTML() {
     if (!S.batch.length) return `<div class="empty"><b>Batch is empty</b>Select elements and press <kbd>B</kbd> (or + Batch in the pill) to collect several pieces of UI into one task, for example "make these three cards consistent".</div>`;
-    return `<div class="list">${S.batch.map((el, i) => `<div class="li" style="cursor:default"><span class="batch-num" style="position:static;box-shadow:none">${i + 1}</span><div class="t mono" style="font-size:12.5px">${esc(describe(el).label)}</div>
-      <select class="role" data-i="${i}" aria-label="Role">${[['change', 'Change'], ['reference', 'Reference'], ['keep', "Don't touch"]].map(([v, l]) => `<option value="${v}" ${el._role === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <div class="s"><span class="mono">${esc(describe(el).short)}</span><button class="tbtn" data-rm="${i}" style="height:22px;padding:0 6px">Remove</button></div></div>`).join('')}</div>
-      <div class="field" style="padding-top:14px"><label for="bGoal">Goal</label><textarea id="bGoal" rows="3" placeholder="e.g. Make these cards use the same padding and heading size"></textarea></div>
-      <div class="actions" style="padding:0 16px 16px"><button class="tbtn outline" id="bCopy">${icon('copy', 'i sm')}Copy</button><button class="tbtn primary" id="bSend" style="margin-left:auto">${icon('send', 'i sm')}${S.agent ? 'Send to ' + AGENTS[S.agent] : 'Copy prompt'}</button></div>`;
+    const roles = [['change', 'Change'], ['reference', 'Reference'], ['keep', "Don't touch"]];
+    const foot = $('sFoot');
+    foot.hidden = false; foot.classList.add('batch');
+    foot.innerHTML = `<div class="field" style="padding:0"><label for="bGoal">Goal</label><textarea id="bGoal" rows="2" placeholder="e.g. Make these cards use the same padding and heading size"></textarea></div>
+      <div class="actions"><button class="tbtn quiet" id="bCopy">${icon('copy', 'i sm')}Copy prompt</button><span class="grow"></span><button class="tbtn primary" id="bSend">${icon('send', 'i sm')}${S.agent ? 'Send to ' + AGENTS[S.agent] : 'Copy prompt'}</button></div>`;
+    return `<p class="hint-line">${S.batch.length} element${S.batch.length === 1 ? '' : 's'} · say what each one is for, then describe the goal.</p>
+      <div class="bitems">${S.batch.map((el, i) => `<div class="bitem"><span class="batch-num" style="position:static;box-shadow:none">${i + 1}</span>
+        <div class="who"><div class="t">${esc(describe(el).plain)}</div><div class="s mono">${esc(describe(el).label)} · ${esc(describe(el).short)}</div></div>
+        <span class="tools"><button class="ibtn" data-rm="${i}" aria-label="Remove from batch">${icon('x', 'i sm')}</button></span>
+        <div class="seg">${roles.map(([v, l]) => `<button data-i="${i}" data-role="${v}" aria-pressed="${(el._role || 'change') === v}">${l}</button>`).join('')}</div></div>`).join('')}</div>`;
   }
   function wireBatch() {
-    $('sBody').onchange = (e) => { if (e.target.matches('.role')) S.batch[+e.target.dataset.i]._role = e.target.value; };
-    $('sBody').onclick = (e) => { const b = e.target.closest('[data-rm]'); if (b) { S.batch.splice(+b.dataset.rm, 1); layout(); renderDock(); renderSide(); } };
+    $('sBody').onclick = (e) => {
+      const r = e.target.closest('[data-role]'); if (r) { S.batch[+r.dataset.i]._role = r.dataset.role; renderSide(); return; }
+      const b = e.target.closest('[data-rm]'); if (b) { S.batch.splice(+b.dataset.rm, 1); layout(); renderDock(); renderSide(); }
+    };
     if ($('bCopy')) $('bCopy').onclick = () => toast(`Copied ${S.batch.length} elements as one prompt`);
     if ($('bSend')) $('bSend').onclick = () => {
       const goal = $('bGoal').value.trim();

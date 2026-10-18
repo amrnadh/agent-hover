@@ -265,8 +265,7 @@ test('scene-02 like this not that', async ({ page, request }) => {
     await glideClick(page, page.locator('#ah-d-batch'), 0.5, 0.5, 20);
     const side = page.locator('#ah-side');
     await pause(page, 700);
-    await glide(page, side.locator('select.ah-role').nth(1), 0.5, 0.5, 20);
-    await side.locator('select.ah-role').nth(1).selectOption('reference');
+    await glideClick(page, side.locator('.ah-roles').nth(1).locator('[data-v=reference]'), 0.5, 0.5, 20);
     await pause(page, 700);
     await glideClick(page, side.locator('#ah-batch-goal'), 0.5, 0.5, 15);
     await page.keyboard.type(goal, { delay: 45 });
