@@ -68,7 +68,7 @@ export function describeTaskStatus(task: TaskLike, agent?: string | null): Statu
     case 'cancelled':
       return { text: 'Cancelled', tone: 'neutral' };
     case 'expired':
-      return { text: 'Expired · not picked up', tone: 'neutral' };
+      return { text: 'Not picked up', tone: 'neutral', hint: 'No agent took this task within 30 minutes' };
     case 'superseded':
       return { text: 'Replaced by a newer task', tone: 'neutral' };
     default:

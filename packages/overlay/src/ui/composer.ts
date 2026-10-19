@@ -58,7 +58,9 @@ export function setupComposer(app: OverlayApp) {
     api.closeCommentCard?.();
     api.closeTaskCard?.();
     nameEl.textContent = api.nameFor(state.selectedTarget);
-    fileEl.textContent = state.selectionSource ? state.selectionSource.file.split('/').pop() + ':' + state.selectionSource.line : '';
+    // The same place the pill names: the element's own line when React knows it, the component's otherwise.
+    const at = state.selectionAt || state.selectionSource;
+    fileEl.textContent = at ? at.file.split('/').pop() + ':' + at.line : '';
     input.value = drafts.get(state.selectedTarget) || '';
     input.classList.remove('invalid');
     renderDest();

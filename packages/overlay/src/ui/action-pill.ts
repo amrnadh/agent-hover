@@ -7,7 +7,7 @@ import type { OverlayApp } from '../app/context.js';
  */
 export function setupActionPill(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
-  Object.assign(api, { copySelection, toggleFreezeSelection, openSelectionInEditor, closePillMenu: () => { menu.hidden = true; } });
+  Object.assign(api, { copySelection, toggleFreezeSelection, openSelectionInEditor, commentOnSelection, closePillMenu: () => { menu.hidden = true; } });
 
   const pill = shadow.getElementById('ah-pill') as HTMLElement;
   const nameEl = shadow.getElementById('ah-pill-name') as HTMLElement;
@@ -23,6 +23,7 @@ export function setupActionPill(app: OverlayApp) {
       menu.hidden = true;
       nameEl.textContent = api.nameFor(state.selectedTarget);
       fileEl.textContent = '';
+      state.selectionAt = null;
       const token = ++sourceToken;
       Promise.all([api.sourceFor(state.currentStack, state.currentStackIndex), exactFor(state.selectedTarget)]).then(([src, exact]: any[]) => {
         if (token !== sourceToken || !src) return;
@@ -31,6 +32,7 @@ export function setupActionPill(app: OverlayApp) {
         fileEl.textContent = at.file.split('/').pop() + ':' + at.line;
         fileEl.title = at.file + ':' + at.line;
         state.selectionSource = src;
+        state.selectionAt = { file: at.file, line: at.line };
         renderLock();
         api.requestLayout();
       });
@@ -76,6 +78,16 @@ export function setupActionPill(app: OverlayApp) {
     return api.exactElementSource?.(item) ?? Promise.resolve(null);
   }
 
+  /**
+   * A comment on the whole selection: its pin goes on the top-left corner, outside, so it covers none of it and
+   * stays clear of the task marker on the top-right.
+   */
+  function commentOnSelection() {
+    const r = api.selectionRect();
+    if (!r) return;
+    api.addCommentAt(state.selectedElement, r.left, r.top > 34 ? r.top : r.top + r.height + 28);
+  }
+
   async function openSelectionInEditor() {
     const [src, exact] = await Promise.all([api.sourceFor(state.currentStack, state.currentStackIndex), exactFor(state.selectedTarget)]);
     if (!src && !exact) { api.toast('No source file found for this element'); return; }
@@ -108,10 +120,7 @@ export function setupActionPill(app: OverlayApp) {
 
   btn('ah-pill-who').onclick = openSelectionInEditor;
   btn('ah-pill-ask').onclick = () => api.openComposer();
-  btn('ah-pill-comment').onclick = () => {
-    const r = api.selectionRect();
-    if (r) api.addCommentAt(state.selectedElement, r.left + r.width - 8, r.top + r.height - 4);
-  };
+  btn('ah-pill-comment').onclick = commentOnSelection;
   btn('ah-pill-batch').onclick = () => api.toggleBatch(state.selectedTarget, state.currentStack);
   btn('ah-pill-copy').onclick = copySelection;
   btn('ah-pill-close').onclick = () => api.deselect();

@@ -33,10 +33,10 @@ export function setupDock(app: OverlayApp) {
   function renderDock() {
     const agents = state.connectedAgents || [];
     const online = !!state.isBridgeConnected;
-    const dotClass = 'ah-dot ' + (agents.length ? 'ok' : online ? 'warn' : '');
+    const dotClass = 'ah-dot ' + (state.bridgeOutdated ? 'warn' : agents.length ? 'ok' : online ? 'warn' : '');
     $('ah-d-mark-dot').className = dotClass;
     $('ah-dock-min-dot').className = dotClass;
-    $('ah-d-mark').dataset.tip = agents.length
+    $('ah-d-mark').dataset.tip = state.bridgeOutdated ? 'Agent Hover · restart your dev server to finish updating' : agents.length
       ? `Agent Hover · ${prettyAgentName(agents[0].client)} connected`
       : online ? 'Agent Hover · no agent connected' : 'Agent Hover · dev server offline';
     pressed('ah-d-inspect', state.mode === 'inspect');
@@ -45,12 +45,13 @@ export function setupDock(app: OverlayApp) {
     pressed('ah-d-tasks', !!side.open && !side.settings && side.tab === 'tasks');
     pressed('ah-d-batch', !!side.open && !side.settings && side.tab === 'batch');
     const tasks = state.tasks ? [...state.tasks.values()] : [];
-    // Pulses while an agent has work; a still dot means a change is waiting for your review.
+    // Pulses while an agent has work; a still dot means something needs you (a change to review, or a failure).
     const working = tasks.some((t: any) => api.isTaskActive?.(t));
-    const toReview = tasks.some((t: any) => api.awaitingReview?.(t));
+    const failed = tasks.some((t: any) => t.status === 'failed' && api.needsYou?.(t));
+    const toReview = failed || tasks.some((t: any) => api.awaitingReview?.(t));
     $('ah-d-tasks-dot').hidden = !working && !toReview;
-    $('ah-d-tasks-dot').className = 'ah-dot working ' + (working ? 'pulse warn' : 'ok'); // .working places it on the button
-    $('ah-d-tasks').dataset.tip = !working && toReview ? 'Tasks · waiting for your review' : 'Tasks';
+    $('ah-d-tasks-dot').className = 'ah-dot working ' + (working ? 'pulse warn' : failed ? 'bad' : 'ok'); // .working places it on the button
+    $('ah-d-tasks').dataset.tip = !working && toReview ? 'Tasks · something needs you' : 'Tasks';
     const count = (state.batch || []).length;
     $('ah-d-batch-count').hidden = !count;
     $('ah-d-batch-count').textContent = String(count);
@@ -102,6 +103,8 @@ export function setupDock(app: OverlayApp) {
            <button class="ah-tbtn primary" data-act="agents">Connect an agent</button>`
         : `<div class="row"><span class="ah-dot"></span><b>Dev server offline</b></div>
            <p>Agent Hover talks to your coding agent through the Vite dev server. Start it again (npm run dev) and this page reconnects.</p>`;
+    if (state.bridgeOutdated) conn.innerHTML = `<div class="row"><span class="ah-dot warn"></span><b>Restart your dev server</b></div>
+         <p>Agent Hover was updated. This page already runs the new version, but the dev server still runs the old one, so some buttons won't work until you restart it (stop it, then npm run dev).</p><hr>` + conn.innerHTML;
     const up = state.updateAvailable;
     if (up) conn.innerHTML += `<hr><div class="row"><span class="ah-dot"></span><b>Update available</b><span class="ah-muted" style="margin-left:auto;font-size:12px">${esc(up.current)} → ${esc(up.latest)}</span></div>
          <button class="ah-tbtn outline" data-act="about">How to update</button>`;

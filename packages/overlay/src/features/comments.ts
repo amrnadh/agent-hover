@@ -1,4 +1,5 @@
 import { anchorTo, buildCSSSelector, esc, timeAgo } from '../lib/ui.js';
+import { isCovered } from '../lib/dom.js';
 import { icon } from '../lib/icon.js';
 import { formatCommentsRequest } from '../lib/prompt-format.js';
 import type { OverlayApp } from '../app/context.js';
@@ -106,10 +107,13 @@ export function setupComments(app: OverlayApp) {
     const d = draft;
     const stack = api.stackFor(d.el!);
     const src = await api.sourceFor(stack, 0).catch(() => null);
+    // The element's own line when React knows it (as the pill shows), else its component's.
+    const exact = await Promise.resolve(api.exactElementSource?.(stack[0])).catch(() => null);
+    const at = exact || src;
     try {
       const data = await post({
         action: 'add',
-        comment: { text, selector: d.selector, component: src?.component || '', file: src?.file || '', line: src?.line || 1, offsetX: d.offsetX, offsetY: d.offsetY },
+        comment: { text, selector: d.selector, component: src?.component || '', file: at?.file || '', line: at?.line || 1, offsetX: d.offsetX, offsetY: d.offsetY },
       });
       draft = null;
       openId = data.comment?.id || null;
@@ -136,6 +140,9 @@ export function setupComments(app: OverlayApp) {
     all.forEach((c) => {
       const p = pinPoint(c);
       if (!p || p.y < 0 || p.y > window.innerHeight + 26) return;
+      // Under the app's own dialog: don't float over it (the open card's pin stays).
+      const el = c.el || commentElement(c);
+      if (openId !== c.id && el && isCovered(el, app.container)) return;
       const b = document.createElement('button');
       b.className = 'ah-cpin' + (c.resolved ? ' resolved' : '') + (openId === c.id ? ' active' : '');
       b.style.left = Math.min(p.x, window.innerWidth - ins.right - 30) + 'px';
@@ -149,7 +156,11 @@ export function setupComments(app: OverlayApp) {
   api.onLayout(renderPins);
 
   // ---------- card ----------
+  /** The comment whose Delete asked “Delete?” (a second click deletes). */
+  let confirmDelete: string | null = null;
+
   function openComment(id: string) {
+    confirmDelete = null;
     if (draft && id !== 'draft') draft = null;
     openId = id;
     api.closeTaskCard?.();
@@ -176,13 +187,20 @@ export function setupComments(app: OverlayApp) {
     if (!c) { card.hidden = true; return; }
     const el = commentElement(c);
     const label = el ? api.nameFor({ isDomElement: true, element: el }) : c.component ? `<${c.component} />` : 'Element no longer on page';
+    const file = (c.file || '').split('/').pop();
+    const where = `${esc(label)}${file && !c.draft ? ` · <span class="ah-mono">${esc(file + (c.line ? ':' + c.line : ''))}</span>` : ''}`;
+    const close = `<button class="ah-ibtn" data-act="close" aria-label="Close" title="Close (Esc)">${icon('x')}</button>`;
+    // Laid out like the task card: status line, the note as the title, what it is about underneath.
     card.innerHTML = c.draft
-      ? `<div class="head"><b>${esc(label)}</b><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
+      ? `<div class="head"><span class="status">New comment</span>${close}</div>
+         <div class="sub">${where}</div>
          <textarea id="ah-comment-input" aria-label="Comment" placeholder="Leave a note for yourself or your agent"></textarea>
          <div class="ah-actions" style="justify-content:flex-end"><button class="ah-ibtn mic" data-act="mic" style="margin-right:auto" title="Speak instead of typing" aria-label="Speak instead of typing" hidden>${icon('mic')}</button><button class="ah-tbtn" data-act="close">Discard</button><button class="ah-tbtn primary" data-act="save">Comment</button></div>`
-      : `<div class="head"><span class="ah-dot ${c.resolved ? 'ok' : ''}"></span><b>#${numberOf(c)} ${esc(label)}</b><span class="ah-muted" style="font-size:12px;white-space:nowrap">${esc(timeAgo(c.createdAt))}</span><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
-         <div class="body">${esc(c.text)}</div>
-         <div class="ah-actions"><button class="ah-tbtn outline" data-act="resolve">${c.resolved ? 'Reopen' : 'Resolve'}</button><button class="ah-tbtn outline" data-act="send">${icon('send', 14)}Send to agent</button><button class="ah-tbtn danger" data-act="delete">Delete</button></div>`;
+      : `<div class="head"><span class="ah-cnum">${numberOf(c)}</span><span class="status">${c.resolved ? 'Resolved' : 'Comment'}</span><span class="time">${esc(timeAgo(c.createdAt))}</span>${close}</div>
+         <div class="title">${esc(c.text)}</div>
+         <div class="sub">${where}</div>
+         <div class="ah-actions">${c.resolved ? '' : `<button class="ah-tbtn primary" data-act="send">${icon('send', 14)}Send to agent</button>`}<button class="ah-tbtn outline" data-act="resolve">${c.resolved ? 'Reopen' : 'Resolve'}</button><span class="grow"></span>
+           ${confirmDelete === c.id ? `<button class="ah-tbtn danger" data-act="delete-yes">${icon('trash', 14)}Delete?</button>` : `<button class="ah-tbtn quiet" data-act="delete" title="Delete">${icon('trash', 14)}</button>`}</div>`;
     card.hidden = false;
     positionCard();
     const ta = card.querySelector('textarea') as HTMLTextAreaElement | null;
@@ -215,6 +233,7 @@ export function setupComments(app: OverlayApp) {
     const c = current();
     const act = b.dataset.act;
     if (act === 'close') { closeCommentCard(); return; }
+    if (act === 'delete') { confirmDelete = c?.id || null; renderCard(); return; }
     if (!c) return;
     if (act === 'save') {
       const ta = card.querySelector('textarea') as HTMLTextAreaElement;
@@ -223,7 +242,8 @@ export function setupComments(app: OverlayApp) {
       await saveDraft(text);
     }
     if (act === 'resolve') await post({ action: 'toggle-resolve', id: c.id }).catch(() => api.toast('Dev server unreachable'));
-    if (act === 'delete') {
+    if (act === 'delete-yes') {
+      confirmDelete = null;
       await post({ action: 'delete', id: c.id }).catch(() => api.toast('Dev server unreachable'));
       closeCommentCard();
       api.toast('Comment deleted');

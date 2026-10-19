@@ -26,7 +26,9 @@ test.describe('0.2 comments', () => {
 
     await card.locator('[data-act=resolve]').click();
     await expect(card.locator('[data-act=resolve]')).toHaveText('Reopen');
+    // Delete asks once.
     await card.locator('[data-act=delete]').click();
+    await card.locator('[data-act=delete-yes]').click();
     await expect(card).toBeHidden();
     const after = await api.get('/comments');
     expect(after.comments.some((c: any) => c.text === text)).toBe(false);

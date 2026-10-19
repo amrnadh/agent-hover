@@ -122,9 +122,10 @@ export function setupVerify(app: OverlayApp) {
     return load(t.id).before ? `<button class="ah-tbtn ${cls}" data-act="compare" aria-pressed="${isPanel(t.id, 'compare')}">${icon('panel', 14)}Compare</button>` : '';
   }
 
-  /** Undo, while the checkpoint can still restore the files. */
+  /** Undo, while the checkpoint can still restore the files. Not offered when the agent changed nothing. */
   function renderUndoAction(t: any, cls = 'outline'): string {
     if (t.status !== 'done' && t.status !== 'failed') return '';
+    if (!(t.result?.filesChanged?.length > 0)) return '';
     const ch = changes.get(t.id);
     return t.checkpointId && !ch?.undoneAt && t.review?.state !== 'undone' ? `<button class="ah-tbtn ${cls}" data-act="undo" aria-pressed="${isPanel(t.id, 'undo')}">${icon('undo', 14)}Undo</button>` : '';
   }

@@ -13,6 +13,8 @@ const UPDATE_CMD = 'npm i -D @agent-hover/vite@latest';
 export function setupSettingsPanel(app: OverlayApp) {
   const { port, state, api } = app;
   let agentTab = 'claude';
+  /** Whether the setup steps are unfolded: open while no agent is connected, or after you open them. */
+  let setupOpen: boolean | null = null;
   const version = typeof __AH_VERSION__ !== 'undefined' ? __AH_VERSION__ : '';
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   const mod = isMac ? '⌘' : 'Ctrl';
@@ -25,6 +27,7 @@ export function setupSettingsPanel(app: OverlayApp) {
     render(body: HTMLElement) {
       const agents = state.connectedAgents || [];
       const setup = AGENT_SETUPS.find((a) => a.id === agentTab) || AGENT_SETUPS[0];
+      const showSetup = setupOpen ?? (!agents.length || state.side.settingsFocus === 'agents');
       body.innerHTML = `
         <div class="ah-ident" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:8px">
           <button class="ah-ibtn" data-act="back" aria-label="Back">${icon('back')}</button><div class="name" style="font-family:var(--ui-font)">Settings</div>
@@ -34,11 +37,13 @@ export function setupSettingsPanel(app: OverlayApp) {
             ? agents.map((a: any) => `<div class="ah-agent"><span class="ah-dot ok"></span>${esc(prettyAgentName(a.client))}<span class="ah-muted">connected</span></div>`).join('')
             : `<p>${state.isBridgeConnected ? 'No agent is connected right now.' : 'The dev server is offline.'} Ask and Comment still work by copying prompts.</p>`}
           <p>Works with any MCP coding agent. Add the server once, then run <b>/agent-hover</b> in your agent (<b>$agent-hover</b> in Codex) or tell it <b>“Listen for agent-hover tasks”</b>.</p>
+          <details class="ah-sec ah-setup" ${showSetup ? 'open' : ''}><summary>${icon('chev-right', 12)}<span class="chev-label">${agents.length ? 'Connect another agent' : 'Set up an agent'}</span></summary>
           <div class="ah-chips" data-agents>${AGENT_SETUPS.map((a) => `<button data-agent="${a.id}" aria-pressed="${a.id === setup.id}">${esc(a.title)}</button>`).join('')}</div>
           ${setup.command ? `<pre class="ah-snippet" tabindex="0">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
           <pre class="ah-snippet" tabindex="0">${esc(setup.snippet)}</pre>
           <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-setup">${icon('copy', 14)}Copy</button><span class="ah-muted" style="font-size:12px">Or run <span class="ah-mono">npx agent-hover mcp</span> in your project.</span></div>
           ${/Windows/.test(navigator.userAgent) ? '<p>On Windows, agents start the server through cmd: <span class="ah-mono">"command": "cmd", "args": ["/c", "npx", "-y", "@agent-hover/mcp"]</span>. <span class="ah-mono">npx agent-hover init</span> writes it that way for you.</p>' : ''}
+          </details>
           <p>Using ChatGPT, Claude.ai, v0, Lovable or Bolt? Use Copy: every prompt is self-contained.</p>
         </section>
         <section class="ah-set"><h4>When you press Send</h4>
@@ -74,6 +79,8 @@ export function setupSettingsPanel(app: OverlayApp) {
           <span>Click through to the page</span><kbd>Hold Shift</kbd>
           <span>Send</span><kbd>${mod} Enter</kbd>
           <span>Tasks</span><kbd>T</kbd>
+          <span>Task card: Keep · Undo · Follow up · Try again</span><kbd>K U F R</kbd>
+          <span>Lists: move · open · remove</span><kbd>↑ ↓ Enter Del</kbd>
           <span>Hide / show dock</span><kbd>${mod} ⇧ X</kbd>
           <span>Close / deselect</span><kbd>Esc</kbd></div></section>
         <section class="ah-set" id="ah-set-about" style="border:0"><h4>About</h4>
@@ -88,6 +95,9 @@ export function setupSettingsPanel(app: OverlayApp) {
         target?.scrollIntoView({ block: 'start' });
         state.side.settingsFocus = '';
       }
+
+      const setupEl = body.querySelector('.ah-setup') as HTMLDetailsElement | null;
+      if (setupEl) setupEl.ontoggle = () => { setupOpen = setupEl.open; };
 
       const lang = body.querySelector('[data-voice-lang]') as HTMLInputElement | null;
       if (lang) lang.onchange = () => api.setVoiceLanguage(lang.value);

@@ -77,7 +77,10 @@ test.describe('0.2 main flow', () => {
     const marker = page.locator('.ah-marker');
     await expect(marker).toHaveCount(1);
     expect(await api.takeTask(taskId)).toBeTruthy();
-    await expect(marker).toHaveAttribute('title', /Seen by Claude Code/);
+    await expect(marker).toHaveAttribute('aria-label', /Seen by Claude Code/);
+    // Hovering the marker previews the request and its status.
+    await marker.hover();
+    await expect(page.locator('.ah-marker-tip')).toContainText('Seen by Claude Code');
     await api.post(`/agent/tasks/${taskId}/claim`, { client: 'claude-code' });
     await expect(marker.locator('.spin')).toBeVisible();
 

@@ -178,8 +178,9 @@ export function setupPrompt(app: OverlayApp) {
       facts,
       label: facts.element.label,
       component: facts.component?.name || '',
-      file: facts.component?.file || '',
-      line: facts.component?.startLine,
+      // Where the element is written: its own JSX line (React 19), else the component's first line.
+      file: facts.element.source?.file || facts.component?.file || '',
+      line: facts.element.source?.line ?? facts.component?.startLine,
       selector: facts.element.selector,
       hierarchy: facts.hierarchy,
       tokens,

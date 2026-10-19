@@ -49,3 +49,17 @@ export function dataUrlToBlob(dataUrl: string): Blob | null {
     return null;
   }
 }
+
+/**
+ * Whether something else is drawn over `el`: the app's own dialog, a sticky header. True only when both its middle
+ * and its top-right corner (where markers sit) are under another element. `ignore` is the overlay's own root.
+ */
+export function isCovered(el: Element, ignore?: Element | null): boolean {
+  const r = el.getBoundingClientRect();
+  const points: Array<[number, number]> = [[r.left + r.width / 2, r.top + r.height / 2], [r.right - 3, r.top + 3]];
+  return points.every(([x, y]) => {
+    if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return false;
+    const hit = document.elementFromPoint(x, y);
+    return !!hit && hit !== ignore && hit !== el && !el.contains(hit) && !hit.contains(el);
+  });
+}
