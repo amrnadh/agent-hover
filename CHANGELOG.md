@@ -8,11 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Tasks grouped by what they need from you.**
+  - The Tasks tab shows **Needs you** (changes to review, failures), **In progress**, and **History**, which starts folded and carries **Clear** (asks once). Rows show the status and the exact `file:line`; open one for the element, the agent's summary, its files and actions.
+  - The Tasks tab badge counts what needs you, and the dock's Tasks dot turns red for a failure.
+  - ↑ ↓ move between rows in Tasks and Comments, Enter opens one, Delete removes it.
 - **Remove tasks.**
-  - Finished, failed and cancelled tasks can leave the list: from the task card's ⋯ menu, or the trash icon on a row in the Tasks tab. A change you haven't kept or undone asks first, because its Undo goes with it.
-  - **Clear finished** removes every task with nothing left to decide; changes waiting for review stay.
-  - The Tasks tab can show All, To review, Active or Done.
-  - Bridge: `POST /api/agent/tasks/remove` with `{ ids }` or `{ finished: true }`, which also deletes the tasks' Undo checkpoints. Running tasks can't be removed, and waiting ones are cancelled first.
+  - Any task but one an agent is working on can leave the list: from the task card's ⋯ menu, or the trash icon on a row. A waiting task is withdrawn, so no agent picks it up later. A change you haven't kept or undone asks first, because its Undo goes with it.
+  - **Clear** in History removes every task with nothing left to decide; changes waiting for review stay.
+  - Finished tasks older than a week leave the list on their own (changes still waiting for review stay).
+  - Bridge: `POST /api/agent/tasks/remove` with `{ ids }` or `{ finished: true }`. A task's Undo checkpoint goes with it however it leaves.
+- **Send again and Try again.** A task no agent picked up (now "Not picked up" instead of "Expired") or one you cancelled can be sent again as a new task, to the same element and agent; a failed one gets **Try again**. Both offer **Copy prompt** for any AI tool. Bridge: `POST /api/agent/tasks/:id/retry`; the new task records `retryOf`.
+- **Restart notice after an update.** The page loads a new Agent Hover right away, but the dev server keeps running the old one until it restarts, so new buttons used to fail with a raw error. The bridge now reports its API level in `/api/health`; when it's older than the page, the dock and sidebar say "Restart your dev server to finish updating", and a request the old bridge doesn't know says the same instead of a parse error.
+- **Task card keys.** With a task card open: **K** Keep, **U** Undo, **F** Follow up, **R** Try again / Send again. While an agent works, the card counts how long it has been at it. The toast when a change is done offers **Review**.
 - **`/agent-hover` starts listening.**
   - `agent-hover init` adds a one-word command for each agent: `.claude/commands/agent-hover.md` (Claude Code), `.cursor/commands/agent-hover.md` (Cursor), `.windsurf/workflows/` (Windsurf), `.agent/workflows/` (Antigravity), and a `$agent-hover` skill for Codex (`.agents/skills/`).
   - The MCP server now tells agents how to listen when they connect, and offers `listen` and `status` prompts (`/mcp__agent-hover__listen` in Claude Code).
@@ -31,13 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The marker gets a ring, the timeline gains a last step (Review, then Kept, Undone or Followed up), and the dock's Tasks dot stays on, without pulsing.
   - The task card leads with **Keep**, then Compare, Undo and **Follow up**.
   - Follow up opens Ask on the same element, and the new prompt carries a "Previous attempt" section (the earlier request, the agent's summary and its files), so the agent builds on the change instead of starting over. The new task records `followUpOf`.
-  - The Tasks tab lists these under "To review".
+  - The Tasks tab lists these under "Needs you".
   - Your decision is saved with the task (`review` on the task, `POST /api/agent/tasks/:id/review`), so it survives reloads. Undo records itself. Keep leaves the checkpoint in place, so Undo stays possible until checkpoints are pruned.
 - **Lock is checked, not only asked.** If a finished task changed the file of a component you locked, its marker turns amber with a lock and the card names the component, with Undo right there.
 - **New page cursor.** In Inspect, Comment and Batch the pointer is the dock's Inspect dart, filled, with a small badge for what a click does: a framed square (select), a speech bubble (comment) or a blue + (add to batch). It replaces the crosshair, which stays as the fallback (`packages/overlay/src/lib/cursor.ts`). The active Inspect or Comment button in the dock fills to match, and the demo recorder draws the same cursors.
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- **One `file:line` everywhere.** The pill, Ask, the task card, comments and the task sent to the agent all use the element's own line (React 19) or else its component's; Ask and comments used the component's first line while the pill showed the element's.
+- **Undo only when something changed.** Tasks that changed no files (a question the agent answered, a failure before any edit) no longer offer Undo.
+- **Comment card matches the task card**: status and time on top, the note as the title, the element and `file:line` underneath, **Send to agent** first. Delete asks once.
+- **Markers stay out of your app's way.** A task marker or comment pin whose element is covered (your app's own dialog, a sticky header) is hidden, a marker on a block of text sits at the end of the text instead of the far edge of the block, and a comment from the pill or **C** pins to the element's top-left corner, outside it, clear of the task marker.
+- **Empty states give you the next step**: Pick an element (Inspect), Add a comment (Comments), Pick elements (Batch). Alt says whether it turned Inspect on or off.
 - **Plain names.** Cards and lists say what you selected in words: “Book a demo” button, “Pricing” link, `<StatCard />`. A library wrapper such as `motion.a` is named by the element it draws. The code name (`button#hero-primary-cta`) stays in the hover tag, in prompts, under the name in Inspect, and in the pill's tooltip.
 - **Task card.**
   - It leads with your request, with the element and file underneath and the status and time on one line.
