@@ -244,6 +244,8 @@ export interface AgentTaskPayload {
   prompt?: string;
   /** The task this one follows up on (Follow up in the task card). */
   followUpOf?: string;
+  /** The failed or never-picked-up task this one sends again. */
+  retryOf?: string;
 }
 
 export interface AgentTaskResult {

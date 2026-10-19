@@ -40,6 +40,13 @@ import type {
   BridgeSession,
 } from '@agent-hover/core';
 
+/**
+ * What this bridge can do, for the page. The overlay is re-read from disk on every page load, but the bridge only
+ * reloads when the dev server restarts; after an update the page compares this with what it needs and asks for a
+ * restart instead of failing. Bump it with BRIDGE_API in packages/overlay/src/lib/bridge-api.ts when routes change.
+ */
+export const BRIDGE_API = 2;
+
 export function isSafeHost(hostHeader: string): boolean {
   if (!hostHeader) return false;
   const [hostname] = hostHeader.split(':');
@@ -142,7 +149,9 @@ export class BridgeServer {
       this.broadcast({ type: 'task.created', data: task });
       this.broadcast({ type: 'agent-task-dispatched', data: task });
     });
+    // However a task leaves the list (removed, sent again, or a week old), its Undo checkpoint goes with it.
     this.taskStore.on('task:removed', (ids: string[]) => {
+      ids.forEach((id) => this.checkpoints.remove(id).catch(() => {}));
       this.broadcast({ type: 'task.removed', data: { ids } });
     });
     this.taskStore.on('task:updated', (task: AgentTask) => {
@@ -270,6 +279,7 @@ export class BridgeServer {
         ok: true,
         status: 'ok',
         version: this.CURRENT_VERSION,
+        api: BRIDGE_API,
         port: this.port,
         updateAvailable: this.updateInfo,
       });
@@ -1206,6 +1216,7 @@ export class BridgeServer {
 
     // Remove tasks from the list, with their Undo checkpoints (POST /api/agent/tasks/remove { ids } or
     // { finished: true } for every finished task that has nothing left to decide: changes waiting for review stay).
+    // A waiting task is withdrawn; one an agent is working on can't be removed.
     this.app.post('/api/agent/tasks/remove', async (req, res) => {
       const { ids, finished } = req.body || {};
       let wanted: string[] = Array.isArray(ids) ? ids.filter((x: unknown) => typeof x === 'string') : [];
@@ -1217,11 +1228,18 @@ export class BridgeServer {
         }).map((t) => t.id);
       }
       try {
-        const removed = await this.taskStore.removeTasks(wanted);
-        await Promise.all(removed.map((id) => this.checkpoints.remove(id).catch(() => {})));
-        res.json({ removed });
+        res.json({ removed: await this.taskStore.removeTasks(wanted) });
       } catch (err: any) {
         res.status(409).json({ error: err.message });
+      }
+    });
+
+    // Send a failed or never-picked-up task again as a new task (POST /api/agent/tasks/:id/retry).
+    this.app.post('/api/agent/tasks/:id/retry', async (req, res) => {
+      try {
+        res.json(await this.taskStore.retryTask(req.params.id));
+      } catch (err: any) {
+        res.status(err.message?.includes('not found') ? 404 : 409).json({ error: err.message });
       }
     });
 
@@ -1638,6 +1656,7 @@ export class BridgeServer {
           this.port = addr.port;
         }
         this.startedAt = new Date().toISOString();
+        this.taskStore.pruneHistory().catch(() => {});
 
         // Write session file (0600 mode) (P1-01)
         try {

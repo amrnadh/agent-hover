@@ -46,6 +46,8 @@ export class TaskStore extends EventEmitter {
   private tasks: Map<string, AgentTask> = new Map();
   private readonly MAX_TASKS = 200;
   private readonly DEFAULT_TTL_MS = 30 * 60 * 1000; // 30 minutes
+  /** Finished tasks leave the list after this long, except changes still waiting for review. */
+  private readonly HISTORY_MS = 7 * 24 * 60 * 60 * 1000;
   private tasksFilePath: string;
 
   constructor(private projectRoot: string) {
@@ -277,24 +279,48 @@ export class TaskStore extends EventEmitter {
   }
 
   /**
-   * Remove tasks from the list. A task an agent is working on can't be removed, and one that is waiting is
-   * cancelled first. Returns the ids that were removed.
+   * Remove tasks from the list. A task an agent is working on can't be removed; one that is still waiting is
+   * withdrawn (an agent that asks for it later finds nothing). Returns the ids that were removed.
    */
   public async removeTasks(ids: string[]): Promise<string[]> {
-    const removed: string[] = [];
     for (const id of ids) {
-      const task = this.tasks.get(id);
-      if (!task) continue;
-      if (task.status === 'in_progress') throw new Error('The agent is working on this task; it can be removed once it finishes');
-      if (task.status === 'queued' || task.status === 'delivered') throw new Error('Cancel the task before removing it');
-      this.tasks.delete(id);
-      removed.push(id);
+      if (this.tasks.get(id)?.status === 'in_progress') throw new Error('The agent is working on this task. Remove it once it finishes');
     }
+    const removed = ids.filter((id) => this.tasks.delete(id));
     if (removed.length) {
       await this.saveToDisk();
       this.emit('task:removed', removed);
     }
     return removed;
+  }
+
+  /**
+   * Send a task again as a new one: the same request, element and agent. For a task no agent picked up (expired or
+   * cancelled), which then leaves the list, and for one that failed, which stays so its Undo stays possible.
+   */
+  public async retryTask(id: string): Promise<{ task: AgentTask; removed: string[] }> {
+    this.expireOldTasks();
+    const old = this.tasks.get(id);
+    if (!old) throw new Error(`Task '${id}' not found`);
+    if (!['failed', 'expired', 'cancelled', 'superseded'].includes(old.status)) {
+      throw new Error(`Only a task that failed or was not picked up can be sent again (this one is '${old.status}')`);
+    }
+    const task = await this.createTask({
+      type: old.type, intent: old.intent, scope: old.scope, instruction: old.instruction,
+      target: old.target, payload: { ...old.payload, retryOf: old.id }, assignee: old.assignee,
+    });
+    const removed = old.status === 'failed' ? [] : await this.removeTasks([old.id]);
+    return { task, removed };
+  }
+
+  /** Drop finished tasks older than a week, keeping changes nobody has kept or undone yet. Returns the ids removed. */
+  public async pruneHistory(now = Date.now()): Promise<string[]> {
+    const old = [...this.tasks.values()].filter((t) => {
+      if (!this.isTerminal(t.status) || now - new Date(t.updatedAt).getTime() < this.HISTORY_MS) return false;
+      const unreviewed = t.status === 'done' && !t.review && (t.result?.filesChanged?.length ?? 0) > 0;
+      return !unreviewed;
+    });
+    return old.length ? this.removeTasks(old.map((t) => t.id)) : [];
   }
 
   public async cancelTask(id: string): Promise<AgentTask> {

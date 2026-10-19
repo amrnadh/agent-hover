@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 import http from 'http';
-import { BridgeServer } from '../bridge-server.js';
+import { BridgeServer, BRIDGE_API } from '../bridge-server.js';
 import type { PinEntry, FreezeEntry, ElementComment } from '@agent-hover/core';
 
 describe('BridgeServer Integration Tests', () => {
@@ -494,7 +494,6 @@ describe('BridgeServer Integration Tests', () => {
     await call('POST', `/agent/tasks/${running}/claim`, { client: 'claude-code' });
 
     expect((await call('POST', '/agent/tasks/remove', { ids: [running] })).status).toBe(409);
-    expect((await call('POST', '/agent/tasks/remove', { ids: [waiting] })).status).toBe(409);
     const cleared = await call('POST', '/agent/tasks/remove', { finished: true });
     expect(cleared.data.removed.sort()).toEqual([kept, noChange].sort());
     const left = (await call('GET', '/agent/tasks?limit=50')).data.tasks.map((t: any) => t.id).sort();
@@ -502,6 +501,43 @@ describe('BridgeServer Integration Tests', () => {
     // One task by id, its checkpoint goes with it.
     expect((await call('POST', '/agent/tasks/remove', { ids: [toReview] })).data.removed).toEqual([toReview]);
     expect((await call('GET', `/agent/tasks/${toReview}`)).status).toBe(404);
+    // A waiting task is withdrawn: removing it needs no Cancel first, and no agent gets it afterwards.
+    expect((await call('POST', '/agent/tasks/remove', { ids: [waiting] })).data.removed).toEqual([waiting]);
+    expect((await call('GET', '/agent/tasks/next')).data.task).toBeNull();
+  });
+
+  it('sends a failed or never-picked-up task again as a new task, and reports its API level', async () => {
+    const testPort = 29000 + Math.floor(Math.random() * 900);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+    const call = async (method: string, url: string, body?: unknown) => {
+      const res = await fetch(`http://localhost:${activePort}/api${url}`, {
+        method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return { status: res.status, data: await res.json() };
+    };
+    expect((await call('GET', '/health')).data.api).toBe(BRIDGE_API);
+
+    const target = { component: 'Hero', file: 'src/Hero.tsx', lineStart: 54, selector: '#cta' };
+    const cancelled = (await call('POST', '/agent/tasks', { instruction: 'make it blue', target, assignee: 'cursor', payload: { prompt: 'P' } })).data.task;
+    await call('POST', `/agent/tasks/${cancelled.id}/cancel`);
+    const again = await call('POST', `/agent/tasks/${cancelled.id}/retry`);
+    expect(again.data.task).toMatchObject({ status: 'queued', instruction: 'make it blue', target, assignee: 'cursor', payload: { prompt: 'P', retryOf: cancelled.id } });
+    // Nothing happened the first time, so the old one leaves the list.
+    expect(again.data.removed).toEqual([cancelled.id]);
+    expect((await call('GET', `/agent/tasks/${cancelled.id}`)).status).toBe(404);
+
+    // A failed one stays (its Undo may still matter).
+    const failed = again.data.task;
+    await call('POST', `/agent/tasks/${failed.id}/claim`, { client: 'cursor' });
+    await call('POST', `/agent/tasks/${failed.id}/complete`, { status: 'failed', error: 'Could not find it' });
+    const retry = await call('POST', `/agent/tasks/${failed.id}/retry`);
+    expect(retry.data.removed).toEqual([]);
+    expect((await call('GET', `/agent/tasks/${failed.id}`)).data.task.status).toBe('failed');
+    // Only tasks that didn't happen can be sent again.
+    expect((await call('POST', `/agent/tasks/${retry.data.task.id}/retry`)).status).toBe(409);
   });
 
   it('records agent presence and reports connected agents (P1-06)', async () => {
