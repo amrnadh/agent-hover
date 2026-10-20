@@ -1,10 +1,13 @@
 import { anchorTo, esc, timeAgo } from '../lib/ui.js';
+import { isCovered } from '../lib/dom.js';
 import { icon } from '../lib/icon.js';
 import { describeTaskStatus, prettyAgentName } from '../lib/task-status.js';
 import { lockedChanges, needsReview, REVIEW_TTL_MS, reviewText } from '../lib/review.js';
 import type { OverlayApp } from '../app/context.js';
 
 const ACTIVE = new Set(['queued', 'delivered', 'in_progress']);
+/** Didn't happen: can be sent again as a new task. */
+const RETRYABLE = new Set(['failed', 'expired', 'cancelled', 'superseded']);
 /** Finished tasks keep their marker on the page this long. */
 const MARKER_TTL_MS = 30 * 60 * 1000;
 
@@ -15,7 +18,7 @@ const MARKER_TTL_MS = 30 * 60 * 1000;
  */
 export function setupTasks(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
-  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status), reviewTask, followUpTask, awaitingReview, lockedFor, renderReviewActions, removeTasks, clearFinished, onTasksRemoved, isRemovable });
+  Object.assign(api, { refreshTasks, trackTask, onTaskEvent, openTaskCard, closeTaskCard, renderTaskCard: () => { if (openId) renderCard(); }, isTaskCardOpen: (id: string) => openId === id && !card.hidden, taskList, taskLabel, elementForTask, cancelTask, isTaskActive: (t: any) => ACTIVE.has(t.status), reviewTask, followUpTask, awaitingReview, lockedFor, renderReviewActions, removeTasks, clearFinished, onTasksRemoved, isRemovable, retryTask, copyTaskPrompt, needsYou, taskWhere, taskCardKey });
 
   const markersLayer = shadow.getElementById('ah-layer-markers') as HTMLElement;
   const card = shadow.getElementById('ah-task-card') as HTMLElement;
@@ -31,6 +34,12 @@ export function setupTasks(app: OverlayApp) {
 
   function taskLabel(t: any): string {
     return t.payload?.display || t.payload?.label || (t.target?.component ? `<${t.target.component} />` : t.type === 'pinned-stack' || t.type === 'batch' ? 'Batch' : 'Task');
+  }
+
+  /** What and where: “Book a demo” button · Hero.tsx:54. */
+  function taskWhere(t: any): string {
+    const file = (t.target?.file || '').split('/').pop();
+    return [taskLabel(t), file ? file + (t.target?.lineStart ? ':' + t.target.lineStart : '') : ''].filter(Boolean).join(' · ');
   }
 
   const hasBox = (el: Element) => { const r = el.getBoundingClientRect(); return r.width > 0 || r.height > 0; };
@@ -81,7 +90,7 @@ export function setupTasks(app: OverlayApp) {
       const text = task.status === 'done'
         ? `Done · ${taskLabel(task)}${files ? ` · ${files} file${files === 1 ? '' : 's'}` : ''}`
         : `Failed · ${taskLabel(task)}`;
-      api.toast(text, { action: 'View', onAction: () => openTaskCard(task.id) });
+      api.toast(text, { action: needsReview(task) ? 'Review' : 'View', onAction: () => openTaskCard(task.id) });
     }
     changed();
   }
@@ -113,20 +122,46 @@ export function setupTasks(app: OverlayApp) {
     return t.status === 'done' ? lockedChanges(t.result?.filesChanged, state.frozenEntries) : [];
   }
 
+  /** What needs you: changes waiting for review, and failed tasks nobody has sent again. */
+  function needsYou(t: any): boolean {
+    return needsReview(t) || (t.status === 'failed' && !retried(t));
+  }
+  const retried = (t: any) => [...state.tasks.values()].some((x: any) => x.payload?.retryOf === t.id);
+
   async function reviewTask(id: string, action: 'keep' | 'follow-up', followUp?: string) {
     try {
-      const res = await fetch(BRIDGE + `/api/agent/tasks/${encodeURIComponent(id)}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, followUp }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save the review');
+      const data = await api.bridgePost(`/api/agent/tasks/${encodeURIComponent(id)}/review`, { action, followUp }, 'Could not save the review');
       onTaskEvent(data.task);
       if (action === 'keep') api.toast(`Kept · ${taskLabel(data.task)}`);
     } catch (err: any) {
-      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message || 'Could not save the review');
+      api.toast(err.message);
     }
+  }
+
+  /** Send a failed or never-picked-up task again: same request, same element, same agent. */
+  async function retryTask(t: any) {
+    try {
+      const data = await api.bridgePost(`/api/agent/tasks/${encodeURIComponent(t.id)}/retry`, undefined, 'Could not send it again');
+      const el = elementForTask(t);
+      const wasOpen = openId === t.id;
+      onTasksRemoved(data.removed || []);
+      trackTask(data.task, el);
+      if (wasOpen) openTaskCard(data.task.id);
+      const who = state.connectedAgents?.length ? prettyAgentName(data.task.assignee || state.connectedAgents[0].client) : null;
+      api.toast(who ? `Sent again to ${who}` : 'Queued again · no agent connected yet');
+    } catch (err: any) {
+      api.toast(err.message);
+    }
+  }
+
+  /** The prompt the agent would get, for pasting into any AI tool. */
+  async function copyTaskPrompt(t: any) {
+    let text: string = t.payload?.prompt || '';
+    if (!text) {
+      try { text = (await (await fetch(BRIDGE + `/api/agent/tasks/${encodeURIComponent(t.id)}`)).json()).prompt || ''; } catch { /* below */ }
+    }
+    if (!text) { api.toast('No prompt saved for this task'); return; }
+    api.toast((await api.copyText(text)) ? 'Prompt copied · paste it into any AI tool' : 'Clipboard blocked by the browser');
   }
 
   /** Ask again about the same element, with this task's request and result in the prompt. */
@@ -140,47 +175,46 @@ export function setupTasks(app: OverlayApp) {
   }
 
   /**
-   * Keep and Undo first (the decision), Compare and Follow up quieter. The card puts them on one row; the Tasks tab
-   * (narrower) asks for `part` 'decide' and 'more' separately and stacks them.
+   * The decision first (Keep and Undo for a change; Try again or Send again when it didn't happen), the rest quieter.
+   * The card puts them on one row; the Tasks tab (narrower) asks for `part` 'decide' and 'more' separately.
    */
   function renderReviewActions(t: any, part: 'all' | 'decide' | 'more' = 'all'): string {
     const undo = api.renderUndoAction?.(t, 'outline') || '';
     const compare = api.renderCompareAction?.(t, 'quiet') || '';
-    const keep = t.status === 'done' && needsReview(t) ? `<button class="ah-tbtn primary" data-act="keep">${icon('check', 14)}Keep</button>` : '';
-    const follow = t.status === 'done' && t.review?.state !== 'undone' && elementForTask(t) ? `<button class="ah-tbtn quiet" data-act="follow-up">${icon('follow-up', 14)}Follow up</button>` : '';
-    if (part === 'decide') return keep + undo;
-    if (part === 'more') return compare + follow;
-    if (!keep && !undo && !compare && !follow) return '';
-    return `${keep}${undo}<span class="grow"></span>${compare}${follow}`;
+    const keep = t.status === 'done' && needsReview(t) ? `<button class="ah-tbtn primary" data-act="keep" title="Keep (K)">${icon('check', 14)}Keep</button>` : '';
+    const follow = t.status === 'done' && t.review?.state !== 'undone' && elementForTask(t) ? `<button class="ah-tbtn quiet" data-act="follow-up" title="Follow up (F)">${icon('follow-up', 14)}Follow up</button>` : '';
+    const again = RETRYABLE.has(t.status) && !retried(t)
+      ? `<button class="ah-tbtn primary" data-act="retry" title="${t.status === 'failed' ? 'Try again' : 'Send again'} (R)">${icon('send', 14)}${t.status === 'failed' ? 'Try again' : 'Send again'}</button>` : '';
+    const copy = RETRYABLE.has(t.status) ? `<button class="ah-tbtn quiet" data-act="copy-prompt">${icon('copy', 14)}Copy prompt</button>` : '';
+    if (part === 'decide') return again + keep + undo;
+    if (part === 'more') return compare + follow + copy;
+    if (!again && !keep && !undo && !compare && !follow && !copy) return '';
+    return `${again}${keep}${undo}<span class="grow"></span>${compare}${follow}${copy}`;
   }
 
-  /** Finished, failed, cancelled or expired: it can leave the list. Waiting tasks are cancelled first; running ones can't. */
+  /** Anything but a task an agent is working on can leave the list; a waiting one is withdrawn. */
   function isRemovable(t: any): boolean {
-    return !ACTIVE.has(t.status);
+    return t.status !== 'in_progress';
   }
 
   async function removeTasks(ids: string[]) {
     try {
-      const res = await fetch(BRIDGE + '/api/agent/tasks/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not remove');
+      const data = await api.bridgePost('/api/agent/tasks/remove', { ids }, 'Could not remove');
       onTasksRemoved(data.removed);
       api.toast(data.removed.length === 1 ? 'Removed from the list' : `Removed ${data.removed.length} tasks`);
     } catch (err: any) {
-      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message);
+      api.toast(err.message);
     }
   }
 
   /** Every finished task with nothing left to decide; changes waiting for your review stay. */
   async function clearFinished() {
     try {
-      const res = await fetch(BRIDGE + '/api/agent/tasks/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ finished: true }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not clear');
+      const data = await api.bridgePost('/api/agent/tasks/remove', { finished: true }, 'Could not clear');
       onTasksRemoved(data.removed);
       api.toast(data.removed.length ? `Cleared ${data.removed.length} finished task${data.removed.length === 1 ? '' : 's'}` : 'Nothing to clear');
     } catch (err: any) {
-      api.toast(err.message === 'Failed to fetch' ? 'Dev server unreachable' : err.message);
+      api.toast(err.message);
     }
   }
 
@@ -197,12 +231,11 @@ export function setupTasks(app: OverlayApp) {
 
   async function cancelTask(id: string) {
     try {
-      const res = await fetch(BRIDGE + `/api/agent/tasks/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
-      const data = await res.json();
+      const data = await api.bridgePost(`/api/agent/tasks/${encodeURIComponent(id)}/cancel`, undefined, 'Could not cancel');
       if (data.task) onTaskEvent(data.task);
       api.toast('Task cancelled');
-    } catch {
-      api.toast('Dev server unreachable');
+    } catch (err: any) {
+      api.toast(err.message);
     }
   }
 
@@ -250,15 +283,36 @@ export function setupTasks(app: OverlayApp) {
     domWatch.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
   }
 
+  /**
+   * Where a marker goes: the element's corner, or for a block of text (a heading as wide as the page) the corner of
+   * the text itself, so the marker sits on what you pointed at instead of floating in empty space.
+   */
+  function markerBox(el: Element): { left: number; top: number; right: number; bottom: number; width: number; height: number } {
+    const r = el.getBoundingClientRect();
+    if (el.children.length > 3 || !(el.textContent || '').trim()) return r;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const t = range.getBoundingClientRect();
+    return t.width > 0 && t.width < r.width - 24 ? { left: t.left, top: r.top, right: t.right, bottom: r.bottom, width: t.width, height: r.height } : r;
+  }
+
+  const tip = document.createElement('div');
+  tip.className = 'ah-tip ah-marker-tip';
+  tip.hidden = true;
+  markersLayer.insertAdjacentElement('afterend', tip);
+
   function renderMarkers() {
     markersLayer.innerHTML = '';
+    tip.hidden = true;
     const pill = shadow.getElementById('ah-pill') as HTMLElement | null;
     const ins = api.insets();
     const { found, missing } = markerTasks();
     watchForMissing(missing);
     for (const { task, el } of found) {
-      const r = el.getBoundingClientRect();
+      const r = markerBox(el);
       if (r.bottom < 0 || r.top > window.innerHeight || (r.width === 0 && r.height === 0)) continue;
+      // Under the app's own dialog or a sticky header: the marker would float over something else.
+      if (isCovered(el, app.container)) continue;
       const m = document.createElement('button');
       const locked = lockedFor(task).length > 0;
       const review = needsReview(task);
@@ -274,8 +328,13 @@ export function setupTasks(app: OverlayApp) {
       m.style.top = top + 'px';
       const view = describeTaskStatus(task, state.connectedAgents?.[0]?.client);
       const extra = [review ? 'waiting for your review' : '', locked ? 'changed a locked component' : ''].filter(Boolean).join(' · ');
-      m.title = `${taskLabel(task)} · ${view.text}${extra ? ' · ' + extra : ''}`;
-      m.setAttribute('aria-label', `Task: ${view.text}${extra ? ', ' + extra : ''}`);
+      m.setAttribute('aria-label', `Task: ${task.instruction || taskLabel(task)}. ${view.text}${extra ? ', ' + extra : ''}`);
+      // Hover says what the marker is about before you open it.
+      m.onmouseenter = () => {
+        tip.innerHTML = `<b>${esc(task.instruction || taskLabel(task))}</b><span>${esc(view.text)}${extra ? ' · ' + esc(extra) : ''}</span>`;
+        anchorTo(tip, m.getBoundingClientRect(), api.insets(), 6);
+      };
+      m.onmouseleave = () => { tip.hidden = true; };
       m.innerHTML = task.status === 'in_progress' ? '<span class="spin"></span>'
         : locked ? icon('lock', 13)
         : task.status === 'done' ? icon('check', 14)
@@ -316,15 +375,18 @@ export function setupTasks(app: OverlayApp) {
     const tone = view.tone === 'success' ? 'ok' : view.tone === 'error' ? 'bad' : view.tone === 'working' ? 'warn pulse' : '';
     const cancellable = t.status === 'queued' || t.status === 'delivered';
     const el = elementForTask(t);
-    const file = (t.target?.file || '').split('/').pop();
-    const head = t.claimedBy && t.status === 'in_progress' ? view.text : t.status === 'done' && needsReview(t) ? `${view.text} · waiting for you` : view.text;
+    const head = t.status === 'done' && needsReview(t) ? `${view.text} · waiting for you` : view.text;
+    // While an agent works, how long it has been at it (ticks while the card is open); otherwise when it was sent.
+    const time = t.status === 'in_progress' ? elapsed(t.updatedAt) : timeAgo(t.createdAt);
     const removable = isRemovable(t);
     const losesUndo = needsReview(t) && !!t.checkpointId;
+    const file = (t.target?.file || '').split('/').pop();
     card.innerHTML = `
-      <div class="head"><span class="ah-dot ${tone}"></span><span class="status">${esc(head)}</span><span class="time">${esc(timeAgo(t.createdAt))}</span>
-        <button class="ah-ibtn" data-act="menu" aria-label="More" aria-haspopup="menu" aria-expanded="${menuOpen}">${icon('more')}</button><button class="ah-ibtn" data-act="close" aria-label="Close">${icon('x')}</button></div>
+      <div class="head"><span class="ah-dot ${tone}"></span><span class="status">${esc(head)}</span><span class="time">${esc(time)}</span>
+        <button class="ah-ibtn" data-act="menu" aria-label="More" title="More" aria-haspopup="menu" aria-expanded="${menuOpen}">${icon('more')}</button><button class="ah-ibtn" data-act="close" aria-label="Close" title="Close (Esc)">${icon('x')}</button></div>
       <div class="title">${esc(t.instruction || taskLabel(t))}</div>
-      <div class="sub">${esc(taskLabel(t))}${file ? ` · <span class="ah-mono">${esc(file)}</span>` : ''}</div>
+      <div class="sub">${esc(taskLabel(t))}${file ? ` · <span class="ah-mono">${esc(file + (t.target?.lineStart ? ':' + t.target.lineStart : ''))}</span>` : ''}</div>
+      ${t.status === 'expired' ? `<div class="ah-summary">No agent picked this up within 30 minutes. Send it again once your agent is listening (run /agent-hover in it), or copy the prompt into any AI tool.</div>` : ''}
       ${reached >= 0 ? `<div class="ah-timeline">${steps.map((s, i) => `<span class="${i <= reached ? 'on' : ''}">${s}</span>`).join(icon('chev-right', 12))}</div>` : ''}
       ${locked.length && t.review?.state !== 'undone' ? `<div class="ah-lockwarn">${icon('lock', 14)}<span>Changed ${locked.map((c) => `<b>&lt;${esc(c)} /&gt;</b>`).join(', ')}, which ${locked.length === 1 ? 'is' : 'are'} locked. Undo it, or unlock it if you meant to allow this.</span></div>` : ''}
       ${view.detail ? `<div class="ah-summary">${esc(view.detail)}</div>` : ''}
@@ -334,13 +396,32 @@ export function setupTasks(app: OverlayApp) {
       ${menuOpen ? `<div class="ah-card-menu ah-menu ah-surface" role="menu">
         <button role="menuitem" data-act="tasks">${icon('tasks', 14)}View in Tasks</button>
         ${el ? `<button role="menuitem" data-act="show">${icon('target', 14)}Show on page</button>` : ''}
+        ${RETRYABLE.has(t.status) ? '' : `<button role="menuitem" data-act="copy-prompt">${icon('copy', 14)}Copy prompt</button>`}
         ${cancellable ? `<button role="menuitem" data-act="cancel">${icon('x', 14)}Cancel task</button>` : ''}
         ${removable ? (confirmRemove === t.id
           ? `<button role="menuitem" class="danger" data-act="remove-confirm">${icon('trash', 14)}Remove · Undo won't be possible</button>`
-          : `<button role="menuitem" class="danger" data-act="${losesUndo ? 'remove-ask' : 'remove'}">${icon('trash', 14)}Remove from list</button>`) : ''}
+          : `<button role="menuitem" class="danger" data-act="${losesUndo ? 'remove-ask' : 'remove'}">${icon('trash', 14)}${cancellable ? 'Withdraw and remove' : 'Remove from list'}</button>`) : ''}
       </div>` : ''}`;
     card.hidden = false;
     positionCard();
+  }
+
+  function elapsed(since: string): string {
+    const s = Math.max(0, Math.round((Date.now() - Date.parse(since)) / 1000));
+    return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+  }
+  setInterval(() => {
+    const t = openId && !card.hidden ? state.tasks.get(openId) : null;
+    if (t?.status === 'in_progress') { const el = card.querySelector('.head .time'); if (el) el.textContent = elapsed(t.updatedAt); }
+  }, 1000);
+
+  /** Keys for the open card's main actions. Returns whether the key did something. */
+  function taskCardKey(key: string): boolean {
+    const act = ({ k: 'keep', u: 'undo', f: 'follow-up', r: 'retry' } as Record<string, string>)[key];
+    const b = act && !card.hidden ? card.querySelector<HTMLButtonElement>(`.ah-actions [data-act="${act}"]`) : null;
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
   }
 
   function positionCard() {
@@ -379,6 +460,8 @@ export function setupTasks(app: OverlayApp) {
     if (act === 'tasks') { closeTaskCard(); api.openSidebar('tasks'); }
     if (act === 'keep' && t) reviewTask(t.id, 'keep');
     if (act === 'follow-up' && t) { followUpTask(t); return; }
+    if (act === 'retry' && t) { retryTask(t); return; }
+    if (act === 'copy-prompt' && t) { copyTaskPrompt(t); api.renderTaskCard(); return; }
     if (act === 'show' && t) {
       const el = elementForTask(t);
       if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => api.selectElement(el), 350); }

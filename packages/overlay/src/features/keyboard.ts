@@ -59,6 +59,8 @@ export function setupKeyboard(app: OverlayApp) {
     if (e.key === 'Alt' && !e.repeat) {
       e.preventDefault();
       api.setMode('inspect');
+      // Alt toggles, so say which way it went: a second Alt by accident otherwise leaves the next click going to the app.
+      api.toast?.(state.mode === 'inspect' ? 'Inspect on · click any element · Alt to stop' : 'Inspect off', { ms: 1800 });
       return;
     }
     if (e.metaKey || e.ctrlKey) {
@@ -70,6 +72,8 @@ export function setupKeyboard(app: OverlayApp) {
       return;
     }
     if (e.altKey || e.shiftKey && e.key !== '?') return;
+    // An open task card takes its own keys: K Keep, U Undo, F Follow up, R Try again.
+    if (visible('ah-task-card') && api.taskCardKey?.(e.key.toLowerCase())) { e.preventDefault(); return; }
 
     const sel = state.selectedTarget;
     // Zero interference: letter shortcuts only while Agent Hover is in use (a mode, a selection, or the sidebar).
@@ -82,10 +86,8 @@ export function setupKeyboard(app: OverlayApp) {
         break;
       case 'c':
       case 'C':
-        if (sel && state.mode === 'inspect') {
-          const r = api.selectionRect();
-          if (r) api.addCommentAt(state.selectedElement, r.left + r.width - 8, r.top + r.height - 4);
-        } else api.setMode('comment');
+        if (sel && state.mode === 'inspect') api.commentOnSelection();
+        else api.setMode('comment');
         break;
       case 'b':
       case 'B':

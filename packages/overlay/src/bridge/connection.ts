@@ -1,4 +1,5 @@
 import { readPref, writePref } from '../lib/ui.js';
+import { bridgeError, bridgeIsOutdated } from '../lib/bridge-api.js';
 import type { OverlayApp } from '../app/context.js';
 
 /**
@@ -7,12 +8,14 @@ import type { OverlayApp } from '../app/context.js';
  */
 export function setupBridgeConnection(app: OverlayApp) {
   const { BRIDGE, fetch, port, shadow, token, state, api } = app;
-  Object.assign(api, { handleUpdateAvailable, setConnectedAgents });
+  Object.assign(api, { handleUpdateAvailable, setConnectedAgents, bridgePost });
 
   state.ws = undefined;
   state.isBridgeConnected = false;
   state.connectedAgents = [];
   state.updateAvailable = null;
+  /** The dev server still runs the bridge from before an update: new buttons would fail until it restarts. */
+  state.bridgeOutdated = false;
 
   function presenceChanged() {
     shadow.dispatchEvent(new Event('ah-presence-changed'));
@@ -43,6 +46,29 @@ export function setupBridgeConnection(app: OverlayApp) {
     api.toast?.(`Agent Hover ${info.latest} is available`, { action: 'Details', onAction: () => api.openSettings('about'), ms: 8000 });
   }
 
+  /**
+   * POST to the bridge and return its JSON. Throws an Error with a message fit for a toast: the bridge's own error,
+   * "restart your dev server" for a route an old bridge doesn't have, or "Dev server unreachable".
+   */
+  async function bridgePost(path: string, body?: unknown, fallback = 'Something went wrong'): Promise<any> {
+    let res: Response;
+    try {
+      res = await fetch(BRIDGE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+    } catch {
+      throw new Error('Dev server unreachable');
+    }
+    if (!res.ok) throw new Error(await bridgeError(res, fallback));
+    return res.json();
+  }
+
+  function setOutdated(outdated: boolean) {
+    if (state.bridgeOutdated === outdated) return;
+    state.bridgeOutdated = outdated;
+    presenceChanged();
+    api.renderSidebar?.();
+    if (outdated) api.toast?.('Agent Hover was updated · restart your dev server to finish', { ms: 10000 });
+  }
+
   try {
     state.ws = new WebSocket('ws://localhost:' + port + '?token=' + (token || ''));
     state.ws.onopen = () => setBridgeConnected(true);
@@ -57,6 +83,7 @@ export function setupBridgeConnection(app: OverlayApp) {
       .then((r) => r.json())
       .then((d) => {
         setBridgeConnected(true);
+        setOutdated(bridgeIsOutdated(d));
         if (d.updateAvailable) handleUpdateAvailable(d.updateAvailable);
       })
       .catch(() => setBridgeConnected(false));

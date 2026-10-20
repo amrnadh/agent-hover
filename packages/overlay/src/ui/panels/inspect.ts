@@ -34,7 +34,8 @@ export function setupInspectPanel(app: OverlayApp) {
     render(body: HTMLElement, foot: HTMLElement) {
       const item = state.selectedTarget;
       if (!item) {
-        body.innerHTML = `<div class="ah-empty"><b>Nothing selected</b>Press <kbd>Alt</kbd> or the pointer in the dock, then click any element to see its props, state, layout and source.</div>`;
+        body.innerHTML = `<div class="ah-empty"><b>Nothing selected</b><p>Click any element on the page to see what it is, where it lives in your code, and its props, state and layout.</p><button class="ah-tbtn primary" data-act="pick">${icon('target', 14)}Pick an element <kbd>Alt</kbd></button></div>`;
+        body.onclick = (e) => { if ((e.target as Element).closest('[data-act=pick]') && state.mode !== 'inspect') api.setMode('inspect'); };
         return;
       }
       ensureContext(item);

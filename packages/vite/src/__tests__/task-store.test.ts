@@ -155,4 +155,24 @@ describe('TaskStore State Machine and Persistence (P1-03)', () => {
     const expired = store.getTask(task.id);
     expect(expired?.status).toBe('expired');
   });
+
+  it('tidies history after a week, keeping changes nobody has kept or undone', async () => {
+    const week = 7 * 24 * 60 * 60 * 1000;
+    const make = async (status: 'done' | 'failed' | 'cancel', files: string[] = []) => {
+      const t = await store.createTask({ instruction: status });
+      if (status === 'cancel') return store.cancelTask(t.id);
+      await store.claimTask(t.id, { client: 'agent' });
+      return store.completeTask(t.id, { status, filesChanged: files });
+    };
+    const cancelled = await make('cancel');
+    const failed = await make('failed');
+    const answered = await make('done');
+    const unreviewed = await make('done', ['src/a.tsx']);
+    const waiting = await store.createTask({ instruction: 'waiting' });
+    expect(await store.pruneHistory()).toEqual([]);
+    const removed = await store.pruneHistory(Date.now() + week + 1000);
+    expect(removed.sort()).toEqual([cancelled.id, failed.id, answered.id].sort());
+    expect(store.getTask(unreviewed.id)).toBeDefined();
+    expect(store.getTask(waiting.id)).toBeDefined();
+  });
 });

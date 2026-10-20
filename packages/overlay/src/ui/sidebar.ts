@@ -99,15 +99,18 @@ export function setupSidebar(app: OverlayApp) {
     foot.innerHTML = '';
     foot.onclick = null;
     foot.classList.remove('batch');
+    body.onclick = null;
+    body.onkeydown = null;
     panels.get(key)?.render(body, foot);
+    if (state.bridgeOutdated) body.insertAdjacentHTML('afterbegin', '<div class="ah-banner" role="status"><b>Restart your dev server to finish updating.</b> This page runs the new Agent Hover, the dev server the old one, so some buttons fail until it restarts.</div>');
     if (body.dataset.panel === key) body.scrollTop = scroll;
     body.dataset.panel = key;
   }
 
   function updateCounts() {
     const tasks = state.tasks ? [...state.tasks.values()] : [];
-    const active = tasks.filter((t: any) => api.isTaskActive?.(t)).length;
-    setCount('ah-n-tasks', active || '');
+    // What needs you (changes to review, failures), not everything in flight: the dock shows when agents are working.
+    setCount('ah-n-tasks', tasks.filter((t: any) => api.needsYou?.(t)).length || '');
     setCount('ah-n-comments', (state.comments || []).filter((c: any) => !c.resolved).length || '');
     setCount('ah-n-batch', (state.batch || []).length || '');
   }

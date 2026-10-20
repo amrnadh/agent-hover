@@ -210,7 +210,7 @@ svg.i.sm { width: 14px; height: 14px; }
 #taskCard .title { font-size: 14px; font-weight: 600; line-height: 1.4; }
 #taskCard .sub { font-size: 12px; color: var(--ov-fg-3); margin-top: -6px; }
 .card-menu { position: absolute; top: 44px; right: 12px; z-index: 2; }
-.card-menu .danger, .li .rm:hover { color: var(--bad); }
+.card-menu .danger, .li .rm:hover, .tbtn.danger { color: var(--bad); }
 .li .end { display: flex; align-items: center; gap: 2px; }
 .li .rm { width: 24px; height: 24px; margin: -3px -6px -3px 0; opacity: 0; color: var(--ov-fg-3); }
 .li:hover .rm { opacity: 1; }
@@ -303,7 +303,13 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
 .li .s .mono { color: var(--ov-fg-2); }
 .li .time { font-size: 11.5px; color: var(--ov-fg-3); font-variant-numeric: tabular-nums; }
 .li .more { grid-column: 2 / 4; display: grid; gap: 8px; margin-top: 6px; cursor: default; }
-.group { padding: 12px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ov-fg-3); }
+.group { padding: 14px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ov-fg-3); display: flex; align-items: center; gap: 6px; min-height: 22px; }
+.group .n { font-weight: 500; letter-spacing: 0; }
+.group.fold { cursor: pointer; border-top: 1px solid var(--ov-line); margin-top: 8px; padding-top: 10px; padding-bottom: 10px; }
+.group.fold[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.group .tbtn { text-transform: none; letter-spacing: 0; height: 24px; font-size: 12px; margin-left: auto; }
+.group .ask { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.group .ask + .tbtn { margin-left: 0; }
 .filters { display: flex; gap: 8px; padding: 12px 16px; align-items: center; }
 .role { font: 11px var(--font-ui); border: 1px solid var(--ov-line-2); border-radius: 6px; background: var(--ov-bg); color: var(--ov-fg); padding: 3px 4px; }
 .field { padding: 0 16px 12px; display: grid; gap: 6px; }
@@ -1017,28 +1023,34 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
 
   function tasksHTML() {
     if (!S.tasks.length) return `<div class="empty"><b>No tasks yet</b>Select an element, choose Ask, and describe the change. Tasks you send show up here with live status.<br>${S.agent ? `Sending to <b style="font-size:13px">${AGENTS[S.agent]}</b>. Tip: tell it "Listen for agent-hover tasks" once.` : 'No agent connected, so prompts go to your clipboard.'}${S.agent ? '' : '<button class="tbtn primary" id="tConnect">Connect an agent</button>'}</div>`;
+    // Grouped by what each needs from you: Needs you (a change to review, a failure), In progress, and History (folded, with Clear).
     const active = S.tasks.filter((t) => t.status !== 'done' && t.status !== 'failed');
-    const review = S.tasks.filter((t) => t.status === 'done' && !t.reviewed);
-    const done = S.tasks.filter((t) => !active.includes(t) && !review.includes(t));
-    const f = S.side.taskFilter || 'all';
+    const needs = S.tasks.filter((t) => (t.status === 'done' && !t.reviewed) || (t.status === 'failed' && !t.retried));
+    const history = S.tasks.filter((t) => !active.includes(t) && !needs.includes(t));
     const row = (t) => `<div class="li" data-id="${t.id}"><span class="dot ${STATUS[t.status][1]}"></span><div class="t">${esc(t.text)}</div>
-      <span class="end"><span class="time">${ago(t.created)}</span>${active.includes(t) ? '' : `<button class="ibtn rm" data-a="remove" aria-label="Remove from list">${icon('trash', 'i sm')}</button>`}</span>
-      <div class="s"><span>${esc(describe(t.el).plain)}</span><span>${AGENTS[t.agent]} · ${STATUS[t.status][0]}${t.reviewed ? ' · ' + t.reviewed : ''}</span></div>
-      ${S.expandedTask === t.id ? `<div class="more">${t.summary ? `<div class="summary">${esc(t.summary)}</div>` : ''}${t.files.length ? `<div class="files">${t.files.map((f) => `<button data-file>${icon('file', 'i sm')}${esc(f)}</button>`).join('')}</div>` : ''}
-        ${review.includes(t) ? `<div class="actions"><button class="tbtn primary" data-a="keep">${icon('check', 'i sm')}Keep</button><button class="tbtn outline" data-a="undo">${icon('undo', 'i sm')}Undo</button></div>` : ''}
-        <div class="actions tight">${t.status === 'done' ? `<button class="tbtn quiet" data-a="compare">${icon('panel', 'i sm')}Compare</button><button class="tbtn quiet" data-a="follow">${icon('follow-up', 'i sm')}Follow up</button>` : ''}<button class="tbtn quiet" data-a="show">${icon('target', 'i sm')}Show on page</button>${active.includes(t) ? '<button class="tbtn outline" data-a="cancel">Cancel task</button>' : ''}</div></div>` : ''}</div>`;
-    const bar = `<div class="filters"><div class="seg" id="tFilter">${[['all', 'All'], ['review', 'To review', review], ['active', 'Active', active], ['done', 'Done', done]].map(([v, l, list]) => `<button data-v="${v}" aria-pressed="${f === v}">${l}${list && list.length ? ` <span class="n">${list.length}</span>` : ''}</button>`).join('')}</div>
-      <button class="tbtn quiet" id="tClear" style="margin-left:auto" ${done.length ? '' : 'disabled'}>Clear finished</button></div>`;
-    const group = (title, list) => (list.length ? `<div class="group">${title}</div><div class="list">${list.map(row).join('')}</div>` : '');
-    const shown = { review, active, done }[f];
-    return bar + (shown ? (shown.length ? `<div class="list">${shown.map(row).join('')}</div>` : '<div class="empty">Nothing here.</div>') : group('To review', review) + group('Active', active) + group('Done', done));
+      <span class="end"><span class="time">${ago(t.created)}</span>${t.status === 'working' ? '' : `<button class="ibtn rm" data-a="remove" aria-label="Remove from list">${icon('trash', 'i sm')}</button>`}</span>
+      <div class="s"><span>${STATUS[t.status][0]}${t.reviewed ? ' · ' + t.reviewed : ''} · ${esc(describe(t.el).file)}</span></div>
+      ${S.expandedTask === t.id ? `<div class="more"><div class="s">${esc(describe(t.el).plain)} · ${AGENTS[t.agent]}</div>${t.summary ? `<div class="summary">${esc(t.summary)}</div>` : ''}${t.files.length ? `<div class="files">${t.files.map((f) => `<button data-file>${icon('file', 'i sm')}${esc(f)}</button>`).join('')}</div>` : ''}
+        ${t.status === 'done' && !t.reviewed ? `<div class="actions"><button class="tbtn primary" data-a="keep">${icon('check', 'i sm')}Keep</button><button class="tbtn outline" data-a="undo">${icon('undo', 'i sm')}Undo</button></div>` : ''}
+        ${t.status === 'failed' && !t.retried ? `<div class="actions"><button class="tbtn primary" data-a="retry">${icon('send', 'i sm')}Try again</button></div>` : ''}
+        <div class="actions tight">${t.status === 'done' ? `<button class="tbtn quiet" data-a="compare">${icon('panel', 'i sm')}Compare</button><button class="tbtn quiet" data-a="follow">${icon('follow-up', 'i sm')}Follow up</button>` : ''}<button class="tbtn quiet" data-a="show">${icon('target', 'i sm')}Show on page</button>${active.includes(t) && t.status !== 'working' ? '<button class="tbtn quiet" data-a="cancel">Cancel task</button>' : ''}</div></div>` : ''}</div>`;
+    const group = (title, list) => (list.length ? `<div class="group"><span>${title}</span><span class="n">${list.length}</span></div><div class="list">${list.map(row).join('')}</div>` : '');
+    const open = !!S.side.showHistory;
+    const head = `<div class="group fold" id="tHistory" aria-expanded="${open}">${icon('chev-right', 'i sm chev')}<span>History</span><span class="n">${history.length}</span>
+      ${S.side.confirmClear ? `<span class="ask">Clear ${history.length}?</span><button class="tbtn quiet" id="tClearNo">Cancel</button><button class="tbtn danger" id="tClearYes">Clear</button>` : '<button class="tbtn quiet" id="tClear">Clear</button>'}</div>`;
+    return (needs.length || active.length ? '' : '<p class="hint-line">All caught up. Nothing needs you.</p>')
+      + group('Needs you', needs) + group('In progress', active)
+      + (history.length ? head + (open ? `<div class="list">${history.map(row).join('')}</div>` : '') : '');
   }
   function wireTasks() {
     if ($('tConnect')) $('tConnect').onclick = () => openSide('tasks', true);
-    if ($('tFilter')) $('tFilter').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S.side.taskFilter = b.dataset.v; renderSide(); };
-    if ($('tClear')) $('tClear').onclick = (e) => {
+    if ($('tHistory')) $('tHistory').onclick = (e) => { if (e.target.closest('button')) return; S.side.showHistory = !S.side.showHistory; S.side.confirmClear = false; renderSide(); };
+    if ($('tClear')) $('tClear').onclick = (e) => { e.stopPropagation(); S.side.confirmClear = true; renderSide(); };
+    if ($('tClearNo')) $('tClearNo').onclick = (e) => { e.stopPropagation(); S.side.confirmClear = false; renderSide(); };
+    if ($('tClearYes')) $('tClearYes').onclick = (e) => {
       e.stopPropagation();
-      const finished = S.tasks.filter((t) => t.status === 'failed' || (t.status === 'done' && t.reviewed));
+      S.side.confirmClear = false;
+      const finished = S.tasks.filter((t) => (t.status === 'failed' && t.retried) || (t.status === 'done' && t.reviewed));
       S.tasks = S.tasks.filter((t) => !finished.includes(t)); layout(); renderDock(); renderSide();
       toast(finished.length ? `Cleared ${finished.length} finished task${finished.length === 1 ? '' : 's'}` : 'Nothing to clear');
     };
@@ -1050,6 +1062,7 @@ pre.src mark { background: rgba(13,153,255,.14); color: var(--ov-fg); }
       if (b && b.dataset.a === 'cancel') { t.status = 'failed'; t.summary = 'Cancelled by you.'; layout(); renderDock(); renderSide(); return; }
       if (b && b.dataset.a === 'remove') { S.tasks.splice(S.tasks.indexOf(t), 1); layout(); renderDock(); renderSide(); toast('Removed from the list'); return; }
       if (b && b.dataset.a === 'keep') { t.reviewed = 'Kept'; renderSide(); toast('Kept'); return; }
+      if (b && b.dataset.a === 'retry') { t.retried = true; S.tasks.unshift({ ...t, id: Date.now(), status: 'queued', created: Date.now(), summary: '', files: [], retried: false }); layout(); renderDock(); renderSide(); toast(`Sent again to ${AGENTS[t.agent]}`); return; }
       if (b && b.dataset.a === 'undo') { t.reviewed = 'Undone'; renderSide(); toast('Undid the change'); return; }
       if (b && (b.dataset.a === 'compare' || b.dataset.a === 'follow')) { toast(b.dataset.a === 'compare' ? 'Shows the element before and after' : 'Follow up opens Ask on the same element'); return; }
       if (b && b.hasAttribute('data-file')) { toast(`Opened ${b.textContent.trim()} in Cursor`); return; }

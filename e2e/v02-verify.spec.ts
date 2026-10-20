@@ -135,7 +135,7 @@ test.describe('0.2 compare and undo', () => {
     }
   });
 
-  test('tasks leave the list: from the card menu (asking first when Undo would go), or with Clear finished', async ({ page, request }) => {
+  test('tasks leave the list: from the card menu (asking first when Undo would go), or with Clear in History', async ({ page, request }) => {
     test.setTimeout(60000);
     const api = bridge(request);
     await api.post('/agent/tasks/remove', { finished: true });
@@ -172,9 +172,10 @@ test.describe('0.2 compare and undo', () => {
     await expect.poll(() => exists(pending)).toBe(false);
     await expect(page.locator('.ah-marker.review')).toHaveCount(0);
 
-    // Clear finished takes the kept one.
+    // Clear (in the folded History group) takes the kept one.
     await page.keyboard.press('t');
     const side = page.locator('#ah-side');
+    await side.locator('[data-act=history]').click();
     // Other specs leave active tasks and changes to review; Clear finished leaves those, and takes the kept one.
     const keptRow = side.locator('.ah-li.task', { hasText: keptText });
     await expect(keptRow).toHaveCount(1);
