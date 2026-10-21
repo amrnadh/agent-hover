@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **OpenCode.** `init --agent opencode` registers the MCP server in `opencode.json` (its own `mcp` format), adds the task note to `AGENTS.md` (written once when Codex is set up too) and `/agent-hover` commands in `.opencode/commands/`. Settings › Agents and `npx agent-hover mcp opencode` show the setup.
+- **`/agent-hover-status`** (`$agent-hover-status` in Codex) lists waiting and running tasks without starting any. `init` writes it next to `/agent-hover` for every agent. Claude Code's desktop app can't send MCP prompt names like `/mcp__agent-hover__status` (it reads the underscores as formatting), so the plain commands are the way to go there.
+- **You can see when the mic is listening.** A strip above the text box says "Listening…", with bars that move faster while it hears you ("Hearing you…"); the mic pulses and the text box gets a red edge. **Esc** stops listening and keeps what was said.
+- **Try unpublished versions in a real project.** `npm run registry:local` starts a private npm registry on your machine with the current code under a fresh version; point npm at it and `npx agent-hover init`, the plugin install and every agent's MCP server use that code. See `docs/testing-before-release.md`.
 - **Tasks grouped by what they need from you.**
   - The Tasks tab shows **Needs you** (changes to review, failures), **In progress**, and **History**, which starts folded and carries **Clear** (asks once). Rows show the status and the exact `file:line`; open one for the element, the agent's summary, its files and actions.
   - The Tasks tab badge counts what needs you, and the dock's Tasks dot turns red for a failure.

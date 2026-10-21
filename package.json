@@ -23,6 +23,8 @@
     "clean": "node scripts/repo-tasks.mjs clean",
     "typecheck": "node scripts/typecheck.mjs",
     "pack:check": "node scripts/pack-check.mjs",
+    "registry:local": "node scripts/local-registry.mjs start",
+    "registry:stop": "node scripts/local-registry.mjs stop",
     "test:e2e:isolated": "node scripts/e2e-isolated.mjs",
     "record:demo": "node scripts/record-demo.mjs",
     "screenshots": "node scripts/e2e-isolated.mjs --screenshots e2e/v02-main-flow.spec.ts e2e/v02-verify.spec.ts e2e/v02-dock-sidebar.spec.ts e2e/v02-screenshots-update.spec.ts"
