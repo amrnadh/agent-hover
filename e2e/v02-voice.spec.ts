@@ -36,13 +36,12 @@ test.describe('0.2 voice', () => {
     await page.locator('#ah-composer [data-voice=ok]').click();
     await expect(page.locator('#ah-comp-input')).toHaveValue('make the button bigger');
     await expect(mic).toHaveAttribute('aria-pressed', 'true');
-    // While the mic is on, a strip says so (and that the browser hears you).
-    const strip = page.locator('#ah-composer .ah-listening');
-    await expect(strip).toContainText('Hearing you');
+    // While the mic is on, it says so quietly: the mic is lit (and breathes).
+    await expect(mic).toHaveClass(/\brec\b/);
     await page.screenshot({ path: path.join(shotsDir('v0.2'), '10b-voice-listening.png') });
     await mic.click();
     await expect(mic).toHaveAttribute('aria-pressed', 'false');
-    await expect(strip).toHaveCount(0);
+    await expect(mic).not.toHaveClass(/\brec\b/);
 
     // Remembered: the next time it starts straight away and adds to what is typed.
     await page.locator('#ah-comp-input').fill('Also');

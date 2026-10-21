@@ -24,7 +24,7 @@ export function setupVoice(app: OverlayApp) {
   Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, voiceLanguage, setVoiceLanguage, attachVoice, stopVoice, isVoiceActive: () => !!active });
 
   const Recognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement; strip: HTMLElement; placeholder: string } | null = null;
+  let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement; placeholder: string } | null = null;
 
   function voiceSupported(): boolean {
     return typeof Recognition === 'function';
@@ -98,33 +98,17 @@ export function setupVoice(app: OverlayApp) {
     };
   }
 
-  /**
-   * While the mic is on: a strip above the text box (moving bars, "Listening…", how to stop), a pulsing mic and a
-   * red-edged text box. The bars move faster while the browser hears speech.
-   */
-  function showListening(field: HTMLTextAreaElement): HTMLElement {
-    field.parentElement?.querySelector('.ah-listening')?.remove();
-    const strip = document.createElement('div');
-    strip.className = 'ah-listening';
-    strip.setAttribute('role', 'status');
-    strip.innerHTML = `<span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="lbl">Listening…</span><span class="hint">Mic or Esc to stop</span>`;
-    field.insertAdjacentElement('beforebegin', strip);
-    field.classList.add('listening');
-    api.requestLayout?.();
-    return strip;
+  /** While the mic is on: the mic button breathes, and an empty text box says it's listening. Nothing else moves. */
+  function showListening(field: HTMLTextAreaElement, button: HTMLElement): string {
+    const placeholder = field.placeholder;
+    field.placeholder = 'Listening…';
+    button.classList.add('rec');
+    return placeholder;
   }
 
-  function hearing(strip: HTMLElement, on: boolean) {
-    strip.classList.toggle('hearing', on);
-    const lbl = strip.querySelector('.lbl');
-    if (lbl) lbl.textContent = on ? 'Hearing you…' : 'Listening…';
-  }
-
-  function hideListening(a: { field: HTMLTextAreaElement; strip: HTMLElement; placeholder: string }) {
-    a.strip.remove();
-    a.field.classList.remove('listening');
+  function hideListening(a: { field: HTMLTextAreaElement; button: HTMLElement; placeholder: string }) {
     a.field.placeholder = a.placeholder;
-    api.requestLayout?.();
+    a.button.classList.remove('rec', 'hearing');
   }
 
   function start(field: HTMLTextAreaElement, button: HTMLElement, lang: string, local: boolean) {
@@ -134,13 +118,11 @@ export function setupVoice(app: OverlayApp) {
     rec.interimResults = true;
     if (local) rec.processLocally = true;
     const base = field.value;
-    const strip = showListening(field);
-    const placeholder = field.placeholder;
-    field.placeholder = 'Speak now…';
-    rec.onspeechstart = () => hearing(strip, true);
-    rec.onspeechend = () => hearing(strip, false);
+    const placeholder = showListening(field, button);
+    // A little livelier while the browser hears speech.
+    rec.onspeechstart = () => button.classList.add('hearing');
+    rec.onspeechend = () => button.classList.remove('hearing');
     rec.onresult = (e: any) => {
-      hearing(strip, true);
       let said = '';
       for (let i = 0; i < e.results.length; i++) said += ' ' + e.results[i][0].transcript;
       field.value = joinTranscript(base, said);
@@ -156,13 +138,11 @@ export function setupVoice(app: OverlayApp) {
       hideListening(active);
       active = null;
       button.setAttribute('aria-pressed', 'false');
-      button.classList.remove('rec');
       button.title = button.getAttribute('aria-label') || '';
     };
-    active = { rec, button, field, strip, placeholder };
+    active = { rec, button, field, placeholder };
     button.title = 'Stop listening (Esc)';
     button.setAttribute('aria-pressed', 'true');
-    button.classList.add('rec');
     field.focus();
     try { rec.start(); } catch { rec.onend(); }
   }
@@ -173,7 +153,6 @@ export function setupVoice(app: OverlayApp) {
     active = null;
     hideListening(a);
     a.button.setAttribute('aria-pressed', 'false');
-    a.button.classList.remove('rec');
     a.button.title = a.button.getAttribute('aria-label') || '';
     try { a.rec.stop(); } catch { /* already stopped */ }
   }

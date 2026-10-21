@@ -26,9 +26,10 @@ Use a real Vite + React app, or a copy of one. Commit everything first: Undo nee
 npx agent-hover@<version> init
 ```
 
-Pick the agents you want to test, e.g. `claude, cursor, codex, opencode`.
+npx asks once whether to download that version (`-y` skips it). Then pick agents in the checklist (↑ ↓, space, Enter), e.g. Claude Code, Cursor, Codex and OpenCode.
 
-- [ ] The plan lists every file and asks before writing.
+- [ ] The checklist ticks the agents the project already uses, and Esc cancels without writing anything.
+- [ ] The plan is grouped (this project, then each agent) and asks Yes/No before writing.
 - [ ] `package.json` has `@agent-hover/vite` at the local version (`npm ls @agent-hover/vite`).
 - [ ] Commands exist: `.claude/commands/`, `.cursor/commands/`, `.opencode/commands/` (`agent-hover.md`, `agent-hover-status.md`), `.agents/skills/` for Codex.
 - [ ] `npm run dev`, open the app: the dock appears. Press Alt and click something: the pill shows a name and `file:line`.
@@ -61,7 +62,7 @@ With two agents open at once:
 ## 4. Changes, voice, updates
 
 - [ ] Tasks tab: Needs you / In progress / History, remove a waiting task, Send again, Try again, Clear.
-- [ ] The mic in Ask (Chrome, Edge or Safari): the "Listening…" strip, "Hearing you…" while you talk, Esc stops.
+- [ ] The mic in Ask (Chrome, Edge or Safari): it turns red and glows softly while listening, Esc stops.
 - [ ] Update path: change some code here, run `npm run registry:local` again (new version), then in the project run `npm i -D @agent-hover/vite@latest` **without** restarting the dev server. The page should say "Restart your dev server to finish updating". Restart it, and restart the agents.
 
 Write down anything that felt confusing, not only what broke.
