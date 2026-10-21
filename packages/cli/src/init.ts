@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from
 import os from 'node:os';
 import path from 'node:path';
 import { BRAND, DISPLAY_NAME, VITE_PACKAGE } from './brand.js';
-import { findClient, MCP_CLIENTS, type McpClient } from './clients.js';
+import { findClient, MCP_CLIENTS, statusCommand, type McpClient } from './clients.js';
 import { inspectProject, installCommand, type ProjectInfo } from './project.js';
-import { mergeCommandFile, mergeGitignore, mergeJsonMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
+import { mergeCommandFile, mergeGitignore, mergeJsonMcp, mergeOpencodeMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
 import { addPluginToViteConfig, VITE_MANUAL_STEPS } from './vite-config.js';
 import type { Style } from './render.js';
 
@@ -53,6 +53,7 @@ export function detectAgents(root: string): string[] {
   if (has('.cursor') || has('.cursorrules')) found.push('cursor');
   if (has('AGENTS.md') || has('.codex')) found.push('codex');
   if (has('.windsurf') || has('.windsurfrules')) found.push('windsurf');
+  if (has('opencode.json') || has('opencode.jsonc') || has('.opencode')) found.push('opencode');
   return found;
 }
 
@@ -88,10 +89,15 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
   else steps.push({ title: `Add the plugin to ${configRel}`, state: 'todo', detail: `import agentHover and add agentHover() to plugins`, write: { file: configFile, content: edit.code, backup: false } });
 
   const home = opts.home ?? os.homedir();
+  // Agents can share a rules file (Codex and OpenCode both read AGENTS.md): plan each file once.
+  const rulesPlanned = new Set<string>();
   for (const agent of agents) {
-    if (agent.projectConfig) {
+    if (agent.projectConfig?.format === 'opencode' && !existsSync(path.join(root, 'opencode.json')) && existsSync(path.join(root, 'opencode.jsonc'))) {
+      steps.push({ title: `Connect ${agent.title} (MCP server)`, state: 'manual', detail: `opencode.jsonc may have comments, so it was not edited. Add the agent-hover entry under "mcp":\n${agent.snippet}` });
+    } else if (agent.projectConfig) {
       const { file, format } = agent.projectConfig;
-      steps.push(fileStep(root, `Connect ${agent.title} (MCP server)`, file, format === 'json' ? (t) => mergeJsonMcp(t) : (t) => mergeTomlMcp(t), format === 'json'));
+      const merge = format === 'json' ? (t: string | null) => mergeJsonMcp(t) : format === 'opencode' ? (t: string | null) => mergeOpencodeMcp(t) : (t: string | null) => mergeTomlMcp(t);
+      steps.push(fileStep(root, `Connect ${agent.title} (MCP server)`, file, merge, format !== 'toml'));
     } else if (agent.globalConfig) {
       // Global only: the first location is created when missing; older locations are updated only if present.
       agent.globalConfig.forEach((rel, i) => {
@@ -106,13 +112,16 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
         detail: agent.command ? `Run: ${agent.command}` : `${agent.title} only has a global config. Add to ${agent.configPath}:\n${agent.snippet}`,
       });
     }
-    if (agent.rulesFile) {
+    if (agent.rulesFile && !rulesPlanned.has(agent.rulesFile.file)) {
       const { file, kind } = agent.rulesFile;
+      rulesPlanned.add(file);
       steps.push(fileStep(root, `Teach ${agent.title} to pick up tasks`, file, (t) => mergeRules(t, kind)));
     }
     if (agent.commandFile) {
       const { file, kind, invoke } = agent.commandFile;
       steps.push(fileStep(root, `Add ${invoke} to ${agent.title} (starts listening)`, file, (t) => mergeCommandFile(t, kind)));
+      const status = statusCommand(agent.commandFile);
+      steps.push(fileStep(root, `Add ${status.invoke} to ${agent.title} (shows waiting tasks)`, status.file, (t) => mergeCommandFile(t, kind, 'status')));
     }
   }
 

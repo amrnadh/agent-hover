@@ -280,6 +280,13 @@ export const LISTEN_PROMPT = [
   "Then call wait_for_agent_task again. Keep going until I tell you to stop. If it returns without a task, call it again.",
 ].join("\n");
 
+/** The status prompt; the same text as the /agent-hover-status command files (STATUS_PROMPT in the CLI). */
+export const STATUS_PROMPT = [
+  "Show my Agent Hover tasks.",
+  "",
+  "Call the agent-hover list_agent_tasks tool and tell me briefly which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+].join("\n");
+
 /**
  * Initialize the Agent Hover MCP server instance.
  */
@@ -297,7 +304,11 @@ const server = new Server(
   }
 );
 
-/** Prompts: Claude Code lists them as /mcp__agent-hover__listen and /mcp__agent-hover__status. */
+/**
+ * Prompts: Claude Code lists them as /mcp__agent-hover__listen and /mcp__agent-hover__status. Its desktop app can't
+ * send those names (it reads the underscores as formatting), so `init` also writes plain /agent-hover and
+ * /agent-hover-status commands.
+ */
 const PROMPTS = {
   listen: {
     description: "Listen for tasks sent from the page with Agent Hover, do each one and report back",
@@ -305,7 +316,7 @@ const PROMPTS = {
   },
   status: {
     description: "Show Agent Hover tasks that are waiting or in progress",
-    text: "Call the agent-hover list_agent_tasks tool and tell me, briefly, which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+    text: STATUS_PROMPT,
   },
 } as const;
 

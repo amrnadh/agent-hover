@@ -8,6 +8,7 @@ const KNOWN_AGENTS: Record<string, string> = {
   codex: 'Codex',
   'codex-mcp-client': 'Codex',
   windsurf: 'Windsurf',
+  opencode: 'OpenCode',
   antigravity: 'Antigravity',
   'gemini-cli': 'Gemini CLI',
   'mcp-agent': 'your agent',

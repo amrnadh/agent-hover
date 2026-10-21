@@ -212,11 +212,36 @@ describe('agent-hover init', () => {
     expect(read(dir, '.agents/skills/agent-hover/SKILL.md')).toMatch(/^---\nname: agent-hover\ndescription: /);
     expect(read(dir, '.windsurf/workflows/agent-hover.md')).toContain('wait_for_agent_task');
     expect(read(dir, '.agent/workflows/agent-hover.md')).toContain('wait_for_agent_task');
+    // And /agent-hover-status ($agent-hover-status in Codex): a plain name every client can send.
+    expect(read(dir, '.claude/commands/agent-hover-status.md')).toMatch(/^---\ndescription: .+\n---\n\nShow my Agent Hover tasks\./);
+    expect(read(dir, '.cursor/commands/agent-hover-status.md')).toContain('list_agent_tasks');
+    expect(read(dir, '.agents/skills/agent-hover-status/SKILL.md')).toMatch(/^---\nname: agent-hover-status\n/);
+    expect(read(dir, '.windsurf/workflows/agent-hover-status.md')).toContain('list_agent_tasks');
     // Someone's own command with the same name is left alone.
     const other = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, '.claude/commands/agent-hover.md': 'my own\n' });
     const r = await run(['init', '--dry-run', '--no-install', '--agent', 'claude'], other, PLAIN, { init: fakeIO() });
     expect(r.stdout).toContain('already exists with other content');
     expect(read(other, '.claude/commands/agent-hover.md')).toBe('my own\n');
+  });
+
+  it('connects OpenCode: opencode.json, AGENTS.md (shared with Codex, written once) and its commands', async () => {
+    const dir = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, 'opencode.json': JSON.stringify({ model: 'anthropic/claude-sonnet' }) });
+    const r = await run(['init', '--yes', '--no-install', '--agent=codex,opencode'], dir, PLAIN, { init: fakeIO() });
+    expect(r.code).toBe(0);
+    const config = JSON.parse(read(dir, 'opencode.json'));
+    expect(config.model).toBe('anthropic/claude-sonnet');
+    expect(config.mcp['agent-hover']).toEqual({ type: 'local', command: ['npx', '-y', '@agent-hover/mcp'], enabled: true });
+    expect(read(dir, 'opencode.json.bak')).toContain('claude-sonnet');
+    expect(read(dir, 'AGENTS.md').match(/## agent-hover tasks/g)).toHaveLength(1);
+    expect(read(dir, '.opencode/commands/agent-hover.md')).toMatch(/^---\ndescription: .+\n---\n\nListen for Agent Hover tasks\./);
+    expect(read(dir, '.opencode/commands/agent-hover-status.md')).toContain('list_agent_tasks');
+    // A new opencode.json gets the schema; one with comments (opencode.jsonc) is left for you.
+    const fresh = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS });
+    await run(['init', '--yes', '--no-install', '--agent', 'opencode'], fresh, PLAIN, { init: fakeIO() });
+    expect(JSON.parse(read(fresh, 'opencode.json')).$schema).toBe('https://opencode.ai/config.json');
+    const commented = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, 'opencode.jsonc': '// mine\n{}' });
+    const d = await run(['init', '--dry-run', '--no-install'], commented, PLAIN, { init: fakeIO() });
+    expect(d.stdout).toContain('! Connect OpenCode (MCP server)');
   });
 
   it('writes global configs for Antigravity and Windsurf, including an older Antigravity location only if it exists', async () => {
@@ -322,6 +347,8 @@ describe('listen command', () => {
     const { LISTEN_PROMPT } = await import('../setup-files.js');
     const mcp = await import('../../../mcp/src/index.js');
     expect(LISTEN_PROMPT).toBe(mcp.LISTEN_PROMPT);
+    const { STATUS_PROMPT } = await import('../setup-files.js');
+    expect(STATUS_PROMPT).toBe(mcp.STATUS_PROMPT);
   });
 });
 
