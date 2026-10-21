@@ -7,6 +7,7 @@ import { inspectProject, installCommand, type ProjectInfo } from './project.js';
 import { mergeCommandFile, mergeGitignore, mergeJsonMcp, mergeOpencodeMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
 import { addPluginToViteConfig, VITE_MANUAL_STEPS } from './vite-config.js';
 import type { Style } from './render.js';
+import type { Choice } from './prompt.js';
 
 export interface InitOptions {
   agents?: string[];
@@ -21,6 +22,10 @@ export interface InitOptions {
 export interface InitIO {
   interactive: boolean;
   ask(question: string): Promise<string>;
+  /** A checklist (arrow keys and space) in a real terminal; null when cancelled. Without it, `ask` takes typed ids. */
+  choose?(message: string, choices: Choice[]): Promise<string[] | null>;
+  /** Yes/no in a real terminal; null when cancelled. Without it, `ask` takes Y/n. */
+  confirm?(message: string): Promise<boolean | null>;
   /** Run a command in the project; returns the exit code. */
   exec(cmd: string, args: string[], cwd: string): number;
   out(text: string): void;
@@ -41,6 +46,8 @@ export interface Step {
   command?: { cmd: string; args: string[]; display: string };
   /** Changes a file in the home folder rather than the project. */
   global?: boolean;
+  /** The agent this step is for; project steps have none. The plan groups by it. */
+  agent?: string;
 }
 
 const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
@@ -55,6 +62,14 @@ export function detectAgents(root: string): string[] {
   if (has('.windsurf') || has('.windsurfrules')) found.push('windsurf');
   if (has('opencode.json') || has('opencode.jsonc') || has('.opencode')) found.push('opencode');
   return found;
+}
+
+/** The agent checklist: what `init` would write for each, with the ones this project already uses ticked. */
+export function agentChoices(detected: string[], checked: string[]): Choice[] {
+  return MCP_CLIENTS.map((c) => {
+    const where = c.projectConfig ? c.projectConfig.file : c.globalConfig ? `~/${c.globalConfig[0]} (global)` : 'prints the setup to paste';
+    return { value: c.id, label: c.title, hint: (detected.includes(c.id) ? 'found here · ' : '') + where, checked: checked.includes(c.id) };
+  });
 }
 
 /** `rewrites` marks merges that re-serialize the file (JSON); those keep a .bak. Appends do not need one.
@@ -92,22 +107,23 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
   // Agents can share a rules file (Codex and OpenCode both read AGENTS.md): plan each file once.
   const rulesPlanned = new Set<string>();
   for (const agent of agents) {
+    const first = steps.length;
     if (agent.projectConfig?.format === 'opencode' && !existsSync(path.join(root, 'opencode.json')) && existsSync(path.join(root, 'opencode.jsonc'))) {
-      steps.push({ title: `Connect ${agent.title} (MCP server)`, state: 'manual', detail: `opencode.jsonc may have comments, so it was not edited. Add the agent-hover entry under "mcp":\n${agent.snippet}` });
+      steps.push({ title: 'MCP server', state: 'manual', detail: `opencode.jsonc may have comments, so it was not edited. Add the agent-hover entry under "mcp":\n${agent.snippet}` });
     } else if (agent.projectConfig) {
       const { file, format } = agent.projectConfig;
       const merge = format === 'json' ? (t: string | null) => mergeJsonMcp(t) : format === 'opencode' ? (t: string | null) => mergeOpencodeMcp(t) : (t: string | null) => mergeTomlMcp(t);
-      steps.push(fileStep(root, `Connect ${agent.title} (MCP server)`, file, merge, format !== 'toml'));
+      steps.push(fileStep(root, 'MCP server', file, merge, format !== 'toml'));
     } else if (agent.globalConfig) {
       // Global only: the first location is created when missing; older locations are updated only if present.
       agent.globalConfig.forEach((rel, i) => {
         if (i > 0 && !existsSync(path.join(home, rel))) return;
         const shown = '~/' + rel.split(path.sep).join('/');
-        steps.push({ ...fileStep(home, `Connect ${agent.title} (MCP server, global config)`, rel, (t) => mergeJsonMcp(t), true, shown), global: true });
+        steps.push({ ...fileStep(home, 'MCP server (global config)', rel, (t) => mergeJsonMcp(t), true, shown), global: true });
       });
     } else {
       steps.push({
-        title: `Connect ${agent.title} (MCP server)`,
+        title: 'MCP server',
         state: 'manual',
         detail: agent.command ? `Run: ${agent.command}` : `${agent.title} only has a global config. Add to ${agent.configPath}:\n${agent.snippet}`,
       });
@@ -115,26 +131,38 @@ export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions 
     if (agent.rulesFile && !rulesPlanned.has(agent.rulesFile.file)) {
       const { file, kind } = agent.rulesFile;
       rulesPlanned.add(file);
-      steps.push(fileStep(root, `Teach ${agent.title} to pick up tasks`, file, (t) => mergeRules(t, kind)));
+      steps.push(fileStep(root, 'Task rules', file, (t) => mergeRules(t, kind)));
     }
     if (agent.commandFile) {
       const { file, kind, invoke } = agent.commandFile;
-      steps.push(fileStep(root, `Add ${invoke} to ${agent.title} (starts listening)`, file, (t) => mergeCommandFile(t, kind)));
+      steps.push(fileStep(root, invoke, file, (t) => mergeCommandFile(t, kind)));
       const status = statusCommand(agent.commandFile);
-      steps.push(fileStep(root, `Add ${status.invoke} to ${agent.title} (shows waiting tasks)`, status.file, (t) => mergeCommandFile(t, kind, 'status')));
+      steps.push(fileStep(root, status.invoke, status.file, (t) => mergeCommandFile(t, kind, 'status')));
     }
+    for (const step of steps.slice(first)) step.agent = agent.title;
   }
 
-  steps.push(fileStep(root, `Keep ${BRAND.dataDir} data out of git`, '.gitignore', mergeGitignore));
-  return steps;
+  // Project steps first, then each agent's.
+  const gitignore = fileStep(root, `Keep ${BRAND.dataDir} data out of git`, '.gitignore', mergeGitignore);
+  const project = steps.filter((x) => !x.agent);
+  return [...project, gitignore, ...steps.filter((x) => x.agent)];
 }
 
+/** The plan, grouped: This project, then each agent. One line per step, with what it does on the right. */
 export function renderPlan(steps: Step[], s: Style): string {
   const icon = { done: s.ok('✓'), todo: s.bold('+'), manual: s.todo('!') };
+  const width = Math.min(34, Math.max(...steps.map((x) => x.title.length)));
   const out: string[] = [];
+  let group: string | undefined = '\0';
   for (const step of steps) {
-    out.push(`  ${icon[step.state]} ${step.title}${step.state === 'done' ? s.dim(' · already done') : ''}`);
-    if (step.detail && step.state !== 'done') out.push(...step.detail.split('\n').map((l) => '      ' + (step.state === 'manual' ? l : s.dim(l))));
+    if (step.agent !== group) {
+      group = step.agent;
+      out.push(`${out.length ? '\n' : ''}  ${s.bold(group ?? 'This project')}`);
+    }
+    const [first, ...rest] = (step.state === 'done' ? 'already done' : step.detail || '').split('\n');
+    const note = step.state === 'manual' && !rest.length ? first : s.dim(first);
+    out.push(`    ${icon[step.state]} ${step.title.padEnd(width)}  ${first ? note : ''}`.trimEnd());
+    out.push(...rest.map((l) => '        ' + l));
   }
   return out.join('\n');
 }
@@ -157,12 +185,21 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
     return 1;
   }
 
-  let ids = opts.agents?.length ? opts.agents : detectAgents(root);
+  io.out(`\n  ${s.bold(DISPLAY_NAME)} ${s.dim('· set up in ' + root)}\n\n`);
+  const detected = detectAgents(root);
+  let ids = opts.agents?.length ? opts.agents : detected;
   if (!opts.agents?.length && io.interactive && !opts.yes && !opts.dryRun) {
-    const choices = MCP_CLIENTS.map((c) => c.id).join(', ');
     const fallback = ids.length ? ids : ['claude'];
-    const answer = (await io.ask(`  Which coding agents do you use? (${choices})\n  [${fallback.join(', ')}] `)).trim();
-    ids = answer ? answer.split(/[\s,]+/).filter(Boolean) : fallback;
+    if (io.choose) {
+      const picked = await io.choose('Which coding agents do you use?', agentChoices(detected, fallback));
+      if (!picked) { io.out('\n  Nothing changed.\n'); return 1; }
+      ids = picked;
+      io.out('\n');
+    } else {
+      const choices = MCP_CLIENTS.map((c) => c.id).join(', ');
+      const answer = (await io.ask(`  Which coding agents do you use? (${choices})\n  [${fallback.join(', ')}] `)).trim();
+      ids = answer ? answer.split(/[\s,]+/).filter(Boolean) : fallback;
+    }
   }
   if (!ids.length) ids = ['claude'];
   const agents: McpClient[] = [];
@@ -177,7 +214,7 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
 
   const steps = planInit(p, agents, { ...opts, home: opts.home ?? io.home });
   const todo = steps.filter((x) => x.state === 'todo');
-  io.out(`\n  ${s.bold(`Set up ${DISPLAY_NAME}`)} ${s.dim('in ' + root)}\n\n${renderPlan(steps, s)}\n`);
+  io.out(`  ${s.bold('Plan')}\n${renderPlan(steps, s)}\n`);
 
   if (opts.dryRun) {
     io.out(s.dim(`\n  Dry run: nothing was changed.${todo.length ? ` Run without --dry-run to apply ${todo.length} change${todo.length === 1 ? '' : 's'}.` : ''}\n`));
@@ -194,8 +231,16 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
     }
     const globals = todo.filter((x) => x.global).length;
     const where = globals ? ` (${globals} in your home folder, for every project)` : '';
-    const answer = (await io.ask(`\n  Apply ${todo.length} change${todo.length === 1 ? '' : 's'}${where}? [Y/n] `)).trim().toLowerCase();
-    if (answer && answer !== 'y' && answer !== 'yes') {
+    const question = `Apply ${todo.length} change${todo.length === 1 ? '' : 's'}${where}?`;
+    let yes: boolean | null;
+    if (io.confirm) {
+      io.out('\n');
+      yes = await io.confirm(question);
+    } else {
+      const answer = (await io.ask(`\n  ${question} [Y/n] `)).trim().toLowerCase();
+      yes = !answer || answer === 'y' || answer === 'yes';
+    }
+    if (!yes) {
       io.out('  Nothing changed.\n');
       return 1;
     }
@@ -207,23 +252,25 @@ export async function runInit(root: string, opts: InitOptions, io: InitIO, s: St
       io.out(`\n  ${s.dim('$ ' + step.command.display)}\n`);
       const code = io.exec(step.command.cmd, step.command.args, root);
       if (code !== 0) {
-        io.out(`  ${s.todo('!')} ${step.title} failed (exit ${code}). Run it yourself: ${step.command.display}\n`);
+        io.out(`  ${s.todo('!')} ${step.agent ? step.agent + ': ' : ''}${step.title} failed (exit ${code}). Run it yourself: ${step.command.display}\n`);
         failed = true;
       }
     } else if (step.write) {
       applyWrite(step.write);
-      io.out(`  ${s.ok('✓')} ${step.title}${step.write.backup ? s.dim(` (backup: ${path.basename(step.write.file)}.bak)`) : ''}\n`);
+      io.out(`  ${s.ok('✓')} ${step.agent ? step.agent + ': ' : ''}${step.title}${step.write.backup ? s.dim(` (backup: ${path.basename(step.write.file)}.bak)`) : ''}\n`);
     }
   }
 
-  const agentName = agents[0]?.title || 'your agent';
-  const invoke = agents[0]?.commandFile?.invoke;
+  const titles = agents.map((a) => a.title);
+  const names = titles.length > 1 ? `${titles.slice(0, -1).join(', ')} and ${titles[titles.length - 1]}` : titles[0] || 'your agent';
+  const starts = agents.filter((a) => a.commandFile).map((a) => `${a.title} ${s.bold(a.commandFile!.invoke)}`);
   io.out([
     '',
     `  ${s.bold('Next')}`,
     `  1. Start your dev server and open the app. Press ${s.bold('Alt')} (or the pointer in the dock) and click anything.`,
-    `  2. Restart ${agentName} so it loads the MCP server${agents.some((a) => a.id === 'claude') ? ' (Claude Code asks you to approve .mcp.json once)' : ''}.`,
-    `  3. ${invoke ? `Run ${s.bold(invoke)} in ${agentName} (or say ${s.bold('"Listen for agent-hover tasks"')})` : `Tell it once: ${s.bold('"Listen for agent-hover tasks"')}`}. Then press Ask on any element and send.`,
+    `  2. Restart ${names} so ${agents.length > 1 ? 'they load' : 'it loads'} the MCP server${agents.some((a) => a.id === 'claude') ? ' (Claude Code asks you to approve .mcp.json once)' : ''}.`,
+    `  3. Start listening: ${starts.length ? starts.join(' · ') : `tell your agent ${s.bold('"Listen for agent-hover tasks"')}`}. Then press Ask on any element and send.`,
+    ...(starts.length ? [`     ${s.dim(`The -status command (e.g. ${agents.find((a) => a.commandFile)!.commandFile!.invoke}-status) shows what is waiting.`)}`] : []),
     '',
     s.dim(`  Check everything with: ${BRAND.cliName} doctor`),
     '',

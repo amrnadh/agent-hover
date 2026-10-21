@@ -70,7 +70,7 @@ try {
   check(JSON.parse(text('.gemini/config/mcp_config.json', home)).mcpServers['agent-hover'], 'Antigravity: global config in the home folder');
   for (const f of ['.claude/commands/agent-hover.md', '.cursor/commands/agent-hover.md', '.agents/skills/agent-hover/SKILL.md', '.agent/workflows/agent-hover.md']) check(has(f), `listen command: ${f}`);
   if (win) check(text('.mcp.json').includes('"cmd"'), 'Windows: agents start the server through cmd');
-  check(/Run .*\/agent-hover/.test(initOut), 'init tells you to run /agent-hover');
+  check(/Start listening: .*\/agent-hover/.test(initOut), 'init tells you to run /agent-hover');
 
   step('dev server, doctor, and an agent connecting');
   devServer = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: app, env, shell: win, detached: !win, stdio: 'ignore' });

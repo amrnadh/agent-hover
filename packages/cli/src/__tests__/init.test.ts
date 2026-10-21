@@ -189,9 +189,28 @@ describe('agent-hover init', () => {
     const dir = app();
     mkdirSync(path.join(dir, '.cursor'));
     const declined = await run(['init'], dir, PLAIN, { init: fakeIO(['', 'n']) });
-    expect(declined.stdout).toContain('Connect Cursor');
+    expect(declined.stdout).toMatch(/  Cursor\n    \+ MCP server +create \.cursor\/mcp\.json/);
     expect(declined.code).toBe(1);
     expect(existsSync(path.join(dir, '.cursor/mcp.json'))).toBe(false);
+  });
+
+  it('in a terminal, picks agents from a checklist (detected ones ticked) and asks yes/no', async () => {
+    const dir = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, '.cursor/rules.md': '' });
+    let offered: any[] = [];
+    const io = { ...fakeIO(), interactive: true, choose: async (_: string, choices: any[]) => { offered = choices; return ['cursor', 'opencode']; }, confirm: async () => true };
+    const r = await run(['init', '--no-install'], dir, PLAIN, { init: io });
+    expect(r.code).toBe(0);
+    expect(offered.filter((c) => c.checked).map((c) => c.value)).toEqual(['cursor']);
+    expect(offered.find((c) => c.value === 'cursor').hint).toBe('found here · .cursor/mcp.json');
+    expect(offered.find((c) => c.value === 'windsurf').hint).toContain('(global)');
+    expect(read(dir, 'opencode.json')).toContain('agent-hover');
+    // Cancelled (Esc) or No: nothing is written.
+    const other = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS });
+    const cancelled = await run(['init', '--no-install'], other, PLAIN, { init: { ...fakeIO(), interactive: true, choose: async () => null } });
+    expect(cancelled.code).toBe(1);
+    const declined = await run(['init', '--no-install'], other, PLAIN, { init: { ...fakeIO(), interactive: true, choose: async () => ["claude"], confirm: async () => false } });
+    expect(declined.stdout).toContain('Nothing changed.');
+    expect(existsSync(path.join(other, '.mcp.json'))).toBe(false);
   });
 
   it('prints manual steps for unusual configs and plans global configs in the home folder', async () => {
@@ -199,7 +218,7 @@ describe('agent-hover init', () => {
     const r = await run(['init', '--dry-run', '--agent', 'windsurf'], dir, PLAIN, { init: fakeIO() });
     expect(r.stdout).toContain('! Add the plugin to vite.config.ts');
     expect(r.stdout).toContain("import agentHover from '@agent-hover/vite';");
-    expect(r.stdout).toContain('+ Connect Windsurf (MCP server, global config)');
+    expect(r.stdout).toMatch(/  Windsurf\n    \+ MCP server \(global config\) +create ~\/\.codeium/);
     expect(r.stdout).toContain('create ~/.codeium/windsurf/mcp_config.json');
   });
 
@@ -241,7 +260,7 @@ describe('agent-hover init', () => {
     expect(JSON.parse(read(fresh, 'opencode.json')).$schema).toBe('https://opencode.ai/config.json');
     const commented = fixture({ 'package.json': '{}', 'vite.config.ts': VITE_TS, 'opencode.jsonc': '// mine\n{}' });
     const d = await run(['init', '--dry-run', '--no-install'], commented, PLAIN, { init: fakeIO() });
-    expect(d.stdout).toContain('! Connect OpenCode (MCP server)');
+    expect(d.stdout).toMatch(/  OpenCode\n    ! MCP server +opencode\.jsonc may have comments/);
   });
 
   it('writes global configs for Antigravity and Windsurf, including an older Antigravity location only if it exists', async () => {
