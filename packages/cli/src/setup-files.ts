@@ -1,5 +1,5 @@
 import { BRAND } from './brand.js';
-import { mcpServerEntry, RULES_SNIPPET, type CommandKind } from './clients.js';
+import { mcpServerEntry, opencodeMcpEntry, OPENCODE_SCHEMA, RULES_SNIPPET, type CommandKind } from './clients.js';
 
 /** Result of merging our entry into an existing (or missing) file. `content` is null when nothing changes. */
 export type Merge = { ok: true; content: string | null } | { ok: false; reason: string };
@@ -20,6 +20,23 @@ export function mergeJsonMcp(existing: string | null, platform: NodeJS.Platform 
     return { ok: false, reason: '`mcpServers` is not an object' };
   }
   config.mcpServers = { ...config.mcpServers, [BRAND.mcpServerName]: mcpServerEntry(platform) };
+  return { ok: true, content: JSON.stringify(config, null, 2) + '\n' };
+}
+
+/** Add the MCP server to OpenCode's opencode.json (`mcp` map, `$schema` on a new file), keeping every other entry. */
+export function mergeOpencodeMcp(existing: string | null, platform: NodeJS.Platform = process.platform): Merge {
+  let config: any = { $schema: OPENCODE_SCHEMA };
+  if (existing && existing.trim()) {
+    try {
+      config = JSON.parse(existing);
+    } catch {
+      return { ok: false, reason: 'not plain JSON (comments or trailing commas?)' };
+    }
+    if (!config || typeof config !== 'object' || Array.isArray(config)) return { ok: false, reason: 'not a JSON object' };
+  }
+  if (config.mcp?.[BRAND.mcpServerName]) return { ok: true, content: null };
+  if (config.mcp !== undefined && (typeof config.mcp !== 'object' || Array.isArray(config.mcp))) return { ok: false, reason: '`mcp` is not an object' };
+  config.mcp = { ...config.mcp, [BRAND.mcpServerName]: opencodeMcpEntry(platform) };
   return { ok: true, content: JSON.stringify(config, null, 2) + '\n' };
 }
 
@@ -85,18 +102,31 @@ export const LISTEN_PROMPT = [
   'Then call wait_for_agent_task again. Keep going until I tell you to stop. If it returns without a task, call it again.',
 ].join('\n');
 
-const COMMAND_DESCRIPTION = `Listen for UI tasks sent from the page with ${BRAND.name}`;
+/** What the status command asks; the same text as the MCP server's `status` prompt (STATUS_PROMPT there). */
+export const STATUS_PROMPT = [
+  'Show my Agent Hover tasks.',
+  '',
+  "Call the agent-hover list_agent_tasks tool and tell me briefly which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+].join('\n');
 
-/** The /agent-hover command (or $agent-hover skill) for each agent's own format. */
-export function commandFileContent(kind: CommandKind): string {
-  if (kind === 'cursor-command') return LISTEN_PROMPT + '\n';
-  if (kind === 'codex-skill') return `---\nname: agent-hover\ndescription: ${COMMAND_DESCRIPTION}. Use when the user asks to listen for ${BRAND.name} tasks.\n---\n\n${LISTEN_PROMPT}\n`;
-  return `---\ndescription: ${COMMAND_DESCRIPTION}\n---\n\n${LISTEN_PROMPT}\n`;
+export type CommandName = 'listen' | 'status';
+
+const COMMANDS: Record<CommandName, { name: string; description: string; prompt: string; when: string }> = {
+  listen: { name: 'agent-hover', description: `Listen for UI tasks sent from the page with ${BRAND.name}`, prompt: LISTEN_PROMPT, when: `the user asks to listen for ${BRAND.name} tasks` },
+  status: { name: 'agent-hover-status', description: `Show ${BRAND.name} tasks that are waiting or in progress`, prompt: STATUS_PROMPT, when: `the user asks what ${BRAND.name} tasks are waiting` },
+};
+
+/** The /agent-hover and /agent-hover-status commands (or $ skills) in each agent's own format. */
+export function commandFileContent(kind: CommandKind, which: CommandName = 'listen'): string {
+  const c = COMMANDS[which];
+  if (kind === 'cursor-command') return c.prompt + '\n';
+  if (kind === 'codex-skill') return `---\nname: ${c.name}\ndescription: ${c.description}. Use when ${c.when}.\n---\n\n${c.prompt}\n`;
+  return `---\ndescription: ${c.description}\n---\n\n${c.prompt}\n`;
 }
 
 /** Create the command file; leave one that is already there (ours, or the user's own with the same name). */
-export function mergeCommandFile(existing: string | null, kind: CommandKind): Merge {
-  if (existing === null) return { ok: true, content: commandFileContent(kind) };
-  if (existing.includes(LISTEN_PROMPT.split('\n')[0])) return { ok: true, content: null };
+export function mergeCommandFile(existing: string | null, kind: CommandKind, which: CommandName = 'listen'): Merge {
+  if (existing === null) return { ok: true, content: commandFileContent(kind, which) };
+  if (existing.includes(COMMANDS[which].prompt.split('\n')[0])) return { ok: true, content: null };
   return { ok: false, reason: 'already exists with other content, so it was left alone' };
 }

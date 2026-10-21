@@ -36,7 +36,7 @@ Then:
 1. Start your dev server (`npm run dev`) and open the app.
 2. Press **Alt** (or the pointer in the dock) and click anything.
 3. Press **Ask**, type what to change, press **⌘/Ctrl + Enter**.
-4. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** It picks up each task you send, does it, reports back, and waits for the next one.
+4. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** It picks up each task you send, does it, reports back, and waits for the next one. **`/agent-hover-status`** shows what is waiting.
 
 Something not working? `npx agent-hover doctor` checks the plugin, the dev server, the token and the agent connection, and tells you what to fix.
 
@@ -64,7 +64,7 @@ Register the MCP server with your agent. For Claude Code:
 claude mcp add agent-hover -- npx -y @agent-hover/mcp
 ```
 
-`npx agent-hover mcp <agent>` prints the config for `cursor`, `codex`, `windsurf`, `antigravity` and `claude-desktop`.
+`npx agent-hover mcp <agent>` prints the config for `cursor`, `codex`, `opencode`, `windsurf`, `antigravity` and `claude-desktop`.
 </details>
 
 ## How it works
@@ -126,6 +126,7 @@ Long components send only the ~90 lines around the element by default (Settings 
 | Claude Code | MCP, project `.mcp.json` (set up by `init`) |
 | Cursor | MCP, project `.cursor/mcp.json` (set up by `init`) |
 | Codex | MCP, project `.codex/config.toml` (set up by `init`) |
+| OpenCode | MCP, project `opencode.json` (set up by `init`) |
 | Windsurf, Antigravity, Claude Desktop | MCP, global config (`npx agent-hover mcp <agent>` prints it) |
 | ChatGPT, Claude.ai, v0, Lovable, Bolt, anything else | Copy: every prompt is self-contained |
 

@@ -9,17 +9,35 @@ export interface McpClient {
   configPath: string;
   snippet: string;
   /** Project-level MCP config `init` can write. Agents without one only have a global config (printed, never written). */
-  projectConfig?: { file: string; format: 'json' | 'toml' };
+  projectConfig?: { file: string; format: 'json' | 'toml' | 'opencode' };
   /** Rules file `init` adds the task instructions to. */
   rulesFile?: { file: string; kind: 'markdown' | 'cursor-rule' };
-  /** Project file that gives the agent a one-word way to start listening (`invoke`). */
+  /** Project file that gives the agent a one-word way to start listening (`invoke`). A second one next to it shows
+   * the tasks (statusCommand). */
   commandFile?: { file: string; kind: CommandKind; invoke: string };
   /** Global MCP config `init` writes after asking, relative to the home folder. The first is created if missing;
    * the others are only updated when they already exist (older locations the agent may still read). */
   globalConfig?: string[];
 }
 
-export type CommandKind = 'claude-command' | 'cursor-command' | 'codex-skill' | 'workflow';
+/** 'markdown-command': Markdown with a `description` front matter (Claude Code, OpenCode). */
+export type CommandKind = 'markdown-command' | 'cursor-command' | 'codex-skill' | 'workflow';
+
+/**
+ * The status command next to a listen command: /agent-hover-status ($agent-hover-status in Codex). A plain name,
+ * because some clients can't run MCP prompts by name: Claude Code's desktop app reads the underscores in
+ * /mcp__agent-hover__status as formatting and refuses to send it.
+ */
+export function statusCommand(cmd: NonNullable<McpClient['commandFile']>): { file: string; kind: CommandKind; invoke: string } {
+  return { file: cmd.file.replace(/agent-hover(\/SKILL\.md|\.md)$/, 'agent-hover-status$1'), kind: cmd.kind, invoke: cmd.invoke + '-status' };
+}
+
+/** OpenCode's config: an `mcp` map whose local servers take the whole command line as one array. */
+export function opencodeMcpEntry(platform: NodeJS.Platform = process.platform) {
+  const server = mcpServerEntry(platform);
+  return { type: 'local', command: [server.command, ...server.args], enabled: true };
+}
+export const OPENCODE_SCHEMA = 'https://opencode.ai/config.json';
 
 /** How agents start the MCP server. On Windows npx is a .cmd script, so agents need cmd /c to run it. */
 export function mcpServerEntry(platform: NodeJS.Platform = process.platform): { command: string; args: string[] } {
@@ -38,6 +56,7 @@ export function mcpClients(platform: NodeJS.Platform = process.platform): McpCli
     `args = [${server.args.map((a) => JSON.stringify(a)).join(', ')}]`,
   ].join('\n');
   const addArgs = `${BRAND.mcpServerName} -- ${[server.command, ...server.args].join(' ')}`;
+  const opencodeSnippet = JSON.stringify({ $schema: OPENCODE_SCHEMA, mcp: { [BRAND.mcpServerName]: opencodeMcpEntry(platform) } }, null, 2);
   return [
   {
     id: 'claude',
@@ -47,7 +66,7 @@ export function mcpClients(platform: NodeJS.Platform = process.platform): McpCli
     snippet: jsonSnippet,
     projectConfig: { file: '.mcp.json', format: 'json' },
     rulesFile: { file: 'CLAUDE.md', kind: 'markdown' },
-    commandFile: { file: '.claude/commands/agent-hover.md', kind: 'claude-command', invoke: '/agent-hover' },
+    commandFile: { file: '.claude/commands/agent-hover.md', kind: 'markdown-command', invoke: '/agent-hover' },
   },
   {
     id: 'cursor',
@@ -67,6 +86,15 @@ export function mcpClients(platform: NodeJS.Platform = process.platform): McpCli
     projectConfig: { file: '.codex/config.toml', format: 'toml' },
     rulesFile: { file: 'AGENTS.md', kind: 'markdown' },
     commandFile: { file: '.agents/skills/agent-hover/SKILL.md', kind: 'codex-skill', invoke: '$agent-hover' },
+  },
+  {
+    id: 'opencode',
+    title: 'OpenCode',
+    configPath: 'opencode.json (project) or ~/.config/opencode/opencode.json (global)',
+    snippet: opencodeSnippet,
+    projectConfig: { file: 'opencode.json', format: 'opencode' },
+    rulesFile: { file: 'AGENTS.md', kind: 'markdown' },
+    commandFile: { file: '.opencode/commands/agent-hover.md', kind: 'markdown-command', invoke: '/agent-hover' },
   },
   {
     id: 'windsurf',

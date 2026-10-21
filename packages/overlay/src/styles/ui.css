@@ -141,7 +141,10 @@
 #ah-composer .target b { font: 600 12px var(--ui-mono); color: var(--ui-fg); white-space: nowrap; }
 #ah-composer .target span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #ah-composer .mic, #ah-comment-card .mic { color: var(--ui-fg-3); }
-.ah-ibtn.mic.rec { color: var(--ui-bad); background: color-mix(in srgb, var(--ui-bad) 12%, transparent); } /* listening */
+.ah-ibtn.mic.rec, #ah-composer .mic.rec, #ah-comment-card .mic.rec { color: var(--ui-bad); background: color-mix(in srgb, var(--ui-bad) 10%, transparent); animation: ah-mic-breathe 2.4s ease-in-out infinite; } /* listening */
+.ah-ibtn.mic.hearing { animation-duration: 1.2s; }
+@keyframes ah-mic-breathe { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-bad) 0%, transparent); } 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-bad) 18%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .ah-ibtn.mic.rec { animation: none; } }
 .ah-voice-note { font-size: 12px; line-height: 1.5; color: var(--ui-fg-2); background: var(--ui-bg-2); border-radius: 8px; padding: 9px 10px; display: grid; gap: 8px; }
 .ah-voice-note p { margin: 0; }
 #ah-composer .follow { font-size: 12px; color: var(--ui-fg-2); background: var(--ui-bg-2); border-radius: 8px; padding: 6px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

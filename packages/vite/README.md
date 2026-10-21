@@ -2,7 +2,7 @@
 
 Agent Hover is a dev-only Vite plugin for React apps. Ask for a change on any element of your running app, and your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. The task stays on the element while the agent works (Sent → Seen → Working → Done). Then review it there: compare before and after, keep it, undo it in one click, or follow up. Lock finished components, and Agent Hover tells you if an agent changed one anyway.
 
-Works with Claude Code, Cursor, Codex, Antigravity, Windsurf and any other MCP agent. No agent connected? Every prompt can be copied into ChatGPT, Claude.ai, v0, Lovable or Bolt.
+Works with Claude Code, Cursor, Codex, OpenCode, Antigravity, Windsurf and any other MCP agent. No agent connected? Every prompt can be copied into ChatGPT, Claude.ai, v0, Lovable or Bolt.
 
 ## Quick start
 
@@ -52,6 +52,7 @@ Then register the MCP server with your agent:
 | Codex | `codex mcp add agent-hover -- npx -y @agent-hover/mcp` (or `.codex/config.toml`) |
 | Antigravity | `agy mcp add agent-hover -- npx -y @agent-hover/mcp` |
 | Cursor | `.cursor/mcp.json` in the project (JSON below) |
+| OpenCode | `opencode.json` in the project: `"mcp": { "agent-hover": { "type": "local", "command": ["npx", "-y", "@agent-hover/mcp"] } }` |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` (JSON below) |
 | Claude Desktop | `claude_desktop_config.json` (Settings › Developer › Edit Config) |
 

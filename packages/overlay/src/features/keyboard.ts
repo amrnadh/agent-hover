@@ -45,6 +45,8 @@ export function setupKeyboard(app: OverlayApp) {
     const typing = isTyping(active);
 
     if (e.key === 'Escape') {
+      // Esc first stops dictation, keeping the card and what was said.
+      if (api.isVoiceActive?.()) { api.stopVoice(); e.preventDefault(); return; }
       if (typing) {
         (active as HTMLElement).blur();
         // Escape in the composer closes it straight away (draft is kept).

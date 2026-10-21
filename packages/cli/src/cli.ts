@@ -8,6 +8,7 @@ import { findClient, MCP_CLIENTS } from './clients.js';
 import { defaultDoctorIO, renderChecks, runChecks, type DoctorIO } from './doctor.js';
 import { runInit, type InitIO } from './init.js';
 import { inspectProject } from './project.js';
+import { askChecklist, askConfirm, type Choice } from './prompt.js';
 import { COLOR, PLAIN, renderClient, renderClientList, renderHelp, renderOverview, renderRules, type Style } from './render.js';
 
 function version(): string {
@@ -59,7 +60,7 @@ export async function run(argv: string[], cwd: string, style: Style, io: RunIO =
     const f = flags(argv.slice(1));
     const agent = f.value('--agent');
     let stdout = '';
-    const initIO: InitIO = io.init ?? terminalIO();
+    const initIO: InitIO = io.init ?? terminalIO(style);
     const out = initIO.out;
     const code = await runInit(cwd, {
       agents: agent ? agent.split(',').map((a) => a.trim()).filter(Boolean) : undefined,
@@ -76,10 +77,15 @@ export async function run(argv: string[], cwd: string, style: Style, io: RunIO =
   return { code: 1, stdout: renderHelp(version(), style), stderr: `Unknown command "${cmd}".\n` };
 }
 
-/** Real terminal: prompts on stdin, installs with the project's package manager, prints as it goes. */
-function terminalIO(): InitIO {
+/** Real terminal: prompts on stdin (a checklist and yes/no), installs with the project's package manager, prints as it goes. */
+function terminalIO(style: Style): InitIO {
+  const interactive = !!process.stdin.isTTY && !!process.stdout.isTTY;
   return {
-    interactive: !!process.stdin.isTTY && !!process.stdout.isTTY,
+    interactive,
+    ...(interactive ? {
+      choose: (message: string, choices: Choice[]) => askChecklist(message, choices, style),
+      confirm: (message: string) => askConfirm(message, style),
+    } : {}),
     async ask(question) {
       const rl = createInterface({ input: process.stdin, output: process.stdout });
       try { return await rl.question(question); } finally { rl.close(); }

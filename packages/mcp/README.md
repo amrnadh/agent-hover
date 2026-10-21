@@ -2,7 +2,7 @@
 
 It connects your coding agent to the Agent Hover plugin ([`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite)) running in your Vite dev server. Tasks you send by clicking elements in your app reach the agent with full context, and the agent's progress (Seen, Working, Done) shows on the page.
 
-Works with Claude Code, Cursor, Codex, Antigravity, Windsurf, Claude Desktop and any other MCP client.
+Works with Claude Code, Cursor, Codex, OpenCode, Antigravity, Windsurf, Claude Desktop and any other MCP client.
 
 ## Setup
 
@@ -34,9 +34,11 @@ Cursor (`.cursor/mcp.json`), Windsurf (`~/.codeium/windsurf/mcp_config.json`) an
 
 Then restart the agent **in your project folder**, with the dev server running. The server finds the dev server through `.agent-hover/session.json` (it looks in the agent's working folder and the folders above it).
 
+OpenCode (`opencode.json`) has its own format; `npx agent-hover mcp opencode` prints it, and `npx agent-hover init --agent opencode` writes it.
+
 ## Listen mode
 
-Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex; `npx agent-hover init` adds the command), or tell it **"Listen for agent-hover tasks."** In Claude Code the server's own prompt works too: `/mcp__agent-hover__listen`.
+Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex; `npx agent-hover init` adds the command), or tell it **"Listen for agent-hover tasks."** **`/agent-hover-status`** shows what is waiting. The server also offers `listen` and `status` prompts (`/mcp__agent-hover__listen` in the Claude Code terminal; the desktop app can't send those names, so use the plain commands there).
 
 It calls `wait_for_agent_task`, which waits until you send a task from the page, claims it and returns the full prompt. The agent makes the change, calls `complete_agent_task` with a short summary, and waits for the next task. The page shows each step on the element. Tell the agent you're done to stop.
 
