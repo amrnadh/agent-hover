@@ -347,18 +347,30 @@ pre.ah-src { margin: 0 16px 14px; padding: 10px; border-radius: 8px; background:
 #ah-side .foot.batch textarea.invalid { border-color: var(--ui-bad); }
 .ah-field { padding: 0 16px 12px; display: grid; gap: 6px; }
 .ah-field label { font-size: 12px; color: var(--ui-fg-2); font-weight: 500; }
-.ah-field input, .ah-field textarea { border: 1px solid var(--ui-line-2); border-radius: 8px; padding: 8px 10px; background: var(--ui-bg-2); color: var(--ui-fg); font: 13px var(--ui-font); outline: none; width: 100%; resize: none; }
+.ah-field input, .ah-field textarea, .ah-field select { border: 1px solid var(--ui-line-2); border-radius: 8px; padding: 8px 10px; background: var(--ui-bg-2); color: var(--ui-fg); font: 13px var(--ui-font); outline: none; width: 100%; resize: none; }
 .ah-set { padding: 16px; border-bottom: 1px solid var(--ui-line); display: grid; gap: 10px; }
 .ah-set h4 { margin: 0; font-size: 13px; }
 .ah-set p { margin: 0; font-size: 12.5px; color: var(--ui-fg-3); line-height: 1.5; }
 .ah-set details.ah-setup { border: 1px solid var(--ui-line); border-radius: 8px; display: grid; gap: 10px; }
 .ah-set details.ah-setup[open] { padding-bottom: 10px; }
-.ah-set details.ah-setup summary { padding: 8px 10px; color: var(--ui-fg); font-weight: 500; }
-.ah-set details.ah-setup summary .ah-i { transition: transform 0.15s; color: var(--ui-fg-3); }
-.ah-set details.ah-setup[open] summary .ah-i { transform: rotate(90deg); }
+.ah-set details.ah-setup > summary { padding: 8px 10px; color: var(--ui-fg); font-weight: 500; }
+.ah-set details.ah-setup > summary .ah-i { transition: transform 0.15s; color: var(--ui-fg-3); }
+.ah-set details.ah-setup[open] > summary .ah-i { transform: rotate(90deg); }
 .ah-set details.ah-setup > :not(summary) { margin: 0 10px; }
+.ah-field select { appearance: none; cursor: pointer; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--ui-fg-3) 50%), linear-gradient(135deg, var(--ui-fg-3) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.ah-steps { margin: 0 10px; padding-left: 18px; display: grid; gap: 10px; font-size: 12.5px; color: var(--ui-fg-2); line-height: 1.5; }
+.ah-steps li { padding-left: 2px; }
+.ah-steps li b { color: var(--ui-fg); font-weight: 600; }
+.ah-steps .ah-snippet { margin: 6px 0; }
+.ah-steps .ah-actions { margin-top: -2px; }
+.ah-code { font: 12px var(--ui-mono); color: var(--ui-fg); background: var(--ui-bg-2); border-radius: 4px; padding: 1px 5px; }
+.ah-set details.ah-byhand { border: 0; display: grid; gap: 8px; }
+.ah-set details.ah-byhand summary { padding: 0; font-size: 12px; color: var(--ui-fg-2); display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; }
+.ah-set details.ah-byhand summary::-webkit-details-marker { display: none; }
+.ah-set details.ah-byhand[open] > summary .ah-i { transform: rotate(90deg); }
+.ah-agent .end { margin-left: auto; }
 .ah-agent { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--ui-bg-2); }
-.ah-agent .ah-muted { margin-left: auto; font-size: 12px; }
+.ah-agent .ah-muted { font-size: 12px; }
 .ah-snippet { margin: 0; padding: 10px; border-radius: 8px; background: var(--ui-bg-2); font: 11.5px/1.6 var(--ui-mono); overflow-x: auto; color: var(--ui-fg-2); white-space: pre; }
 .ah-shortcuts { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
 .ah-shortcuts kbd { justify-self: end; }

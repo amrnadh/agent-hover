@@ -21,7 +21,7 @@ export function joinTranscript(base: string, spoken: string): string {
  */
 export function setupVoice(app: OverlayApp) {
   const { shadow, api } = app;
-  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, voiceLanguage, setVoiceLanguage, attachVoice, stopVoice, isVoiceActive: () => !!active });
+  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, voiceLanguage, setVoiceLanguage, attachVoice, stopVoice, voiceLanguagePref: () => readPref(LANG_KEY, ''), isVoiceActive: () => !!active });
 
   const Recognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement; placeholder: string } | null = null;

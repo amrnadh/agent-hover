@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Agents that start outside your project connect.** A running dev server now also lists itself in `~/.agent-hover/bridges/` (only you can read it, like `.agent-hover/session.json`). The MCP server looks for the dev server in its working folder, then in the workspace folders the agent reports (MCP roots), then in that list. Antigravity, Windsurf and Claude Desktop, which use a global config, used to get "401 Unauthorized". A 401 now says what to check. Set `AGENT_HOVER_HOME` to move the list.
+- **Settings › Agents, step by step.** Pick an agent and get three steps: the `init` command for it (with Copy), how to restart it so it loads the server, and its own listen and status commands. The by-hand config is folded underneath. Connected agents show how you start them listening.
 - **OpenCode.** `init --agent opencode` registers the MCP server in `opencode.json` (its own `mcp` format), adds the task note to `AGENTS.md` (written once when Codex is set up too) and `/agent-hover` commands in `.opencode/commands/`. Settings › Agents and `npx agent-hover mcp opencode` show the setup.
 - **`/agent-hover-status`** (`$agent-hover-status` in Codex) lists waiting and running tasks without starting any. `init` writes it next to `/agent-hover` for every agent. Claude Code's desktop app can't send MCP prompt names like `/mcp__agent-hover__status` (it reads the underscores as formatting), so the plain commands are the way to go there.
 - **You can see when the mic is listening.** The mic turns red and glows softly (a little faster while it hears you), and an empty text box says "Listening…". **Esc** stops listening and keeps what was said.
@@ -50,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- **Voice language is a list** (Settings › Voice): the language you speak, from about 30, or the page's own. It was a free text box that expected a code like `en-US`.
 - **One `file:line` everywhere.** The pill, Ask, the task card, comments and the task sent to the agent all use the element's own line (React 19) or else its component's; Ask and comments used the component's first line while the pill showed the element's.
 - **Undo only when something changed.** Tasks that changed no files (a question the agent answered, a failure before any edit) no longer offer Undo.
 - **Comment card matches the task card**: status and time on top, the note as the title, the element and `file:line` underneath, **Send to agent** first. Delete asks once.
@@ -79,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub demo video**: `npm run record:demo` records six scenes (point instead of describe, like this not that, notes, add a feature, lock), each on a fresh demo copy, and joins them into `docs/media/agent-hover-demo.mp4`; scene 1 is the README GIF. `npm run record:demo -- 2` re-records one scene. `docs/media/VIDEOS.md` describes the demo video and the separate launch video.
 
 ### Fixed
+- An agent running in a sandbox (Cursor, Antigravity) treated the running dev server as stopped, because the sandbox doesn't let it check other processes, and sent no token: every tool failed with 401.
 - Task markers could go missing after a page reload or after the agent's change hot-reloaded the element, until you scrolled (mostly Safari/WebKit). Markers are placed again while the page settles, and when a task's element appears later (another route in a single-page app).
 - Compare's "before" image is now taken when you open Ask, not after Send, so a fast agent can no longer change the page while it is being captured (which left Compare missing or showing the changed element).
 - Screenshots and Compare's after image no longer hide the whole overlay while they capture; a slow capture (Linux WebKit) made the UI disappear for its duration. A capture now gives up after 10 seconds instead of waiting forever.

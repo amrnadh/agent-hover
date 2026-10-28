@@ -174,7 +174,7 @@ export function setupComposer(app: OverlayApp) {
     const b = (e.target as Element).closest('button') as HTMLElement | null;
     if (!b) return;
     destMenu.hidden = true;
-    if (b.dataset.v === 'setup') { api.openSettings('agents'); return; }
+    if (b.dataset.v === 'setup') { api.openSettings('connect'); return; }
     api.chooseDestination(b.dataset.v || null);
     renderDest();
   };

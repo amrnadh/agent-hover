@@ -374,7 +374,7 @@ describe('listen command', () => {
 describe('Settings › Agents', () => {
   it('shows the same setup as the CLI', () => {
     // The overlay shows the macOS/Linux form; Windows gets a note there (cmd /c npx).
-    const cli = mcpClients('darwin').map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }));
-    expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }))).toEqual(cli);
+    const cli = mcpClients('darwin').map(({ id, title, command, configPath, snippet, commandFile }) => ({ id, title, command, configPath, snippet, listen: commandFile?.invoke }));
+    expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet, listen }) => ({ id, title, command, configPath, snippet, listen }))).toEqual(cli);
   });
 });
