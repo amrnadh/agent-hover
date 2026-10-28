@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { BridgeServer } from './bridge-server.js';
 import { createLocationMapper } from './source-location.js';
+import { formatUpdateNotice } from './update-check.js';
 import { MODERN_SCREENSHOT_CODE } from './vendor/modern-screenshot.js';
 import { getOverlayBundle } from '@agent-hover/overlay';
 
@@ -57,7 +58,17 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
         } catch (e) { }
       }
       // Start bridge server when Vite dev server starts
-      bridgeServer = new BridgeServer(projectRoot, port);
+      // The update notice goes after Vite's own startup lines (its URLs), where it is seen, not above them.
+      const listening = new Promise<void>((resolve) => {
+        if (server.httpServer?.listening) resolve();
+        else server.httpServer?.once('listening', () => setTimeout(resolve, 300));
+        if (!server.httpServer) resolve();
+      });
+      bridgeServer = new BridgeServer(projectRoot, port, {
+        onUpdateAvailable: (info) => {
+          listening.then(() => server.config.logger.info(formatUpdateNotice(info, !!process.stdout.isTTY)));
+        },
+      });
       // React 19 has no _debugSource: element sources come from React's creation stack and this server's source maps.
       bridgeServer.setLocationMapper(createLocationMapper(server, projectRoot));
       bridgeServer.start();

@@ -74,7 +74,7 @@
 .ah-ibtn { width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--ui-fg-2); display: inline-grid; place-items: center; cursor: pointer; flex-shrink: 0; padding: 0; position: relative; }
 .ah-ibtn:hover { background: var(--ui-hover); color: var(--ui-fg); }
 .ah-ibtn[aria-pressed="true"] { background: var(--ui-bg-3); color: var(--ui-fg); }
-.ah-tbtn { height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--ui-fg); display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.ah-tbtn { text-decoration: none; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--ui-fg); display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap; }
 .ah-tbtn:hover { background: var(--ui-hover); }
 .ah-tbtn:disabled { opacity: 0.45; cursor: default; }
 .ah-tbtn.primary { background: var(--ui-ink); color: var(--ui-on-ink); }

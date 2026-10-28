@@ -6,7 +6,8 @@ import type { OverlayApp } from '../../app/context.js';
 
 declare const __AH_VERSION__: string;
 
-/** The plugin pulls in core and the overlay; the MCP server runs through npx and stays current on its own. */
+/** The plugin pulls in core and the overlay; the MCP server runs through npx and stays current on its own. The
+ * bridge sends the command for this project's package manager; this is for older bridges. */
 const UPDATE_CMD = 'npm i -D @agent-hover/vite@latest';
 
 /** Settings view (gear): agents, what Send does, appearance, editor, keyboard, about. */
@@ -99,9 +100,9 @@ export function setupSettingsPanel(app: OverlayApp) {
           <span>Close / deselect</span><kbd>Esc</kbd></div></section>
         <section class="ah-set" id="ah-set-about" style="border:0"><h4>About</h4>
           <p>Agent Hover${version ? ' ' + esc(version) : ''} · bridge on port ${port} · MIT</p>
-          ${state.updateAvailable ? `<p><b>${esc(state.updateAvailable.latest)}</b> is available (you have ${esc(state.updateAvailable.current)}). Update, then restart the dev server:</p>
-            <pre class="ah-snippet" tabindex="0">${esc(UPDATE_CMD)}</pre>
-            <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-update">${icon('copy', 14)}Copy</button></div>` : ''}
+          ${state.updateAvailable ? `<p><b>${esc(state.updateAvailable.latest)}</b> is available (you have ${esc(state.updateAvailable.current)}). Run this in your project, then restart the dev server and your agent:</p>
+            <pre class="ah-snippet" tabindex="0">${esc(state.updateAvailable.command || UPDATE_CMD)}</pre>
+            <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-update">${icon('copy', 14)}Copy</button>${state.updateAvailable.releaseUrl ? `<a class="ah-tbtn quiet" href="${esc(state.updateAvailable.releaseUrl)}" target="_blank" rel="noopener">What's new</a>` : ''}</div>` : ''}
         </section>`;
 
       if (state.side.settingsFocus) {
@@ -144,7 +145,7 @@ export function setupSettingsPanel(app: OverlayApp) {
           api.toast(ok ? `Copied ${setup.title} setup` : 'Clipboard blocked by the browser');
         }
         if (act === 'copy-update') {
-          const ok = await api.copyText(UPDATE_CMD);
+          const ok = await api.copyText(state.updateAvailable?.command || UPDATE_CMD);
           api.toast(ok ? 'Copied the update command' : 'Clipboard blocked by the browser');
         }
       };

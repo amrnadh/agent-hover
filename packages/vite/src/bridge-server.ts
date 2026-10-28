@@ -6,7 +6,7 @@ import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
 import { TaskStore } from './task-store.js';
 import { CheckpointStore } from './checkpoints.js';
-import { checkForUpdate, packageVersion, type UpdateInfo } from './update-check.js';
+import { checkForUpdate, formatUpdateNotice, packageVersion, UPDATE_CHECK_INTERVAL, type UpdateInfo } from './update-check.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
@@ -107,7 +107,12 @@ export class BridgeServer {
   private updateInfo: UpdateInfo | null = null;
   private clients: Set<WebSocket> = new Set();
 
-  constructor(projectRoot: string, port: number = 9850, options?: { token?: string }) {
+  /** Prints the update notice; the Vite plugin passes one that waits for Vite's own startup output. */
+  private onUpdateAvailable: (info: UpdateInfo) => void;
+  private updateTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(projectRoot: string, port: number = 9850, options?: { token?: string; onUpdateAvailable?: (info: UpdateInfo) => void }) {
+    this.onUpdateAvailable = options?.onUpdateAvailable ?? ((info) => console.log(formatUpdateNotice(info, !!process.stdout.isTTY)));
     this.projectRoot = projectRoot;
     this.port = port;
     this.initialPort = port;
@@ -1751,12 +1756,19 @@ export class BridgeServer {
         );
 
         resolve(this.port);
-        checkForUpdate(this.CURRENT_VERSION).then((info) => {
-          if (!info) return;
+        // Now, then once a day for dev servers that stay up for days. The page and the terminal hear about each
+        // new version once.
+        const check = () => checkForUpdate(this.CURRENT_VERSION, { projectRoot: this.projectRoot }).then((info) => {
+          if (!info || info.latest === this.updateInfo?.latest) return;
           this.updateInfo = info;
-          console.log(`[agent-hover] Update available: ${info.current} → ${info.latest} (npm i -D @agent-hover/vite@latest)`);
+          this.onUpdateAvailable(info);
           this.broadcastState();
         });
+        check();
+        if (!this.updateTimer) {
+          this.updateTimer = setInterval(check, UPDATE_CHECK_INTERVAL);
+          this.updateTimer.unref?.();
+        }
       };
 
       server.once('error', errorHandler);
@@ -1769,6 +1781,8 @@ export class BridgeServer {
     console.log('[agent-hover] Stopping bridge server...');
     if (this.presenceTimer) clearInterval(this.presenceTimer);
     this.presenceTimer = null;
+    if (this.updateTimer) clearInterval(this.updateTimer);
+    this.updateTimer = null;
 
     // Clean up session file
     await removeSessionFile(this.projectRoot);

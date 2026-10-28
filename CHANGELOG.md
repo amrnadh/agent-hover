@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
+- **Update notices like other npm tools.** When a new version is out, the dev server prints a box under Vite's own startup lines: the versions, the update command for your package manager (npm, pnpm, yarn or bun, from the lockfile, including a monorepo root), and a link to the release notes. The page shows the same in one toast per version, the dock popover and Settings › About (with Copy and What's new), and `agent-hover doctor` repeats it. The check asks the registry npm is set to use (a company mirror too), at most once a day (cached in `~/.agent-hover`), and again every day for dev servers that stay up. It stays off in CI, with `AGENT_HOVER_NO_UPDATE_CHECK=1`, or with the usual `NO_UPDATE_NOTIFIER=1`.
 - **One `file:line` everywhere.** The pill, Ask, the task card, comments and the task sent to the agent all use the element's own line (React 19) or else its component's; Ask and comments used the component's first line while the pill showed the element's.
 - **Undo only when something changed.** Tasks that changed no files (a question the agent answered, a failure before any edit) no longer offer Undo.
 - **Comment card matches the task card**: status and time on top, the note as the title, the element and `file:line` underneath, **Send to agent** first. Delete asks once.
