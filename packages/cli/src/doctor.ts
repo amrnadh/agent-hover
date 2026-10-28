@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { BRAND, VITE_PACKAGE } from './brand.js';
+import { BRAND, DISPLAY_NAME, VITE_PACKAGE } from './brand.js';
 import { MCP_CLIENTS } from './clients.js';
 import { inspectProject, installCommand } from './project.js';
 import { gitignoreCoversSession, RULES_MARKER } from './setup-files.js';
@@ -92,7 +92,8 @@ export async function runChecks(root: string, io: DoctorIO): Promise<Check[]> {
       if (installedVersion && health.body?.version && health.body.version !== installedVersion) {
         add('warn', `The running bridge is ${health.body.version} but ${installedVersion} is installed`, 'Restart the dev server.');
       }
-      if (health.body?.updateAvailable?.latest) add('warn', `${health.body.updateAvailable.latest} is available`, `npm i -D ${VITE_PACKAGE}@latest`);
+      const update = health.body?.updateAvailable;
+      if (update?.latest) add('warn', `${DISPLAY_NAME} ${update.latest} is available (you have ${update.current})`, `${update.command || `npm i -D ${VITE_PACKAGE}@latest`}, then restart the dev server.${update.releaseUrl ? ` What's new: ${update.releaseUrl}` : ''}`);
       const presence = await getJson(io, `${base}/api/agent/presence`, session.token);
       if (!presence || presence.status === 401) add('fail', 'The session token was rejected', 'Restart the dev server to write a fresh session file.');
       else {

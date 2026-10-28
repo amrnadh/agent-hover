@@ -161,7 +161,7 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 ## Privacy and security
 
 - Everything runs on your machine. The bridge listens on `127.0.0.1` only, checks the page's origin, and requires a per-session token (stored in `.agent-hover/session.json`, which `init` adds to `.gitignore`).
-- No telemetry. The only outbound request is a once-a-day update check to the npm registry, with no project data; turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1`.
+- No telemetry. The only outbound request is a once-a-day update check to the npm registry, with no project data; turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1` (or the usual `NO_UPDATE_NOTIFIER=1`).
 - Voice uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple (you are told once, before the first use). Agent Hover never receives or stores audio. Turn the mic off in Settings › Voice.
 - Undo never runs `git reset`, `clean` or `checkout`; it restores the listed files one by one from the checkpoint.
 

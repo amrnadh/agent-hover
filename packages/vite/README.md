@@ -175,7 +175,7 @@ Environment variables:
 
 | Variable | |
 |----------|--|
-| `AGENT_HOVER_NO_UPDATE_CHECK=1` | Turn off the daily update check (it is also off in CI) |
+| `AGENT_HOVER_NO_UPDATE_CHECK=1` or `NO_UPDATE_NOTIFIER=1` | Turn off the daily update check (it is also off in CI) |
 | `AGENT_HOVER_SESSION` | Path to a `.agent-hover/session.json`, for agents started outside the project folder |
 | `AGENT_HOVER_PORT`, `AGENT_HOVER_TOKEN` | Connect the MCP server to a bridge directly |
 
@@ -223,7 +223,7 @@ Remove `agentHover()` and its import from your Vite config, remove the `agent-ho
 
 - Everything runs on your machine. The bridge listens on `127.0.0.1` only, accepts requests from your dev server's page only, and requires a token that changes on every dev server start.
 - File access is limited to your project folder.
-- No telemetry. The only outbound request is a once-a-day check of the npm registry for a newer version, with no project data. Turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1`.
+- No telemetry. The only outbound request is a once-a-day check of the npm registry for a newer version, with no project data. Turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1` (or `NO_UPDATE_NOTIFIER=1`).
 - Voice uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple (you are told once, before the first use). Agent Hover never receives or stores audio.
 - Undo never runs `git reset`, `git clean` or `git checkout`; it restores the listed files one by one.
 

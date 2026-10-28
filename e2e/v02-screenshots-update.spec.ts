@@ -79,7 +79,8 @@ test.describe('0.2 screenshots and update notice', () => {
     await page.route(/\/api\/health$/, async (route) => {
       const res = await route.fetch();
       const body = await res.json();
-      await route.fulfill({ response: res, json: { ...body, updateAvailable: { current: body.version, latest: '9.9.9' } } });
+      const releaseUrl = 'https://github.com/amrnadh/agent-hover/releases/tag/v9.9.9';
+      await route.fulfill({ response: res, json: { ...body, updateAvailable: { current: body.version, latest: '9.9.9', command: 'pnpm add -D @agent-hover/vite@latest', releaseUrl } } });
     });
     await openDemo(page);
     const toast = page.locator('#ah-toast');
@@ -88,7 +89,9 @@ test.describe('0.2 screenshots and update notice', () => {
     await expect(page.locator('#ah-conn')).toContainText('Update available');
     await page.locator('#ah-conn [data-act=about]').click();
     await expect(page.locator('#ah-set-about')).toContainText('9.9.9');
-    await expect(page.locator('#ah-set-about')).toContainText('npm i -D @agent-hover/vite@latest');
+    // The command for this project's package manager, and the release notes.
+    await expect(page.locator('#ah-set-about')).toContainText('pnpm add -D @agent-hover/vite@latest');
+    await expect(page.locator('#ah-set-about a', { hasText: "What's new" })).toHaveAttribute('href', /releases\/tag\/v9\.9\.9$/);
 
     // Once per version: a reload does not toast again.
     await page.reload();
