@@ -249,7 +249,8 @@ describe('agent-hover init', () => {
     expect(r.code).toBe(0);
     const config = JSON.parse(read(dir, 'opencode.json'));
     expect(config.model).toBe('anthropic/claude-sonnet');
-    expect(config.mcp['agent-hover']).toEqual({ type: 'local', command: ['npx', '-y', '@agent-hover/mcp'], enabled: true });
+    const server = mcpServerEntry(); // cmd /c npx on Windows
+    expect(config.mcp['agent-hover']).toEqual({ type: 'local', command: [server.command, ...server.args], enabled: true });
     expect(read(dir, 'opencode.json.bak')).toContain('claude-sonnet');
     expect(read(dir, 'AGENTS.md').match(/## agent-hover tasks/g)).toHaveLength(1);
     expect(read(dir, '.opencode/commands/agent-hover.md')).toMatch(/^---\ndescription: .+\n---\n\nListen for Agent Hover tasks\./);

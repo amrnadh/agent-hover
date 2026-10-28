@@ -1,7 +1,7 @@
 import { esc, writePref } from '../../lib/ui.js';
 import { icon } from '../../lib/icon.js';
 import { prettyAgentName } from '../../lib/task-status.js';
-import { AGENT_SETUPS, EDITORS, setupForClient, VOICE_LANGUAGES } from '../../lib/agents.js';
+import { AGENT_SETUPS, EDITORS, setupForClient } from '../../lib/agents.js';
 import type { OverlayApp } from '../../app/context.js';
 
 declare const __AH_VERSION__: string;
@@ -33,9 +33,6 @@ export function setupSettingsPanel(app: OverlayApp) {
       const listenLine = setup.listen
         ? `Run <span class="ah-code">${esc(setup.listen)}</span> in ${esc(setup.title)}. <span class="ah-code">${esc(setup.listen)}-status</span> shows what is waiting.`
         : `Tell ${esc(setup.title)} <b>“Listen for agent-hover tasks”</b>.`;
-      const langPref = api.voiceLanguagePref?.() || '';
-      const langs = VOICE_LANGUAGES.some(([v]) => v === langPref) || !langPref ? VOICE_LANGUAGES : [[langPref, langPref] as [string, string], ...VOICE_LANGUAGES];
-      const pageLang = document.documentElement.lang || navigator.language || 'en-US';
       body.innerHTML = `
         <div class="ah-ident" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:8px">
           <button class="ah-ibtn" data-act="back" aria-label="Back">${icon('back')}</button><div class="name" style="font-family:var(--ui-font)">Settings</div>
@@ -72,8 +69,6 @@ export function setupSettingsPanel(app: OverlayApp) {
         <section class="ah-set" id="ah-set-voice"><h4>Voice</h4>
           ${api.voiceSupported()
             ? `${seg('voice', [['on', 'Mic in Ask and comments'], ['off', 'Off']], api.voiceEnabled() ? 'on' : 'off')}
-               <div class="ah-field" style="padding:0"><label for="ah-voice-lang">Language you speak</label>
-                 <select id="ah-voice-lang" data-voice-lang><option value="" ${langPref ? '' : 'selected'}>Same as the page (${esc(pageLang)})</option>${langs.map(([v, l]) => `<option value="${esc(v)}" ${v === langPref ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
                <p>Your browser turns speech into text: on the device when it can, otherwise Chrome and Edge send the audio to Google or Microsoft, Safari to Apple. Agent Hover never receives or stores audio.</p>`
             : '<p>This browser has no speech recognition.</p>'}
           <p>Your system's dictation works in any text box too: press Fn twice on macOS, or Windows + H.</p>
@@ -118,8 +113,6 @@ export function setupSettingsPanel(app: OverlayApp) {
       const setupEl = body.querySelector('.ah-setup') as HTMLDetailsElement | null;
       if (setupEl) setupEl.ontoggle = () => { setupOpen = setupEl.open; };
 
-      const lang = body.querySelector('[data-voice-lang]') as HTMLSelectElement | null;
-      if (lang) lang.onchange = () => api.setVoiceLanguage(lang.value);
 
       body.onclick = async (e) => {
         const b = (e.target as Element).closest('button') as HTMLElement | null;

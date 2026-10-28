@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - React 19 dropped the source information Agent Hover read in React 18. The element's own creation stack is now mapped back through the dev server's source maps to the exact file and line, in Chrome, Firefox and Safari.
   - This includes components that don't live in a file of their own name.
   - An element drawn by a shared UI block (`ui/button.tsx`) points to where the block is used (`<Button>` in `Hero.tsx`).
-- **Voice.** A mic button in Ask and in new comments: speak instead of typing. It uses the browser's speech recognition, on the device when the browser can; otherwise it says once where the audio goes. It's hidden where the browser has no speech recognition (Firefox). Settings › Voice turns it off or sets the language.
+- **Voice.** A mic button in Ask and in new comments: speak instead of typing. It uses the browser's speech recognition, on the device when the browser can; otherwise it says once where the audio goes. It's hidden where the browser has no speech recognition (Firefox). It listens in your browser's language, and Settings › Voice turns it off.
 - **`init` writes global configs** for Antigravity (`~/.gemini/config/mcp_config.json`, plus the older `~/.gemini/antigravity/` file if you have one) and Windsurf, after showing them in the plan and asking.
 - **Windows support.**
   - Agents start the MCP server through `cmd /c npx`.
@@ -52,7 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click to collect.** With Inspect on and the Batch tab open, clicking an element adds it to the batch, and clicking it again takes it out; the cursor shows the + while this is on.
 
 ### Changed
-- **Voice language is a list** (Settings › Voice): the language you speak, from about 30, or the page's own. It was a free text box that expected a code like `en-US`.
 - **One `file:line` everywhere.** The pill, Ask, the task card, comments and the task sent to the agent all use the element's own line (React 19) or else its component's; Ask and comments used the component's first line while the pill showed the element's.
 - **Undo only when something changed.** Tasks that changed no files (a question the agent answered, a failure before any edit) no longer offer Undo.
 - **Comment card matches the task card**: status and time on top, the note as the title, the element and `file:line` underneath, **Send to agent** first. Delete asks once.

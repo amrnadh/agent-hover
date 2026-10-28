@@ -3,7 +3,6 @@ import type { OverlayApp } from '../app/context.js';
 
 const ENABLED_KEY = 'agent_hover_voice';
 const CONSENT_KEY = 'agent_hover_voice_ok';
-const LANG_KEY = 'agent_hover_voice_lang';
 
 /** Joins what was already typed with what was said, with one space between. */
 export function joinTranscript(base: string, spoken: string): string {
@@ -21,7 +20,7 @@ export function joinTranscript(base: string, spoken: string): string {
  */
 export function setupVoice(app: OverlayApp) {
   const { shadow, api } = app;
-  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, voiceLanguage, setVoiceLanguage, attachVoice, stopVoice, voiceLanguagePref: () => readPref(LANG_KEY, ''), isVoiceActive: () => !!active });
+  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, attachVoice, stopVoice, isVoiceActive: () => !!active });
 
   const Recognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement; placeholder: string } | null = null;
@@ -37,11 +36,9 @@ export function setupVoice(app: OverlayApp) {
     if (!on) stopVoice();
     refreshButtons();
   }
+  /** The language you speak: your browser's (en-US, en-GB, en-IN…). */
   function voiceLanguage(): string {
-    return readPref(LANG_KEY, '') || document.documentElement.lang || navigator.language || 'en-US';
-  }
-  function setVoiceLanguage(lang: string) {
-    writePref(LANG_KEY, lang.trim());
+    return navigator.language || 'en-US';
   }
 
   const buttons = new Set<HTMLElement>();

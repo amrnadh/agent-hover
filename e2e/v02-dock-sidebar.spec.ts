@@ -36,10 +36,6 @@ test.describe('0.2 dock', () => {
     await agents.locator('[data-agent=codex]').click();
     await expect(page.locator('#ah-set-agents .ah-steps')).toContainText('npx agent-hover init --agent codex');
     await expect(page.locator('#ah-set-agents .ah-steps')).toContainText('$agent-hover-status');
-    // Voice language is a list, starting with the page's own language (where the browser has speech recognition).
-    if (await page.evaluate(() => 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      await expect(page.locator('#ah-voice-lang option').first()).toContainText('Same as the page');
-    }
   });
 
   test('drag moves it, the position survives a reload, Reset puts it back', async ({ page }) => {

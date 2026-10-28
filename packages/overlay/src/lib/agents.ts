@@ -41,16 +41,6 @@ export function setupForClient(client: string): AgentSetup | undefined {
   return AGENT_SETUPS.find((a) => a.id === id);
 }
 
-/** Languages for speaking to the mic. "" follows the page's language. */
-export const VOICE_LANGUAGES: Array<[string, string]> = [
-  ['en-US', 'English (US)'], ['en-GB', 'English (UK)'], ['en-IN', 'English (India)'], ['en-AU', 'English (Australia)'],
-  ['es-ES', 'Español (España)'], ['es-MX', 'Español (México)'], ['fr-FR', 'Français'], ['de-DE', 'Deutsch'], ['it-IT', 'Italiano'],
-  ['pt-BR', 'Português (Brasil)'], ['pt-PT', 'Português (Portugal)'], ['nl-NL', 'Nederlands'], ['pl-PL', 'Polski'], ['sv-SE', 'Svenska'],
-  ['tr-TR', 'Türkçe'], ['ru-RU', 'Русский'], ['uk-UA', 'Українська'], ['ar-SA', 'العربية'], ['hi-IN', 'हिन्दी'], ['ta-IN', 'தமிழ்'],
-  ['te-IN', 'తెలుగు'], ['ml-IN', 'മലയാളം'], ['bn-IN', 'বাংলা'], ['id-ID', 'Bahasa Indonesia'], ['vi-VN', 'Tiếng Việt'], ['th-TH', 'ไทย'],
-  ['ja-JP', '日本語'], ['ko-KR', '한국어'], ['zh-CN', '中文 (简体)'], ['zh-TW', '中文 (繁體)'],
-];
-
 export const EDITORS: Array<[string, string]> = [
   ['cursor', 'Cursor'],
   ['vscode', 'VS Code'],
