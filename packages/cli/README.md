@@ -15,7 +15,7 @@ No dependencies, so `npx` starts instantly.
 | `npx agent-hover init` | Installs `@agent-hover/vite`, adds it to your Vite config, connects your agents, and keeps local data out of git |
 | `npx agent-hover doctor` | Checks the setup, the running dev server and the agent connection, and says how to fix each problem |
 | `npx agent-hover` | Lists the setup steps still missing in this project |
-| `npx agent-hover mcp [agent]` | Prints the MCP command and config for `claude`, `cursor`, `codex`, `windsurf`, `antigravity` or `claude-desktop` |
+| `npx agent-hover mcp [agent]` | Prints the MCP command and config for `claude`, `cursor`, `codex`, `opencode`, `windsurf`, `antigravity` or `claude-desktop` |
 | `npx agent-hover rules` | Prints the rules note that teaches agents to pick up tasks (for CLAUDE.md, AGENTS.md or Cursor rules) |
 | `npx agent-hover --version` | The CLI version |
 | `npx agent-hover help` | All commands |
@@ -44,6 +44,8 @@ What it changes, all inside your project:
 | `.mcp.json` | Registers the MCP server for Claude Code |
 | `.cursor/mcp.json` | Registers it for Cursor |
 | `.codex/config.toml` | Registers it for Codex |
+| `opencode.json` | Registers it for OpenCode (an `opencode.jsonc` with comments is left alone; `init` prints the entry to add) |
+| `/agent-hover` and `/agent-hover-status` commands | `.claude/commands/`, `.cursor/commands/`, `.opencode/commands/`, `.windsurf/workflows/`, `.agent/workflows/`, and `$agent-hover` / `$agent-hover-status` skills for Codex in `.agents/skills/` |
 | `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/agent-hover.mdc` | Adds the short note on picking up tasks |
 | `.gitignore` | Adds `.agent-hover/session.json`, `tasks.json`, `checkpoints/`, `screenshots/` |
 | Antigravity, Windsurf, Claude Desktop | Nothing is written: these agents only read a global config in your home folder, so `init` prints the command to run (for Antigravity: `agy mcp add agent-hover -- npx -y @agent-hover/mcp`) or the snippet to paste |
@@ -54,7 +56,7 @@ After `init`:
 
 1. Start your dev server and open the app. Press **Alt** (or the pointer in the dock) and click anything.
 2. Restart your agent so it loads the MCP server (Claude Code asks you to approve `.mcp.json` once).
-3. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** Then select an element, press **Ask**, and send.
+3. Run **`/agent-hover`** in your agent (**`$agent-hover`** in Codex), or tell it **"Listen for agent-hover tasks."** Then select an element, press **Ask**, and send. **`/agent-hover-status`** shows what is waiting.
 
 ## doctor
 

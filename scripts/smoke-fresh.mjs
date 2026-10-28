@@ -70,7 +70,7 @@ try {
   check(JSON.parse(text('.gemini/config/mcp_config.json', home)).mcpServers['agent-hover'], 'Antigravity: global config in the home folder');
   for (const f of ['.claude/commands/agent-hover.md', '.cursor/commands/agent-hover.md', '.agents/skills/agent-hover/SKILL.md', '.agent/workflows/agent-hover.md']) check(has(f), `listen command: ${f}`);
   if (win) check(text('.mcp.json').includes('"cmd"'), 'Windows: agents start the server through cmd');
-  check(/Run .*\/agent-hover/.test(initOut), 'init tells you to run /agent-hover');
+  check(/Start listening: .*\/agent-hover/.test(initOut), 'init tells you to run /agent-hover');
 
   step('dev server, doctor, and an agent connecting');
   devServer = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: app, env, shell: win, detached: !win, stdio: 'ignore' });
@@ -102,6 +102,21 @@ try {
   await client.close();
   for (let i = 0; i < 20 && (await presence()).length; i++) await new Promise((r) => setTimeout(r, 250));
   check(!(await presence()).length, 'closing the agent removes it at once');
+
+  // A global MCP config (Antigravity, Windsurf) starts the server outside the project: it finds the dev server
+  // through the list in the home folder.
+  const outside = new Client({ name: 'antigravity', version: '1.0.0' });
+  await outside.connect(new StdioClientTransport({
+    command: process.execPath,
+    args: [path.join(app, 'node_modules', '@agent-hover', 'mcp', 'dist', 'index.js')],
+    cwd: home, env, stderr: 'ignore',
+  }));
+  agents = [];
+  for (let i = 0; i < 40 && !agents.length; i++) { agents = await presence(); if (!agents.length) await new Promise((r) => setTimeout(r, 250)); }
+  check(agents.some((a) => a.client === 'antigravity'), 'an agent started outside the project connects too');
+  const listed = await outside.callTool({ name: 'list_agent_tasks', arguments: {} });
+  check(!listed.isError, 'and its requests are authorized');
+  await outside.close();
 
   console.log('\n[smoke] all good');
 } catch (err) {

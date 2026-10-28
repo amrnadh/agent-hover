@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Agents that start outside your project connect.** A running dev server now also lists itself in `~/.agent-hover/bridges/` (only you can read it, like `.agent-hover/session.json`). The MCP server looks for the dev server in its working folder, then in the workspace folders the agent reports (MCP roots), then in that list. Antigravity, Windsurf and Claude Desktop, which use a global config, used to get "401 Unauthorized". A 401 now says what to check. Set `AGENT_HOVER_HOME` to move the list.
+- **Settings › Agents, step by step.** Pick an agent and get three steps: the `init` command for it (with Copy), how to restart it so it loads the server, and its own listen and status commands. The by-hand config is folded underneath. Connected agents show how you start them listening.
+- **OpenCode.** `init --agent opencode` registers the MCP server in `opencode.json` (its own `mcp` format), adds the task note to `AGENTS.md` (written once when Codex is set up too) and `/agent-hover` commands in `.opencode/commands/`. Settings › Agents and `npx agent-hover mcp opencode` show the setup.
+- **`/agent-hover-status`** (`$agent-hover-status` in Codex) lists waiting and running tasks without starting any. `init` writes it next to `/agent-hover` for every agent. Claude Code's desktop app can't send MCP prompt names like `/mcp__agent-hover__status` (it reads the underscores as formatting), so the plain commands are the way to go there.
+- **You can see when the mic is listening.** The mic turns red and glows softly (a little faster while it hears you), and an empty text box says "Listening…". **Esc** stops listening and keeps what was said.
+- **`init` asks properly.** Pick agents from a checklist (↑ ↓, space, a for all, Enter), with the ones your project already uses ticked and where each one's config goes shown next to it; then a Yes/No before anything is written. Esc or Ctrl+C cancels. The plan is grouped (this project, then each agent), and the next steps name each agent's own start command. Without a terminal (scripts, CI) it works as before: `--agent` and `--yes`.
+- **Try unpublished versions in a real project.** `npm run registry:local` starts a private npm registry on your machine with the current code under a fresh version; point npm at it and `npx agent-hover init`, the plugin install and every agent's MCP server use that code. See `docs/testing-before-release.md`.
 - **Tasks grouped by what they need from you.**
   - The Tasks tab shows **Needs you** (changes to review, failures), **In progress**, and **History**, which starts folded and carries **Clear** (asks once). Rows show the status and the exact `file:line`; open one for the element, the agent's summary, its files and actions.
   - The Tasks tab badge counts what needs you, and the dock's Tasks dot turns red for a failure.
@@ -28,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - React 19 dropped the source information Agent Hover read in React 18. The element's own creation stack is now mapped back through the dev server's source maps to the exact file and line, in Chrome, Firefox and Safari.
   - This includes components that don't live in a file of their own name.
   - An element drawn by a shared UI block (`ui/button.tsx`) points to where the block is used (`<Button>` in `Hero.tsx`).
-- **Voice.** A mic button in Ask and in new comments: speak instead of typing. It uses the browser's speech recognition, on the device when the browser can; otherwise it says once where the audio goes. It's hidden where the browser has no speech recognition (Firefox). Settings › Voice turns it off or sets the language.
+- **Voice.** A mic button in Ask and in new comments: speak instead of typing. It uses the browser's speech recognition, on the device when the browser can; otherwise it says once where the audio goes. It's hidden where the browser has no speech recognition (Firefox). It listens in your browser's language, and Settings › Voice turns it off.
 - **`init` writes global configs** for Antigravity (`~/.gemini/config/mcp_config.json`, plus the older `~/.gemini/antigravity/` file if you have one) and Windsurf, after showing them in the plan and asking.
 - **Windows support.**
   - Agents start the MCP server through `cmd /c npx`.
@@ -74,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub demo video**: `npm run record:demo` records six scenes (point instead of describe, like this not that, notes, add a feature, lock), each on a fresh demo copy, and joins them into `docs/media/agent-hover-demo.mp4`; scene 1 is the README GIF. `npm run record:demo -- 2` re-records one scene. `docs/media/VIDEOS.md` describes the demo video and the separate launch video.
 
 ### Fixed
+- An agent running in a sandbox (Cursor, Antigravity) treated the running dev server as stopped, because the sandbox doesn't let it check other processes, and sent no token: every tool failed with 401.
 - Task markers could go missing after a page reload or after the agent's change hot-reloaded the element, until you scrolled (mostly Safari/WebKit). Markers are placed again while the page settles, and when a task's element appears later (another route in a single-page app).
 - Compare's "before" image is now taken when you open Ask, not after Send, so a fast agent can no longer change the page while it is being captured (which left Compare missing or showing the changed element).
 - Screenshots and Compare's after image no longer hide the whole overlay while they capture; a slow capture (Linux WebKit) made the UI disappear for its duration. A capture now gives up after 10 seconds instead of waiting forever.

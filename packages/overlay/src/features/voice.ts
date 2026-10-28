@@ -3,7 +3,6 @@ import type { OverlayApp } from '../app/context.js';
 
 const ENABLED_KEY = 'agent_hover_voice';
 const CONSENT_KEY = 'agent_hover_voice_ok';
-const LANG_KEY = 'agent_hover_voice_lang';
 
 /** Joins what was already typed with what was said, with one space between. */
 export function joinTranscript(base: string, spoken: string): string {
@@ -21,10 +20,10 @@ export function joinTranscript(base: string, spoken: string): string {
  */
 export function setupVoice(app: OverlayApp) {
   const { shadow, api } = app;
-  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, voiceLanguage, setVoiceLanguage, attachVoice, stopVoice });
+  Object.assign(api, { voiceSupported, voiceEnabled, setVoiceEnabled, attachVoice, stopVoice, isVoiceActive: () => !!active });
 
   const Recognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement } | null = null;
+  let active: { rec: any; button: HTMLElement; field: HTMLTextAreaElement; placeholder: string } | null = null;
 
   function voiceSupported(): boolean {
     return typeof Recognition === 'function';
@@ -37,11 +36,9 @@ export function setupVoice(app: OverlayApp) {
     if (!on) stopVoice();
     refreshButtons();
   }
+  /** The language you speak: your browser's (en-US, en-GB, en-IN…). */
   function voiceLanguage(): string {
-    return readPref(LANG_KEY, '') || document.documentElement.lang || navigator.language || 'en-US';
-  }
-  function setVoiceLanguage(lang: string) {
-    writePref(LANG_KEY, lang.trim());
+    return navigator.language || 'en-US';
   }
 
   const buttons = new Set<HTMLElement>();
@@ -98,6 +95,19 @@ export function setupVoice(app: OverlayApp) {
     };
   }
 
+  /** While the mic is on: the mic button breathes, and an empty text box says it's listening. Nothing else moves. */
+  function showListening(field: HTMLTextAreaElement, button: HTMLElement): string {
+    const placeholder = field.placeholder;
+    field.placeholder = 'Listening…';
+    button.classList.add('rec');
+    return placeholder;
+  }
+
+  function hideListening(a: { field: HTMLTextAreaElement; button: HTMLElement; placeholder: string }) {
+    a.field.placeholder = a.placeholder;
+    a.button.classList.remove('rec', 'hearing');
+  }
+
   function start(field: HTMLTextAreaElement, button: HTMLElement, lang: string, local: boolean) {
     const rec = new Recognition();
     rec.lang = lang;
@@ -105,6 +115,10 @@ export function setupVoice(app: OverlayApp) {
     rec.interimResults = true;
     if (local) rec.processLocally = true;
     const base = field.value;
+    const placeholder = showListening(field, button);
+    // A little livelier while the browser hears speech.
+    rec.onspeechstart = () => button.classList.add('hearing');
+    rec.onspeechend = () => button.classList.remove('hearing');
     rec.onresult = (e: any) => {
       let said = '';
       for (let i = 0; i < e.results.length; i++) said += ' ' + e.results[i][0].transcript;
@@ -117,14 +131,16 @@ export function setupVoice(app: OverlayApp) {
       else if (e.error !== 'aborted') api.toast('Voice input stopped');
     };
     rec.onend = () => {
-      if (active?.rec !== rec) return;
+      const a = active;
+      if (!a || a.rec !== rec) return;
+      hideListening(a);
       active = null;
       button.setAttribute('aria-pressed', 'false');
-      button.classList.remove('rec');
+      button.title = button.getAttribute('aria-label') || '';
     };
-    active = { rec, button, field };
+    active = { rec, button, field, placeholder };
+    button.title = 'Stop listening (Esc)';
     button.setAttribute('aria-pressed', 'true');
-    button.classList.add('rec');
     field.focus();
     try { rec.start(); } catch { rec.onend(); }
   }
@@ -133,8 +149,9 @@ export function setupVoice(app: OverlayApp) {
     const a = active;
     if (!a) return;
     active = null;
+    hideListening(a);
     a.button.setAttribute('aria-pressed', 'false');
-    a.button.classList.remove('rec');
+    a.button.title = a.button.getAttribute('aria-label') || '';
     try { a.rec.stop(); } catch { /* already stopped */ }
   }
 

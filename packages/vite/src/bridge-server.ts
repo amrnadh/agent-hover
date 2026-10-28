@@ -9,7 +9,7 @@ import { CheckpointStore } from './checkpoints.js';
 import { checkForUpdate, packageVersion, type UpdateInfo } from './update-check.js';
 import path from 'path';
 import fs from 'fs/promises';
-import { readFileSync, existsSync, unlinkSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import type { LocationMapper } from './source-location.js';
 import {
   ContextBuilder,
@@ -22,7 +22,7 @@ import {
   generateSessionToken,
   writeSessionFile,
   removeSessionFile,
-  getSessionFilePath,
+  removeSessionFileSync,
   BRAND,
 } from '@agent-hover/core';
 import type {
@@ -1672,14 +1672,7 @@ export class BridgeServer {
           console.error('[agent-hover] Failed to write session file:', err);
         }
 
-        this.cleanupExitHandler = () => {
-          try {
-            const p = getSessionFilePath(this.projectRoot);
-            if (existsSync(p)) {
-              unlinkSync(p);
-            }
-          } catch {}
-        };
+        this.cleanupExitHandler = () => removeSessionFileSync(this.projectRoot);
         process.once('exit', this.cleanupExitHandler);
 
         const wss = new WebSocketServer({ server });

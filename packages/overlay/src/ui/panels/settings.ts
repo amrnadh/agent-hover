@@ -1,7 +1,7 @@
 import { esc, writePref } from '../../lib/ui.js';
 import { icon } from '../../lib/icon.js';
 import { prettyAgentName } from '../../lib/task-status.js';
-import { AGENT_SETUPS, EDITORS } from '../../lib/agents.js';
+import { AGENT_SETUPS, EDITORS, setupForClient } from '../../lib/agents.js';
 import type { OverlayApp } from '../../app/context.js';
 
 declare const __AH_VERSION__: string;
@@ -27,24 +27,39 @@ export function setupSettingsPanel(app: OverlayApp) {
     render(body: HTMLElement) {
       const agents = state.connectedAgents || [];
       const setup = AGENT_SETUPS.find((a) => a.id === agentTab) || AGENT_SETUPS[0];
-      const showSetup = setupOpen ?? (!agents.length || state.side.settingsFocus === 'agents');
+      // Open while nothing is connected, or when you came to connect another ('connect').
+      const showSetup = setupOpen ?? (!agents.length || state.side.settingsFocus === 'connect');
+      const init = `npx agent-hover init --agent ${setup.id}`;
+      const listenLine = setup.listen
+        ? `Run <span class="ah-code">${esc(setup.listen)}</span> in ${esc(setup.title)}. <span class="ah-code">${esc(setup.listen)}-status</span> shows what is waiting.`
+        : `Tell ${esc(setup.title)} <b>“Listen for agent-hover tasks”</b>.`;
       body.innerHTML = `
         <div class="ah-ident" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:8px">
           <button class="ah-ibtn" data-act="back" aria-label="Back">${icon('back')}</button><div class="name" style="font-family:var(--ui-font)">Settings</div>
         </div>
         <section class="ah-set" id="ah-set-agents"><h4>Agents</h4>
           ${agents.length
-            ? agents.map((a: any) => `<div class="ah-agent"><span class="ah-dot ok"></span>${esc(prettyAgentName(a.client))}<span class="ah-muted">connected</span></div>`).join('')
-            : `<p>${state.isBridgeConnected ? 'No agent is connected right now.' : 'The dev server is offline.'} Ask and Comment still work by copying prompts.</p>`}
-          <p>Works with any MCP coding agent. Add the server once, then run <b>/agent-hover</b> in your agent (<b>$agent-hover</b> in Codex) or tell it <b>“Listen for agent-hover tasks”</b>.</p>
-          <details class="ah-sec ah-setup" ${showSetup ? 'open' : ''}><summary>${icon('chev-right', 12)}<span class="chev-label">${agents.length ? 'Connect another agent' : 'Set up an agent'}</span></summary>
+            ? agents.map((a: any) => {
+                const s = setupForClient(a.client);
+                const how = s?.listen ? `<span class="ah-code">${esc(s.listen)}</span> to listen` : 'connected';
+                return `<div class="ah-agent"><span class="ah-dot ok"></span>${esc(prettyAgentName(a.client))}${a.sessions > 1 ? `<span class="ah-muted">· ${a.sessions} sessions</span>` : ''}<span class="ah-muted end">${how}</span></div>`;
+              }).join('')
+            : `<p>${state.isBridgeConnected ? 'No agent connected yet.' : 'The dev server is offline.'} Ask and Comment still work: prompts go to your clipboard.</p>`}
+          <details class="ah-sec ah-setup" ${showSetup ? 'open' : ''}><summary>${icon('chev-right', 12)}<span class="chev-label">${agents.length ? 'Connect another agent' : 'Connect an agent'}</span></summary>
           <div class="ah-chips" data-agents>${AGENT_SETUPS.map((a) => `<button data-agent="${a.id}" aria-pressed="${a.id === setup.id}">${esc(a.title)}</button>`).join('')}</div>
-          ${setup.command ? `<pre class="ah-snippet" tabindex="0">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
-          <pre class="ah-snippet" tabindex="0">${esc(setup.snippet)}</pre>
-          <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-setup">${icon('copy', 14)}Copy</button><span class="ah-muted" style="font-size:12px">Or run <span class="ah-mono">npx agent-hover mcp</span> in your project.</span></div>
-          ${/Windows/.test(navigator.userAgent) ? '<p>On Windows, agents start the server through cmd: <span class="ah-mono">"command": "cmd", "args": ["/c", "npx", "-y", "@agent-hover/mcp"]</span>. <span class="ah-mono">npx agent-hover init</span> writes it that way for you.</p>' : ''}
+          <ol class="ah-steps">
+            <li><b>Set it up</b> in your project folder:<pre class="ah-snippet" tabindex="0">${esc(init)}</pre><div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-init">${icon('copy', 14)}Copy</button></div></li>
+            <li><b>${esc(setup.restart[0])}</b> ${esc(setup.restart[1])}</li>
+            <li><b>Start listening.</b> ${listenLine}</li>
+          </ol>
+          <details class="ah-sec ah-byhand"><summary>${icon('chev-right', 12)}<span>Set it up by hand</span></summary>
+            ${setup.command ? `<pre class="ah-snippet" tabindex="0">${esc(setup.command)}</pre><p>Or add to ${esc(setup.configPath)}:</p>` : `<p>Add to ${esc(setup.configPath)}:</p>`}
+            <pre class="ah-snippet" tabindex="0">${esc(setup.snippet)}</pre>
+            <div class="ah-actions"><button class="ah-tbtn outline" data-act="copy-setup">${icon('copy', 14)}Copy</button></div>
+            ${/Windows/.test(navigator.userAgent) ? '<p>On Windows, agents start the server through cmd: <span class="ah-mono">"command": "cmd", "args": ["/c", "npx", "-y", "@agent-hover/mcp"]</span>. <span class="ah-mono">npx agent-hover init</span> writes it that way for you.</p>' : ''}
           </details>
-          <p>Using ChatGPT, Claude.ai, v0, Lovable or Bolt? Use Copy: every prompt is self-contained.</p>
+          </details>
+          <p>Using ChatGPT, Claude.ai, v0, Lovable or Bolt? Pick Copy in Ask: every prompt is self-contained.</p>
         </section>
         <section class="ah-set"><h4>When you press Send</h4>
           ${seg('delivery', [['auto', 'Send if an agent is connected, else copy'], ['copy', 'Always copy']], state.delivery)}
@@ -54,7 +69,6 @@ export function setupSettingsPanel(app: OverlayApp) {
         <section class="ah-set" id="ah-set-voice"><h4>Voice</h4>
           ${api.voiceSupported()
             ? `${seg('voice', [['on', 'Mic in Ask and comments'], ['off', 'Off']], api.voiceEnabled() ? 'on' : 'off')}
-               <div class="ah-field" style="padding:0"><label for="ah-voice-lang">Language</label><input id="ah-voice-lang" data-voice-lang value="${esc(api.voiceLanguage())}" placeholder="en-US"></div>
                <p>Your browser turns speech into text: on the device when it can, otherwise Chrome and Edge send the audio to Google or Microsoft, Safari to Apple. Agent Hover never receives or stores audio.</p>`
             : '<p>This browser has no speech recognition.</p>'}
           <p>Your system's dictation works in any text box too: press Fn twice on macOS, or Windows + H.</p>
@@ -99,8 +113,6 @@ export function setupSettingsPanel(app: OverlayApp) {
       const setupEl = body.querySelector('.ah-setup') as HTMLDetailsElement | null;
       if (setupEl) setupEl.ontoggle = () => { setupOpen = setupEl.open; };
 
-      const lang = body.querySelector('[data-voice-lang]') as HTMLInputElement | null;
-      if (lang) lang.onchange = () => api.setVoiceLanguage(lang.value);
 
       body.onclick = async (e) => {
         const b = (e.target as Element).closest('button') as HTMLElement | null;
@@ -123,6 +135,10 @@ export function setupSettingsPanel(app: OverlayApp) {
         if (act === 'back') api.openSidebar();
         if (act === 'reset-dock') api.resetDockPosition();
         if (act === 'minimize') api.setDockMinimized(true);
+        if (act === 'copy-init') {
+          const ok = await api.copyText(init);
+          api.toast(ok ? 'Copied · run it in your project folder' : 'Clipboard blocked by the browser');
+        }
         if (act === 'copy-setup') {
           const ok = await api.copyText(setup.command || setup.snippet);
           api.toast(ok ? `Copied ${setup.title} setup` : 'Clipboard blocked by the browser');

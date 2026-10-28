@@ -15,6 +15,7 @@ import {
   GetPromptRequestSchema,
   ListPromptsRequestSchema,
   ListToolsRequestSchema,
+  RootsListChangedNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { discoverSession, BRAND } from "@agent-hover/core";
 import { randomUUID } from "crypto";
@@ -25,10 +26,25 @@ import { dirname, join } from "path";
 /** Default port for the Agent Hover bridge server */
 const DEFAULT_BRIDGE_PORT = 9850;
 
+/** The agent's workspace folders (MCP roots), for agents that start this server outside the project. */
+let workspaceRoots: string[] = [];
+
+/** Ask the client for its workspace folders, when it can say (Cursor, VS Code, Claude Code…). */
+async function refreshRoots(): Promise<void> {
+  if (!server.getClientCapabilities()?.roots) return;
+  try {
+    const { roots } = await server.listRoots(undefined, { timeout: 3000 });
+    workspaceRoots = roots.filter((r) => r.uri.startsWith("file:")).map((r) => fileURLToPath(r.uri));
+  } catch {
+    // Not answered: the working folder and the list of running dev servers still work.
+  }
+}
+
 /**
  * Resolves the bridge server connection:
  * 1. An explicit port in COMPONENT_POINTER_PORT / AGENT_HOVER_PORT (with AGENT_HOVER_TOKEN): you asked for it
- * 2. The session file (.agent-hover/session.json) of the dev server above the working directory
+ * 2. The running dev server's session: from AGENT_HOVER_SESSION, the working folder, the agent's workspace
+ *    folders, or the dev servers listed in ~/.agent-hover (discoverSession)
  * 3. DEFAULT_BRIDGE_PORT (9850)
  */
 function resolveBridgeConnection(): { port: number; token?: string } {
@@ -41,7 +57,7 @@ function resolveBridgeConnection(): { port: number; token?: string } {
   }
 
   try {
-    const session = discoverSession();
+    const session = discoverSession(process.cwd(), workspaceRoots);
     if (session) {
       return { port: session.port, token: session.token };
     }
@@ -127,6 +143,12 @@ function handleBridgeError(error: unknown) {
  * @param response - Fetch Response object from the bridge server
  * @returns Formatted context string
  */
+/** Said with a 401: the dev server is running but this server didn't find its session file. */
+const AUTH_HINT =
+  "\n\nAgent Hover found a dev server but not its session. Check that the dev server was started after installing Agent Hover " +
+  "(restart it once), then restart this agent. If the agent runs outside your project folder, add " +
+  "AGENT_HOVER_SESSION=<your project>/.agent-hover/session.json to the env of the agent-hover MCP server in its config.";
+
 async function parseBridgeResponse(response: Response): Promise<string> {
   const contentType = response.headers.get("content-type") || "";
 
@@ -140,7 +162,7 @@ async function parseBridgeResponse(response: Response): Promise<string> {
       serverMessage = errorBody;
     }
     const details = serverMessage ? `: ${serverMessage}` : "";
-    throw new Error(`HTTP ${response.status} ${response.statusText}${details}`);
+    throw new Error(`HTTP ${response.status} ${response.statusText}${details}${response.status === 401 ? AUTH_HINT : ""}`);
   }
 
   if (contentType.includes("application/json")) {
@@ -233,7 +255,7 @@ async function bridgeJson<T>(method: "GET" | "POST", endpoint: string, body?: un
     try {
       message = JSON.parse(text).error || text;
     } catch {}
-    throw new Error(`HTTP ${response.status}${message ? `: ${message}` : ""}`);
+    throw new Error(`HTTP ${response.status}${message ? `: ${message}` : ""}${response.status === 401 ? AUTH_HINT : ""}`);
   }
   return response.json() as Promise<T>;
 }
@@ -280,6 +302,13 @@ export const LISTEN_PROMPT = [
   "Then call wait_for_agent_task again. Keep going until I tell you to stop. If it returns without a task, call it again.",
 ].join("\n");
 
+/** The status prompt; the same text as the /agent-hover-status command files (STATUS_PROMPT in the CLI). */
+export const STATUS_PROMPT = [
+  "Show my Agent Hover tasks.",
+  "",
+  "Call the agent-hover list_agent_tasks tool and tell me briefly which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+].join("\n");
+
 /**
  * Initialize the Agent Hover MCP server instance.
  */
@@ -297,7 +326,11 @@ const server = new Server(
   }
 );
 
-/** Prompts: Claude Code lists them as /mcp__agent-hover__listen and /mcp__agent-hover__status. */
+/**
+ * Prompts: Claude Code lists them as /mcp__agent-hover__listen and /mcp__agent-hover__status. Its desktop app can't
+ * send those names (it reads the underscores as formatting), so `init` also writes plain /agent-hover and
+ * /agent-hover-status commands.
+ */
 const PROMPTS = {
   listen: {
     description: "Listen for tasks sent from the page with Agent Hover, do each one and report back",
@@ -305,7 +338,7 @@ const PROMPTS = {
   },
   status: {
     description: "Show Agent Hover tasks that are waiting or in progress",
-    text: "Call the agent-hover list_agent_tasks tool and tell me, briefly, which tasks are waiting or in progress and what each asks for. Don't start any of them.",
+    text: STATUS_PROMPT,
   },
 } as const;
 
@@ -956,8 +989,9 @@ async function main(): Promise<void> {
   };
   // Register presence once the client has identified itself (initialize), so the browser shows its real name.
   server.oninitialized = () => {
-    sendHeartbeat();
+    refreshRoots().finally(sendHeartbeat);
   };
+  server.setNotificationHandler(RootsListChangedNotificationSchema, async () => { await refreshRoots(); });
   const heartbeatTimer = setInterval(() => {
     if (server.getClientVersion()) sendHeartbeat();
   }, 10000);

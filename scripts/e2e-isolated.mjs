@@ -48,7 +48,7 @@ const result = spawnSync('npx', ['playwright', 'test', ...playwrightArgs], {
   cwd: root,
   stdio: 'inherit',
   shell: process.platform === 'win32',
-  env: { ...process.env, AH_DEMO_DIR: dir, AH_E2E_PORT: process.env.AH_E2E_PORT || '5175', ...(screenshots ? { AH_SCREENSHOTS: '1' } : {}) },
+  env: { ...process.env, AGENT_HOVER_HOME: path.join(dir, '.user-home'), AH_DEMO_DIR: dir, AH_E2E_PORT: process.env.AH_E2E_PORT || '5175', ...(screenshots ? { AH_SCREENSHOTS: '1' } : {}) },
 });
 if (keep) console.log(`[e2e] kept ${dir}`);
 else rmSync(dir, { recursive: true, force: true });

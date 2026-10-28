@@ -28,7 +28,14 @@ test.describe('0.2 dock', () => {
     await page.locator('#ah-d-mark').click();
     await expect(page.locator('#ah-conn')).toContainText('Cursor');
     await page.locator('#ah-conn [data-act=agents]').click();
-    await expect(page.locator('#ah-set-agents')).toBeVisible();
+    const agents = page.locator('#ah-set-agents');
+    await expect(agents).toBeVisible();
+    await expect(agents.locator('.ah-agent', { hasText: 'Cursor' })).toContainText('/agent-hover to listen');
+    // Connecting another one: three steps, in that agent's own words.
+    await agents.locator('.ah-setup > summary').click();
+    await agents.locator('[data-agent=codex]').click();
+    await expect(page.locator('#ah-set-agents .ah-steps')).toContainText('npx agent-hover init --agent codex');
+    await expect(page.locator('#ah-set-agents .ah-steps')).toContainText('$agent-hover-status');
   });
 
   test('drag moves it, the position survives a reload, Reset puts it back', async ({ page }) => {

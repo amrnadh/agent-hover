@@ -7,9 +7,9 @@ import { icon } from '../lib/icon.js';
 
 describe('agent setup table', () => {
   it('matches the CLI table so Settings and `npx agent-hover mcp` never disagree', () => {
-    expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet }))).toEqual(
+    expect(AGENT_SETUPS.map(({ id, title, command, configPath, snippet, listen }) => ({ id, title, command, configPath, snippet, listen }))).toEqual(
       // The overlay shows the macOS/Linux form; on Windows Settings adds a note about cmd /c npx.
-      mcpClients('darwin').map(({ id, title, command, configPath, snippet }) => ({ id, title, command, configPath, snippet })),
+      mcpClients('darwin').map(({ id, title, command, configPath, snippet, commandFile }) => ({ id, title, command, configPath, snippet, listen: commandFile?.invoke })),
     );
   });
 });
