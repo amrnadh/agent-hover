@@ -134,8 +134,9 @@ export function setupVoice(app: OverlayApp) {
       else if (e.error !== 'aborted') api.toast('Voice input stopped');
     };
     rec.onend = () => {
-      if (active?.rec !== rec) return;
-      hideListening(active);
+      const a = active;
+      if (!a || a.rec !== rec) return;
+      hideListening(a);
       active = null;
       button.setAttribute('aria-pressed', 'false');
       button.title = button.getAttribute('aria-label') || '';

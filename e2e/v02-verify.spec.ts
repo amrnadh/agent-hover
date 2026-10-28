@@ -49,7 +49,8 @@ test.describe('0.2 compare and undo', () => {
     await card.locator('[data-act=compare]').click();
     // The after image is captured once HMR settles; capture now if it is not there yet.
     const captureNow = card.locator('[data-act=capture-after]');
-    if (await captureNow.isVisible().catch(() => false)) await captureNow.click();
+    // The automatic capture can finish (and replace the button) while we click: that's fine too.
+    if (await captureNow.isVisible().catch(() => false)) await captureNow.click({ timeout: 5000 }).catch(() => {});
     await expect(card.locator('.ah-compare img')).toHaveCount(2, { timeout: 10000 });
     // The "After" label is a small tag in the corner, not a dark layer over the after image.
     const afterTag = (await card.locator('.ah-compare .tag.after').boundingBox())!;
