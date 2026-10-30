@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-29
+
+The review release. A change your agent makes now waits on its element until you Keep it, Undo it or follow up; the Tasks tab is sorted by what needs you; and agents are easier to start: `/agent-hover` in Claude Code, Cursor, Codex, OpenCode, Windsurf and Antigravity, a checklist in `init`, and a connection that works from sandboxes and global configs. Also: exact file and line on React 19, Windows, voice input, and update notices.
+
 ### Added
 - **Agents that start outside your project connect.** A running dev server now also lists itself in `~/.agent-hover/bridges/` (only you can read it, like `.agent-hover/session.json`). The MCP server looks for the dev server in its working folder, then in the workspace folders the agent reports (MCP roots), then in that list. Antigravity, Windsurf and Claude Desktop, which use a global config, used to get "401 Unauthorized". A 401 now says what to check. Set `AGENT_HOVER_HOME` to move the list.
 - **Settings › Agents, step by step.** Pick an agent and get three steps: the `init` command for it (with Copy), how to restart it so it loads the server, and its own listen and status commands. The by-hand config is folded underneath. Connected agents show how you start them listening.
@@ -28,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Restart notice after an update.** The page loads a new Agent Hover right away, but the dev server keeps running the old one until it restarts, so new buttons used to fail with a raw error. The bridge now reports its API level in `/api/health`; when it's older than the page, the dock and sidebar say "Restart your dev server to finish updating", and a request the old bridge doesn't know says the same instead of a parse error.
 - **Task card keys.** With a task card open: **K** Keep, **U** Undo, **F** Follow up, **R** Try again / Send again. While an agent works, the card counts how long it has been at it. The toast when a change is done offers **Review**.
 - **`/agent-hover` starts listening.**
-  - `agent-hover init` adds a one-word command for each agent: `.claude/commands/agent-hover.md` (Claude Code), `.cursor/commands/agent-hover.md` (Cursor), `.windsurf/workflows/` (Windsurf), `.agent/workflows/` (Antigravity), and a `$agent-hover` skill for Codex (`.agents/skills/`).
+  - `agent-hover init` adds a one-word command for each agent: `.claude/commands/agent-hover.md` (Claude Code), `.cursor/commands/agent-hover.md` (Cursor), `.windsurf/workflows/` (Windsurf), `.agent/workflows/` (Antigravity), `.opencode/commands/` (OpenCode), and a `$agent-hover` skill for Codex (`.agents/skills/`).
   - The MCP server now tells agents how to listen when they connect, and offers `listen` and `status` prompts (`/mcp__agent-hover__listen` in Claude Code).
 - **Pick which agent gets a task.** With several agents connected, the agent you pick in Ask (or the first one) is the only one that receives the task. Comments and Batch go to the same agent. Two sessions of one agent show as one agent with a session count.
 - **Exact file and line on React 19.**

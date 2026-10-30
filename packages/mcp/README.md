@@ -62,18 +62,23 @@ Without listen mode, send from the page and tell the agent "I sent you an agent-
 
 ## Updating
 
-The server runs through `npx`, so restarting your agent picks up the latest release. To pin a version, put it in the args: `["-y", "@agent-hover/mcp@0.2.0"]` (or `@latest`). Update the plugin in your project too:
+The server runs through `npx`, so restarting your agent picks up the latest release. To pin a version, put it in the args: `["-y", "@agent-hover/mcp@0.2.1"]` (or `@latest`). Update the plugin in your project too:
 
 ```bash
 npm install -D @agent-hover/vite@latest
 ```
 
+## Finding your dev server
+
+The server connects to the dev server of the project you're working on. It looks in its working folder (and the folders above), then in the workspace folders your agent reports, then in the list of running dev servers in `~/.agent-hover/bridges/`. So agents with a global config (Antigravity, Windsurf, Claude Desktop) connect too. With several dev servers running and nothing else to go on, it uses the newest.
+
 ## Environment
 
 | Variable | |
 |----------|--|
-| `AGENT_HOVER_SESSION` | Path to a `.agent-hover/session.json`, when the agent runs outside the project folder (for example in a monorepo root) |
+| `AGENT_HOVER_SESSION` | Path to a `.agent-hover/session.json`, to pick one project's dev server explicitly |
 | `AGENT_HOVER_PORT`, `AGENT_HOVER_TOKEN` | Connect to a bridge directly |
+| `AGENT_HOVER_HOME` | Where the list of running dev servers lives (default `~/.agent-hover`) |
 
 ## Troubleshooting
 
@@ -81,6 +86,7 @@ npm install -D @agent-hover/vite@latest
 
 - **The page shows no agent connected.** Restart the agent in the project folder after registering the server, and make sure the dev server is running.
 - **Tasks stay at "Sent".** The agent isn't listening: run `/agent-hover`, or tell it "Listen for agent-hover tasks".
+- **"401 Unauthorized".** The server found a dev server but not its session. Restart the dev server once (so it writes the session again), then restart the agent. Still failing? Set `AGENT_HOVER_SESSION` to your project's `.agent-hover/session.json` in the server's `env`.
 
 ## License
 

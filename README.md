@@ -127,7 +127,8 @@ Long components send only the ~90 lines around the element by default (Settings 
 | Cursor | MCP, project `.cursor/mcp.json` (set up by `init`) |
 | Codex | MCP, project `.codex/config.toml` (set up by `init`) |
 | OpenCode | MCP, project `opencode.json` (set up by `init`) |
-| Windsurf, Antigravity, Claude Desktop | MCP, global config (`npx agent-hover mcp <agent>` prints it) |
+| Windsurf, Antigravity | MCP, global config in your home folder (set up by `init`, after asking) |
+| Claude Desktop | MCP, global config (`npx agent-hover mcp claude-desktop` prints it) |
 | ChatGPT, Claude.ai, v0, Lovable, Bolt, anything else | Copy: every prompt is self-contained |
 
 ## Keyboard

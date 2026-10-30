@@ -1,6 +1,6 @@
 {
   "name": "@agent-hover/vite",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "See every UI change your agent makes, right on the page. Dev-only Vite plugin for React: ask for a change on any element, track it there while Claude Code, Cursor, Codex or any MCP agent works, then compare, keep, undo or follow up.",
   "type": "module",
   "main": "dist/index.js",
@@ -28,8 +28,8 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
-    "@agent-hover/core": "^0.2.0",
-    "@agent-hover/overlay": "^0.2.0",
+    "@agent-hover/core": "^0.2.1",
+    "@agent-hover/overlay": "^0.2.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "cors": "^2.8.5",
     "express": "^4.21.0",

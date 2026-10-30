@@ -35,7 +35,7 @@ npx agent-hover init --agent claude,cursor --yes
 | `--yes` | Apply without asking (needed in scripts, where there is no terminal to ask) |
 | `--no-install` | Skip installing the package |
 
-What it changes, all inside your project:
+What it changes:
 
 | File | Change |
 |------|--------|
@@ -48,7 +48,8 @@ What it changes, all inside your project:
 | `/agent-hover` and `/agent-hover-status` commands | `.claude/commands/`, `.cursor/commands/`, `.opencode/commands/`, `.windsurf/workflows/`, `.agent/workflows/`, and `$agent-hover` / `$agent-hover-status` skills for Codex in `.agents/skills/` |
 | `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/agent-hover.mdc` | Adds the short note on picking up tasks |
 | `.gitignore` | Adds `.agent-hover/session.json`, `tasks.json`, `checkpoints/`, `screenshots/` |
-| Antigravity, Windsurf, Claude Desktop | Nothing is written: these agents only read a global config in your home folder, so `init` prints the command to run (for Antigravity: `agy mcp add agent-hover -- npx -y @agent-hover/mcp`) or the snippet to paste |
+| `~/.gemini/config/mcp_config.json`, `~/.codeium/windsurf/mcp_config.json` | Antigravity and Windsurf only read a global config, so `init` adds the server there, after listing it in the plan and asking (these are the only files outside your project it touches) |
+| Claude Desktop | Nothing is written: `init` prints the snippet for `claude_desktop_config.json` |
 
 It merges into files that exist (JSON configs keep a `.bak` copy), never removes anything, and running it again changes nothing. If your Vite config isn't a plain `plugins: [...]` list, it prints the two lines to add instead of guessing.
 
