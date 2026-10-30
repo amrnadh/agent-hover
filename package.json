@@ -1,6 +1,6 @@
 {
   "name": "agent-hover",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "See every UI change your agent makes, right on the page. Keep it or undo it.",
   "workspaces": [

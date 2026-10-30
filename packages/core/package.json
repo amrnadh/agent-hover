@@ -1,6 +1,6 @@
 {
   "name": "@agent-hover/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared engine for Agent Hover: source parsing, prompt formatting and session discovery.",
   "type": "module",
   "main": "dist/index.js",

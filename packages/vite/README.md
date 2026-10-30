@@ -152,7 +152,7 @@ npm install -D @agent-hover/vite@latest
 
 Then restart your dev server. This also updates the overlay and the shared engine. Agent Hover tells you when a new version is out: a one-time notice, a line in the dock's connection popover (click the logo), and the update command in Settings › About.
 
-- **MCP server:** it runs through `npx`, so restarting your agent picks up the latest release. To pin a version, use `@agent-hover/mcp@0.2.0` (or `@latest`) in the MCP config's args.
+- **MCP server:** it runs through `npx`, so restarting your agent picks up the latest release. To pin a version, use `@agent-hover/mcp@0.2.1` (or `@latest`) in the MCP config's args.
 - **CLI:** `npx agent-hover@latest <command>` always runs the newest one.
 - `npx agent-hover doctor` shows the installed and the running version, and says if a restart is needed.
 

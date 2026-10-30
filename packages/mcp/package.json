@@ -1,6 +1,6 @@
 {
   "name": "@agent-hover/mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server for Agent Hover: Claude Code, Cursor, Codex, Antigravity and other agents pick up the UI changes you ask for on the page, and report back to the element so you can review them.",
   "type": "module",
   "main": "dist/index.js",
@@ -31,7 +31,7 @@
     "dev": "npx tsc --watch"
   },
   "dependencies": {
-    "@agent-hover/core": "^0.2.0",
+    "@agent-hover/core": "^0.2.1",
     "@modelcontextprotocol/sdk": "^1.12.0"
   },
   "devDependencies": {

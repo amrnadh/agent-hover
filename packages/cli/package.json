@@ -1,6 +1,6 @@
 {
   "name": "agent-hover",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Set up and check Agent Hover: npx agent-hover init, doctor, and MCP config for each agent.",
   "type": "module",
   "bin": {

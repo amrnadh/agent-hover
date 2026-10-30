@@ -1,34 +1,34 @@
-# Release checklist (0.2.0)
+# Release checklist (0.2.1)
 
-Everything above the line is automated (CI and `npm run …`); the rest needs a person.
+Everything under "Automated" runs in CI and with `npm run …`; the rest needs a person.
+
+## Prepare
+
+- [x] Every package at the new version, internal dependencies at `^<version>` (`packages/*/package.json`, root `package.json`, `package-lock.json`).
+- [x] `## [Unreleased]` in `CHANGELOG.md` becomes `## [<version>] - <date>`, with a fresh empty `[Unreleased]` above it.
+- [x] Release notes in `docs/releases/v<version>.md` (the GitHub release uses them).
+- [x] Docs match the code: `docs/bridge-api.md`, the package READMEs, `docs/testing-before-release.md`.
 
 ## Automated (must be green)
 
 - [x] `npm run typecheck`, `npm test` (unit), `npm run pack:check`
-- [x] `npm run test:e2e:isolated`: main flow, dock and sidebar, comments and batch, compare and undo, screenshots and update notice, the full agent loop through the real MCP server (`v02-mcp-agent`), accessibility (axe, WCAG 2.1 A/AA, no serious or critical issues, dark and light), performance (no idle frames; ~0.13 ms of overlay script per pointer move)
-- [x] `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit`: the user flows in Firefox and WebKit (Safari's engine)
-- [x] Fresh project: packed tarballs installed into a new Vite 8 + React 19 app, `npx agent-hover init --yes`, overlay works, `npx agent-hover doctor` all green, about 35 seconds from install to a checked setup
+- [x] `npm run test:e2e:isolated`: main flow, dock and sidebar, task flow (remove, Send again, Try again, restart notice), comments and batch, compare and undo, screenshots and update notice, voice, the full agent loop through the real MCP server (`v02-mcp-agent`), accessibility (axe, WCAG 2.1 A/AA, dark and light), performance
+- [x] `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit`: the same flows in Firefox and WebKit (Safari's engine)
+- [x] Fresh project (`node scripts/smoke-fresh.mjs`, CI on macOS, Linux and Windows): packed packages in a new Vite + React app, `init` for four agents, `doctor`, an agent connecting from the project and one from outside it
+- [x] CI green on the release PR
 
-## Real agents (manual, ~10 minutes each)
+## Real agents (manual)
 
-Use the demo (`npm run build && npm run dev`) or any Vite + React app with the local build. To use the local MCP server instead of the published one, point the agent at `node /path/to/agent-hover/packages/mcp/dist/index.js`.
+Follow [testing-before-release.md](testing-before-release.md): `npm run registry:local` publishes the release to a registry on your machine, so `npx agent-hover init` and every agent get exactly what npm will serve.
 
-For each of **Claude Code**, **Cursor** and **Codex**:
-
-1. Register the MCP server (`npx agent-hover init --agent <claude|cursor|codex>` in the app, or `npx agent-hover mcp <agent>`), then restart the agent in the app folder.
-2. The dock's status dot turns green and the connection popover names the agent.
-3. Run `/agent-hover` in the agent (or tell it "Listen for agent-hover tasks.")
-4. Select an element → Ask → "Make this button larger" → Send. The marker goes Sent → Seen → Working → Done; the card shows the agent's summary and the changed file.
-5. Open Compare (before/after), then Undo: the file is back exactly as before (`git diff` is empty).
-6. Send two comments with "Send N open" and a 3-element Batch: each arrives as one task with all the context.
-7. Note anything the agent misunderstood in the prompt and open an issue with the copied prompt.
-
-Also try Copy with no agent connected: paste the prompt into ChatGPT or Claude.ai and check that it is self-contained.
+- [x] Claude Code (desktop app), Codex, Cursor: listen, a task end to end, Keep / Undo, `/agent-hover-status`
+- [x] OpenCode: connects (`opencode mcp list`)
+- [ ] Antigravity: re-test after the 401 fix (it connects from a global config now)
 
 ## Publish
 
 1. `npm run build && npm run pack:check`
-2. `npm login` (once), then in this order:
+2. `npm login` (once), then in this order (dependencies first):
    ```bash
    npm publish --workspace=@agent-hover/core
    npm publish --workspace=@agent-hover/overlay
@@ -36,8 +36,12 @@ Also try Copy with no agent connected: paste the prompt into ChatGPT or Claude.a
    npm publish --workspace=@agent-hover/mcp
    npm publish --workspace=agent-hover
    ```
-3. Move the `## [Unreleased]` entries in `CHANGELOG.md` under `## [0.2.0] - <date>`.
-4. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`; create the GitHub release from the changelog.
-5. GitHub › Settings › General › Social preview: upload `docs/brand/logo/social.png`.
-   If the UI changed, re-record the demo first (`npm run record:demo`, see `docs/media/VIDEOS.md`). For an inline player, drag `docs/media/agent-hover-demo.mp4` into the README editor on github.com.
-6. Check `npx agent-hover@latest --version` prints 0.2.0 and a fresh `npx agent-hover init` installs 0.2.0.
+3. Tag and push: `git tag v<version> && git push origin v<version>`.
+4. GitHub release from the notes: `gh release create v<version> --title "Agent Hover <version>" --notes-file docs/releases/v<version>.md`. The update notice links to this page, so it must exist.
+5. If the UI changed: refresh the README images (`npm run screenshots`) and the demo (`npm run record:demo`, see `docs/media/VIDEOS.md`); GitHub › Settings › General › Social preview gets the current poster.
+
+## After publishing
+
+- [ ] `npx agent-hover@latest --version` prints the new version, and a fresh `npx -y agent-hover init` installs it.
+- [ ] A project on the previous version shows the update notice: the box under Vite's output after starting the dev server, the page toast, Settings › About with the right command and What's new. (The check runs at most once a day; delete `~/.agent-hover/update-check.json` to see it at once.)
+- [ ] Update that project (`npm i -D @agent-hover/vite@latest`) without restarting the dev server: the page asks for a restart. Restart, and everything works.
