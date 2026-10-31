@@ -71,8 +71,8 @@ async function showCursor(page: Page) {
 }
 
 /** A short line at the top of the frame saying what the scene shows (part of the video, not of the demo app). */
-async function caption(page: Page, text: string) {
-  await page.evaluate((t) => {
+async function caption(page: Page, text: string, top = 80) {
+  await page.evaluate(({ t, top }) => {
     let el = document.getElementById('rec-caption');
     if (!el) {
       el = document.createElement('div');
@@ -81,9 +81,31 @@ async function caption(page: Page, text: string) {
       document.documentElement.appendChild(el);
     }
     const node = el;
+    node.style.top = top + 'px';
     node.style.opacity = '0';
-    setTimeout(() => { node.textContent = t; node.style.opacity = '1'; }, 150);
-  }, text);
+    setTimeout(() => { node.textContent = t; node.style.opacity = t ? '1' : '0'; }, 150);
+  }, { t: text, top });
+}
+
+/** The dock takes the stage: the real dock grows to the middle of the page and the page blurs behind it. Off puts it back. */
+async function spotlightDock(page: Page, on: boolean) {
+  await page.evaluate((on) => {
+    const root = document.getElementById('agent-hover-root')!.shadowRoot!;
+    let style = root.getElementById('rec-dock');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rec-dock';
+      root.appendChild(style);
+    }
+    const ease = '1s cubic-bezier(.22,1,.36,1)';
+    const scale = 2.6;
+    // The dock centres itself with translateX(-50%), which grows with it: move it back by the difference.
+    const dx = (root.getElementById('ah-dock')!.offsetWidth * (scale - 1)) / 2;
+    style.textContent = `#ah-dock { transition: scale ${ease}, translate ${ease}; transform-origin: 50% 100%; ${on ? `scale: ${scale}; translate: ${dx}px -250px;` : ''} }${on ? ' #ah-dock-tip { display: none !important; }' : ''}`;
+    const app = document.getElementById('root')!;
+    app.style.transition = 'filter 1s ease';
+    app.style.filter = on ? 'blur(7px) brightness(.97)' : '';
+  }, on);
 }
 
 async function pointAt(target: Locator, fx = 0.5, fy = 0.5) {
@@ -148,7 +170,7 @@ function card(body: string) {
 
 test('scene-00 title', async ({ page }) => {
   const rec = recorder();
-  await page.setContent(card('<h1>Agent Hover</h1><p>Point at your UI. Your agent understands it.</p>'));
+  await page.setContent(card('<h1>Agent Hover</h1><p>See every UI change your agent makes. Keep it or undo it.</p>'));
   await page.evaluate(() => document.fonts.ready);
   rec.mark('start');
   await pause(page, 2800);
@@ -156,7 +178,38 @@ test('scene-00 title', async ({ page }) => {
   rec.save();
 });
 
-test('scene-01 point at it', async ({ page, request }) => {
+test('scene-01 the dock', async ({ page, request }) => {
+  test.setTimeout(90000);
+  const rec = recorder();
+  const api = bridge(request);
+  await startScene(page, api);
+  rec.mark('start');
+  await pause(page, 800);
+  await spotlightDock(page, true);
+  await caption(page, 'This is the dock. It sits on your running app.', 560);
+  await pause(page, 2200);
+  const stops: Array<[string, string]> = [
+    ['#ah-d-mark', 'Your agent is connected.'],
+    ['#ah-d-inspect', 'Point at anything on the page.'],
+    ['#ah-d-comment', 'Leave a note right where it belongs.'],
+    ['#ah-d-tasks', 'See what your agent is doing, and what needs you.'],
+    ['#ah-d-batch', 'Collect several elements into one task.'],
+  ];
+  for (const [id, text] of stops) {
+    if (id === '#ah-d-tasks') rec.mark('gifDock'); // the README GIF opens here, on the dock
+    await glide(page, page.locator(id), 0.5, 0.5, 18);
+    await caption(page, text, 560);
+    await pause(page, 1500);
+  }
+  await caption(page, '', 560);
+  await page.mouse.move(1000, 560, { steps: 20 });
+  await spotlightDock(page, false);
+  await pause(page, 1300);
+  rec.mark('end');
+  rec.save();
+});
+
+test('scene-02 point at it', async ({ page, request }) => {
   test.setTimeout(120000);
   const rec = recorder();
   const api = bridge(request);
@@ -197,6 +250,7 @@ test('scene-01 point at it', async ({ page, request }) => {
       await expect(squiggle.locator('path')).toHaveAttribute('stroke-width', '3', { timeout: 15000 });
     }, 'Made the underline in <Squiggle /> thinner (3px) and lighter (50% opacity).');
     await expect(page.locator('.ah-marker.done')).toHaveCount(1);
+    await caption(page, 'Done. It waits on the element for your review.');
     await pause(page, 2200); // the "after" image is taken once HMR settles
 
     await glideClick(page, page.locator('.ah-marker.done'), 0.5, 0.5, 20);
@@ -231,7 +285,7 @@ test('scene-01 point at it', async ({ page, request }) => {
   }
 });
 
-test('scene-02 like this not that', async ({ page, request }) => {
+test('scene-03 like this not that', async ({ page, request }) => {
   test.setTimeout(120000);
   const rec = recorder();
   const api = bridge(request);
@@ -300,7 +354,7 @@ test('scene-02 like this not that', async ({ page, request }) => {
   }
 });
 
-test('scene-03 notes where they belong', async ({ page, request }) => {
+test('scene-04 notes where they belong', async ({ page, request }) => {
   test.setTimeout(120000);
   const rec = recorder();
   const api = bridge(request);
@@ -357,7 +411,7 @@ test('scene-03 notes where they belong', async ({ page, request }) => {
   }
 });
 
-test('scene-04 add what is missing', async ({ page, request }) => {
+test('scene-05 add what is missing', async ({ page, request }) => {
   test.setTimeout(120000);
   const rec = recorder();
   const api = bridge(request);
@@ -396,7 +450,19 @@ test('scene-04 add what is missing', async ({ page, request }) => {
       await expect(page.getByRole('button', { name: 'Export CSV' })).toBeVisible({ timeout: 15000 });
     }, 'Added an Export CSV button after the filters (outline, small, with a download icon).');
     await expect(page.locator('.ah-marker.done')).toHaveCount(1);
-    await pause(page, 3000);
+    await pause(page, 1200);
+
+    // Review from the dock: Tasks shows what needs you, and Keep settles it.
+    await caption(page, 'Tasks shows what needs you. Keep it, or undo it.');
+    await glideClick(page, page.locator('#ah-d-tasks'), 0.5, 0.5, 20);
+    const side = page.locator('#ah-side');
+    const row = side.locator('.ah-li.task', { hasText: instruction });
+    await pause(page, 900);
+    await glideClick(page, row, 0.5, 0.3, 20);
+    await pause(page, 1200);
+    await glideClick(page, row.locator('[data-act=keep]'), 0.5, 0.5, 15);
+    await expect(page.locator('#ah-toast')).toContainText('Kept');
+    await pause(page, 2000);
     rec.mark('end');
   } finally {
     files.restore();
@@ -404,7 +470,7 @@ test('scene-04 add what is missing', async ({ page, request }) => {
   }
 });
 
-test('scene-05 keep agents off it', async ({ page, request }) => {
+test('scene-06 keep agents off it', async ({ page, request }) => {
   test.setTimeout(90000);
   const rec = recorder();
   const api = bridge(request);
@@ -439,9 +505,9 @@ test('scene-05 keep agents off it', async ({ page, request }) => {
   }
 });
 
-test('scene-06 end', async ({ page }) => {
+test('scene-07 end', async ({ page }) => {
   const rec = recorder();
-  await page.setContent(card('<p>Try it in your Vite + React app</p><code>npx agent-hover init</code><small>Claude Code · Cursor · Codex · any MCP agent &nbsp;·&nbsp; github.com/amrnadh/agent-hover</small>'));
+  await page.setContent(card('<p>Try it in your Vite + React app</p><code>npx agent-hover init</code><small>Claude Code · Cursor · Codex · OpenCode · any MCP agent &nbsp;·&nbsp; github.com/amrnadh/agent-hover</small>'));
   await page.evaluate(() => document.fonts.ready);
   rec.mark('start');
   await pause(page, 3500);

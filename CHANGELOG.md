@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.1] - 2026-10-29
+### Changed
+- The README images, GIF and demo video put the dock first. The demo opens on the dock, the README explains it with an annotated image, and the Tasks tab has its own image. `npm run screenshots` now also makes the annotated dock and the poster (`e2e/media.spec.ts`).
+- The poster says what Agent Hover is for ("Can't describe it? Point at it."), shows the real dock and the install command, and is sharper (2560×1280).
+
+## [0.2.1] - 2026-10-31
 
 The review release. A change your agent makes now waits on its element until you Keep it, Undo it or follow up; the Tasks tab is sorted by what needs you; and agents are easier to start: `/agent-hover` in Claude Code, Cursor, Codex, OpenCode, Windsurf and Antigravity, a checklist in `init`, and a connection that works from sandboxes and global configs. Also: exact file and line on React 19, Windows, voice input, and update notices.
 

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
-import { bridge, openDemo, selectHost, startInspect, overlaps, shadowActiveId, shotsDir } from './helpers/overlay';
+import { bridge, openDemo, restPointer, selectHost, startInspect, overlaps, shadowActiveId, shotsDir, unique } from './helpers/overlay';
 
 /** Main flow: hover → select → pill → Ask → send → marker → done. */
 test.describe('0.2 main flow', () => {
@@ -60,7 +60,7 @@ test.describe('0.2 main flow', () => {
     await selectHost(page, '#hero-primary-cta');
     await page.locator('#ah-pill-ask').click();
     await expect(page.locator('#ah-comp-dest-label')).toHaveText('Claude Code');
-    const instruction = `Make the CTA larger ${Date.now()}`;
+    const instruction = unique('Make the button a little larger');
     await page.locator('#ah-comp-input').fill(instruction);
     await page.keyboard.press('ControlOrMeta+Enter');
 
@@ -105,6 +105,7 @@ test.describe('0.2 main flow', () => {
     await expect(card.locator('.ah-summary')).toHaveText('Raised the CTA to h-12.');
     await expect(card.locator('.ah-files')).toContainText('src/components/Hero.tsx');
     await expect(page.locator('#ah-toast')).toContainText(/Done · .* · 1 file/);
+    await restPointer(page);
     await page.screenshot({ path: path.join(shots, '02-task-done.png') });
 
     // The marker comes back after a reload (the task stores the element's selector).

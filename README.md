@@ -15,11 +15,11 @@
 
 Ask for a change on any element of your running React app. Your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. While it works, the task stays on the element: Sent, Seen, Working, Done. Then you review it there: compare before and after, keep it, undo it in one click, or follow up. Lock what's finished, and Agent Hover tells you if an agent changed it anyway.
 
-Works with Claude Code, Cursor, Codex and any other MCP agent, or with plain Copy for ChatGPT, Claude.ai, v0, Lovable and Bolt.
+Works with Claude Code, Cursor, Codex, OpenCode and any other MCP agent, or with plain Copy for ChatGPT, Claude.ai, v0, Lovable and Bolt.
 
-![Agent Hover: a change request on the page, the agent's progress on the element, then before and after, and Undo](docs/media/agent-hover.gif)
+![Agent Hover: the dock, a change request on the page, the agent's progress on the element, then before and after](docs/media/agent-hover.gif)
 
-**[Watch the full demo (1:36)](docs/media/agent-hover-demo.mp4)**: point instead of describe, "like this, not that", notes, adding a feature, and keeping agents off finished work.
+**[Watch the full demo (1:54)](docs/media/agent-hover-demo.mp4)**: the dock, point instead of describe, "like this, not that", notes, adding a feature and reviewing it, and keeping agents off finished work.
 
 ## Quick start
 
@@ -69,6 +69,15 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 
 ## How it works
 
+**The dock** sits on your running app, in development only. It shows whether your agent is connected, starts everything below, and its Tasks dot tells you when something needs you.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v0.2/00-dock-dark.png">
+    <img src="docs/screenshots/v0.2/00-dock.png" width="760" alt="The dock: agent status, Inspect, Comment, Tasks, Batch and More">
+  </picture>
+</p>
+
 **Ask.** Press **Alt** (or the pointer in the dock) and click an element. A small pill offers Ask, Comment, add to Batch, Copy, and more (open in editor, screenshot, lock from agents, parent/child, details). Describe the change (or click the mic and say it); it goes to your connected agent, or to the clipboard when none is connected (or when you prefer Copy). With several agents connected, pick which one gets it.
 
 ![Action pill on a selected element](docs/screenshots/v0.2/01-pill.png)
@@ -80,6 +89,10 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 **Review.** A finished change waits on its element until you decide. **Compare** shows the element before and after. **Keep** settles it. **Undo** restores exactly the files that changed, after showing you the list: when the agent picks up a task, Agent Hover takes a git checkpoint of your work tree (including uncommitted and untracked files, without touching them). **Follow up** asks again about the same element, and the new prompt carries the earlier request and what the agent did, so it builds on the change instead of starting over.
 
 ![Before and after comparison](docs/screenshots/v0.2/06-compare.png)
+
+**Tasks.** The Tasks tab (**T**, or the dock) sorts everything by what it needs from you: changes to review and failures first, then what's running, then History. Keep and Undo work from here too, a task nobody picked up can be sent again, and a failed one tried again.
+
+![The Tasks tab: Needs you, In progress and History, next to the page with its task markers](docs/screenshots/v0.2/10-tasks.png)
 
 **Lock.** "Don't let agents change this" on a component puts it in every prompt as off limits. If a finished task changed its file anyway, its marker turns amber and the card says which locked component changed, with Undo right there.
 

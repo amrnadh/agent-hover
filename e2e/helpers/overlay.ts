@@ -71,6 +71,15 @@ export async function shadowActiveId(page: Page) {
   return page.evaluate(() => document.querySelector('#agent-hover-root')!.shadowRoot!.activeElement?.id || null);
 }
 
+/** Text that won't collide with earlier tests' tasks. When taking the README images it stays as written. */
+export const unique = (text: string) => (process.env.AH_SCREENSHOTS ? text : `${text} ${Date.now()}`);
+
+/** Before a README image: rest the pointer on the dock's grip, so no hover outline or tooltip gets in the picture. */
+export async function restPointer(page: Page) {
+  await page.locator('#ah-d-grip').hover();
+  await page.waitForTimeout(250);
+}
+
 /**
  * Where a test saves its screenshots. By default the ignored test-results/ folder, so test runs don't rewrite
  * images in the repo; `npm run screenshots` sets AH_SCREENSHOTS=1 to refresh the README images in docs/screenshots/.

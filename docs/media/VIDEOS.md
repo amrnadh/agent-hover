@@ -16,12 +16,15 @@ Recorded from the demo app (Sorrel, `demo/`) by `e2e/record-demo.spec.ts`, one P
 | Scene | Caption | Feature |
 |---|---|---|
 | 00 | Title card | |
-| 01 | Don't know what it's called? Point at it. / Ask on the page. Watch it land on the element. | Ask on an un-nameable element (the hero underline, `<Squiggle />`), task marker, Compare, Undo |
-| 02 | Like this, not that: point at both. | Batch: the one-off tile (Change) and a `<StatCard>` (Reference) |
-| 03 | Small things? Leave a note right where they are. | Comment pins on the Amount header and an odd date, sent as one task |
-| 04 | Not just styling: ask for what's missing. | Ask on the table header to add an Export CSV button |
-| 05 | Finished something? Keep agents off it. | Lock `<Logo />` |
-| 06 | `npx agent-hover init` | End card |
+| 01 | This is the dock. It sits on your running app. | The real dock grows to the middle of the page (the page blurs behind it) while the cursor visits each button, then goes back into place |
+| 02 | Don't know what it's called? Point at it. / Ask on the page. Watch it land on the element. / Done. It waits on the element for your review. | Ask on an un-nameable element (the hero underline, `<Squiggle />`), task marker, Compare, Undo |
+| 03 | Like this, not that: point at both. | Batch: the one-off tile (Change) and a `<StatCard>` (Reference) |
+| 04 | Small things? Leave a note right where they are. | Comment pins on the Amount header and an odd date, sent as one task |
+| 05 | Not just styling: ask for what's missing. / Tasks shows what needs you. Keep it, or undo it. | Ask on the table header to add an Export CSV button, then Tasks from the dock and Keep |
+| 06 | Finished something? Keep agents off it. | Lock `<Logo />` |
+| 07 | `npx agent-hover init` | End card |
+
+Keep the dock in the picture: it opens the demo, and every other image and video should show it, not crop it out. The annotated dock in the README and the dock on the poster come from `e2e/media.spec.ts` (`npm run screenshots`).
 
 The demo app stages each moment on purpose (see `demo/README.md`); `e2e/demo-scenes.spec.ts` keeps them in place.
 
@@ -36,8 +39,8 @@ npm run record:demo -- 2 4
 ```
 
 Output:
-- `docs/media/agent-hover-demo.mp4`: all scenes, about 1:36.
-- `docs/media/agent-hover.gif` and `agent-hover.mp4`: scene 1 from Send to Compare (the `gifStart` and `gifEnd` marks), for the top of the README. It opens on the task rather than on pointing: what happens after you send is what sets Agent Hover apart.
+- `docs/media/agent-hover-demo.mp4`: all scenes, about 1:54.
+- `docs/media/agent-hover.gif` and `agent-hover.mp4`: for the top of the README, two cuts: the dock (scene 1 from the `gifDock` mark), then scene 2 from Send to Compare (the `gifStart` and `gifEnd` marks). It opens on the dock, which is what you see first in the product, then shows what happens after you send, which is what sets Agent Hover apart.
 
 GitHub only plays videos inline when they are uploaded through its editor. After re-recording, drag `agent-hover-demo.mp4` into the README editor on github.com to get a player, or keep the link.
 
