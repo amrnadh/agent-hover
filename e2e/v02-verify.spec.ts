@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { bridge, openDemo, selectHost, shotsDir } from './helpers/overlay';
+import { bridge, openDemo, restPointer, selectHost, shotsDir, unique } from './helpers/overlay';
 
 /** P3-01: before/after compare and Undo, with a scripted "agent" that really edits a demo file. */
 test.describe('0.2 compare and undo', () => {
@@ -21,7 +21,7 @@ test.describe('0.2 compare and undo', () => {
 
     await selectHost(page, '#hero-primary-cta');
     await page.locator('#ah-pill-ask').click();
-    const instruction = `Change the button label ${Date.now()}`;
+    const instruction = unique('Change the button label');
     await page.locator('#ah-comp-input').fill(instruction);
     await page.keyboard.press('ControlOrMeta+Enter');
 
@@ -55,6 +55,7 @@ test.describe('0.2 compare and undo', () => {
     // The "After" label is a small tag in the corner, not a dark layer over the after image.
     const afterTag = (await card.locator('.ah-compare .tag.after').boundingBox())!;
     expect(afterTag.width).toBeLessThan(80);
+    await restPointer(page);
     await page.screenshot({ path: path.join(shots, '06-compare.png') });
 
     await card.locator('[data-act=undo]').click();
@@ -92,7 +93,7 @@ test.describe('0.2 compare and undo', () => {
 
     await selectHost(page, '#hero-primary-cta');
     await page.locator('#ah-pill-ask').click();
-    const first = await ask(`Make the CTA larger ${Date.now()}`);
+    const first = await ask(unique('Round the corners a little more'));
     await finish(first.id);
 
     const marker = page.locator('.ah-marker.review');
@@ -107,7 +108,7 @@ test.describe('0.2 compare and undo', () => {
     await card.locator('[data-act=follow-up]').click();
     await expect(page.locator('#ah-composer')).toBeVisible();
     await expect(page.locator('#ah-comp-follow')).toContainText(first.instruction);
-    const second = await ask(`A bit smaller ${Date.now()}`);
+    const second = await ask(unique('A bit smaller'));
     expect(second.payload.followUpOf).toBe(first.id);
     expect(second.payload.prompt).toContain('## Previous attempt');
     expect(second.payload.prompt).toContain(`- Asked: ${first.instruction}`);
@@ -121,6 +122,7 @@ test.describe('0.2 compare and undo', () => {
       await expect(marker).toHaveClass(/locked/);
       await marker.click();
       await expect(card.locator('.ah-lockwarn')).toContainText('<Hero />');
+      await restPointer(page);
       await page.screenshot({ path: path.join(shots, '09-lock-guard.png') });
 
       // Keep settles it: no marker, still settled after a reload.

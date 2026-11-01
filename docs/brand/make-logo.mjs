@@ -2,10 +2,10 @@
 // The Agent Hover logo ("Lift"): a solid element hovering over its own dithered shadow.
 // Generates every logo asset from one definition:
 //   docs/brand/logo/            mark SVGs (theme-following, ink, light; fine and small), favicon.svg,
-//                               PNG icons, wordmark lockups, social preview (1280×640)
+//                               PNG icons, wordmark lockups, social preview (2560×1280)
 //   packages/overlay/src/brand/mark.svg   the dock mark (small version, currentColor)
 // node docs/brand/make-logo.mjs   (needs Playwright for the PNGs: npx playwright install chromium)
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const here = import.meta.dirname;
@@ -96,13 +96,37 @@ const lockup = (dark) => {
     <span style="font-weight:650;font-size:64px;letter-spacing:-0.035em;color:${fg}">Agent Hover</span></div>`, 640, 160);
 };
 
+// The logo's dither, coming in from the bottom-right corner behind the dock.
+const socialDither = () => {
+  const cell = 6;
+  let d = '';
+  for (let j = 0; j < 640 / cell; j++) {
+    for (let i = 0; i < 1280 / cell; i++) {
+      const tone = clamp(1.02 - Math.hypot((1280 - (i + 0.5) * cell) / 1.5, 640 - (j + 0.5) * cell) / 330);
+      if (tone * 16 > BAYER[j % 4][i % 4] + 0.5) d += `M${i * cell} ${j * cell}h${cell}v${cell}h-${cell}z`;
+    }
+  }
+  return `<svg width="1280" height="640" style="position:absolute;inset:0" shape-rendering="crispEdges"><path d="${d}" fill="${LIGHT}" fill-opacity=".2"/></svg>`;
+};
+
+// logo/dock.png is the real dock, 40px of padding around it, captured by e2e/media.spec.ts (npm run screenshots).
+const dockPng = `data:image/png;base64,${readFileSync(path.join(out, 'dock.png')).toString('base64')}`;
+const dockScale = 1.5, dockW = 240 * dockScale, dockH = 44 * dockScale, dockX = 1280 - 96 - dockW, dockCenter = 469;
+
 const social = page(`<div style="width:1280px;height:640px;position:relative;background:${GRAPHITE};color:${LIGHT};overflow:hidden">
+  ${socialDither()}
   <div style="position:absolute;left:96px;top:50%;transform:translateY(-50%)">
-    <div style="display:flex;align-items:center;gap:26px">${markSvg({ color: LIGHT, size: 104, title: false })}
-      <span style="font-weight:650;font-size:76px;letter-spacing:-0.035em">Agent Hover</span></div>
-    <div style="margin-top:34px;font-size:40px;font-weight:500;letter-spacing:-0.02em;color:#c9ccd2">Point at your UI. Your agent understands it.</div>
-    <div style="margin-top:22px;font-size:24px;color:#80858e">For Vite + React · works with Claude Code, Cursor, Codex and any MCP agent</div>
+    <div style="display:flex;align-items:center;gap:28px">${markSvg({ color: LIGHT, size: 116, title: false })}
+      <span style="font-weight:650;font-size:86px;letter-spacing:-0.035em">Agent Hover</span></div>
+    <div style="margin-top:36px;font-size:50px;line-height:1.12;font-weight:600;letter-spacing:-0.025em">Can’t describe it? Point at it.</div>
+    <div style="margin-top:14px;font-size:30px;font-weight:500;letter-spacing:-0.015em;color:#c9ccd2">Your coding agent gets the exact file, line and styles.</div>
+    <div style="margin-top:40px;display:flex;align-items:center;gap:26px">
+      <span style="font:500 26px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-0.02em;padding:13px 20px;border-radius:12px;background:#1f2126;box-shadow:inset 0 0 0 1px #33363d">npx agent-hover init</span>
+      <span style="font-size:24px;color:#a2a7b0">Vite + React · Any MCP agent</span>
+    </div>
   </div>
+  <div style="position:absolute;left:${dockX + 10}px;top:${dockCenter - dockH / 2 + 22}px;width:${dockW - 20}px;height:${dockH - 6}px;border-radius:21px;background:rgba(0,0,0,.6);filter:blur(22px)"></div>
+  <img src="${dockPng}" style="position:absolute;left:${dockX - 40 * dockScale}px;top:${dockCenter - dockH / 2 - 40 * dockScale}px;width:${(240 + 80) * dockScale}px">
 </div>`, 1280, 640, GRAPHITE);
 
 const pngs = [
@@ -126,7 +150,7 @@ if (chromium) {
   const browser = await chromium.launch();
   for (const [name, html, w, h] of pngs) {
     // Lockups and social are rendered at 2× for sharpness; icons at their exact pixel size.
-    const scale = name.startsWith('lockup') ? 2 : 1;
+    const scale = name.startsWith('lockup') || name.startsWith('social') ? 2 : 1;
     const p = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: scale });
     await p.setContent(html);
     await p.screenshot({ path: path.join(out, name), omitBackground: !name.startsWith('social') });
