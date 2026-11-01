@@ -1,6 +1,8 @@
-**See every UI change your agent makes, right on the page. Keep it or undo it.**
+**Can't describe it? Point at it.**
 
-Agent Hover is a dev-only Vite plugin for React apps. Ask for a change on any element of your running app, and your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. The task stays on the element while the agent works (Sent → Seen → Working → Done). Then review it there: compare before and after, keep it, undo it in one click, or follow up. Lock finished components, and Agent Hover tells you if an agent changed one anyway.
+You can see exactly what you want changed, but you don't know what it's called, and your agent can't tell which one you mean. Agent Hover is a dev-only Vite plugin for React apps: you click the element in your running app and say what should change. Your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch, so it changes the right thing.
+
+The task stays on the element while the agent works. When it's done, check it there: compare before and after, keep it, undo it in one click, or follow up. Lock finished components, and Agent Hover tells you if an agent changed one anyway.
 
 Works with Claude Code, Cursor, Codex, OpenCode, Antigravity, Windsurf and any other MCP agent. No agent connected? Every prompt can be copied into ChatGPT, Claude.ai, v0, Lovable or Bolt.
 

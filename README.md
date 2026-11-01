@@ -11,9 +11,11 @@
 [![CI](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 
-**See every UI change your agent makes, right on the page. Keep it or undo it.**
+**Can't describe it? Point at it.**
 
-Ask for a change on any element of your running React app. Your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch. While it works, the task stays on the element: Sent, Seen, Working, Done. Then you review it there: compare before and after, keep it, undo it in one click, or follow up. Lock what's finished, and Agent Hover tells you if an agent changed it anyway.
+You can see exactly what you want changed, but you don't know what it's called, and your agent can't tell which one you mean. With Agent Hover, you click it in your running React app and say what should change. Your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch, so it changes the right thing.
+
+The task stays on the element while the agent works. When it's done, check it there: compare before and after, keep it, undo it in one click, or follow up. Lock what's finished, and Agent Hover tells you if an agent changed it anyway.
 
 Works with Claude Code, Cursor, Codex, OpenCode and any other MCP agent, or with plain Copy for ChatGPT, Claude.ai, v0, Lovable and Bolt.
 
