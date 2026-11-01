@@ -170,7 +170,7 @@ function card(body: string) {
 
 test('scene-00 title', async ({ page }) => {
   const rec = recorder();
-  await page.setContent(card('<h1>Agent Hover</h1><p>See every UI change your agent makes. Keep it or undo it.</p>'));
+  await page.setContent(card('<h1>Agent Hover</h1><p>Can’t describe it? Point at it.</p>'));
   await page.evaluate(() => document.fonts.ready);
   rec.mark('start');
   await pause(page, 2800);

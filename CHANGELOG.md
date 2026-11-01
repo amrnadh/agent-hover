@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- New message: "Can't describe it? Point at it." The README, npm descriptions, `init` header and demo video lead with the problem Agent Hover solves.
 - The README images, GIF and demo video put the dock first. The demo opens on the dock, the README explains it with an annotated image, and the Tasks tab has its own image. `npm run screenshots` now also makes the annotated dock and the poster (`e2e/media.spec.ts`).
 - The poster says what Agent Hover is for ("Can't describe it? Point at it."), shows the real dock and the install command, and is sharper (2560×1280).
 

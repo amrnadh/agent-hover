@@ -21,7 +21,7 @@ function check(s: Style, done: boolean, label: string): string {
 
 export function renderOverview(p: ProjectInfo, s: Style): string {
   const out: string[] = [];
-  out.push('', `  ${s.bold(DISPLAY_NAME)} ${s.dim('· point at your UI, your agent understands it')}`, '');
+  out.push('', `  ${s.bold(DISPLAY_NAME)} ${s.dim("· can't describe it? point at it")}`, '');
   const ready = p.pluginInstalled && p.pluginConfigured && p.mcpConfigured.length > 0;
   if (p.viteConfig && !ready) out.push(`  ${s.bold(`npx ${BRAND.cliName} init`)} sets all of this up for you.`, '');
 

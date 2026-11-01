@@ -1,6 +1,6 @@
 **Set up and check Agent Hover in one command.**
 
-Agent Hover lets you click any element in your running React app, say what should change, and send precise context (file, line, current look, props, rules) to Claude Code, Cursor, Codex, Antigravity or any MCP agent, or copy it into any AI chat. The plugin itself is [`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite); this CLI sets it up and checks it.
+Can't describe it? Point at it. Agent Hover lets you click any element in your running React app and say what should change. Claude Code, Cursor, Codex, Antigravity or any MCP agent gets the exact file, line and styles, or you can copy the prompt into any AI chat. The plugin itself is [`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite); this CLI sets it up and checks it.
 
 ```bash
 npx agent-hover init
