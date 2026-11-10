@@ -3,7 +3,7 @@ import type { OverlayApp } from '../app/context.js';
 
 /**
  * Action pill: appears on the selection's top edge after a click. Identity (opens the editor), Ask,
- * Comment, + Batch, Copy, ⋯ (editor, screenshot, protect from agents, parent/child, details), close.
+ * Comment, Place, + Batch, Copy, ⋯ (editor, screenshot, protect from agents, parent/child, details), close.
  */
 export function setupActionPill(app: OverlayApp) {
   const { BRIDGE, fetch, shadow, state, api } = app;
@@ -121,6 +121,7 @@ export function setupActionPill(app: OverlayApp) {
   btn('ah-pill-who').onclick = openSelectionInEditor;
   btn('ah-pill-ask').onclick = () => api.openComposer();
   btn('ah-pill-comment').onclick = commentOnSelection;
+  btn('ah-pill-place').onclick = () => api.openPlace();
   btn('ah-pill-batch').onclick = () => api.toggleBatch(state.selectedTarget, state.currentStack);
   btn('ah-pill-copy').onclick = copySelection;
   btn('ah-pill-close').onclick = () => api.deselect();

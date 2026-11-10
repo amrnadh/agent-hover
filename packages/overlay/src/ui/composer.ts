@@ -1,6 +1,7 @@
 import { anchorTo, esc } from '../lib/ui.js';
 import { icon } from '../lib/icon.js';
 import { prettyAgentName } from '../lib/task-status.js';
+import { hostElementOf, instancesOf } from '../lib/instances.js';
 import type { OverlayApp } from '../app/context.js';
 
 /**
@@ -27,6 +28,48 @@ export function setupComposer(app: OverlayApp) {
   const followEl = shadow.getElementById('ah-comp-follow') as HTMLElement;
   /** The finished task this request follows up on, if any. */
   let followUp: any = null;
+  const scopeEl = shadow.getElementById('ah-comp-scope') as HTMLElement;
+  const scopeLayer = shadow.getElementById('ah-layer-scope') as HTMLElement;
+  /** A shared component used more than once on the page: this one (default) or every one (spec P3-02). */
+  let scope: { mode: 'instance' | 'component'; component: string; count: number; fibers: any[] } | null = null;
+
+  function readScope() {
+    scope = null;
+    const owner = api.projectOwner(state.currentStack, state.currentStackIndex);
+    const fibers = owner?.fiber ? instancesOf(owner.fiber) : [];
+    if (owner && fibers.length > 1) scope = { mode: 'instance', component: owner.name, count: fibers.length, fibers };
+    renderScope();
+  }
+
+  function renderScope() {
+    scopeEl.hidden = !scope;
+    if (!scope) { scopeEl.innerHTML = ''; return; }
+    const seg = (v: 'instance' | 'component', l: string) => `<button data-scope="${v}" aria-pressed="${scope!.mode === v}">${esc(l)}</button>`;
+    scopeEl.innerHTML = `<span class="used">${esc('<' + scope.component + ' />')} is used ${scope.count} times here</span><div class="ah-seg" role="radiogroup" aria-label="Change which">${seg('instance', 'This one')}${seg('component', 'All ' + scope.count)}</div>`;
+  }
+
+  /** Hovering the choice outlines every instance on the page. */
+  function showInstances(on: boolean) {
+    scopeLayer.innerHTML = '';
+    if (!on || !scope) return;
+    for (const f of scope.fibers) {
+      const el = hostElementOf(f);
+      const r = el?.getBoundingClientRect();
+      if (!r || (!r.width && !r.height)) continue;
+      const o = document.createElement('div');
+      o.className = 'ah-batch-outline';
+      Object.assign(o.style, { left: r.left - 1 + 'px', top: r.top - 1 + 'px', width: r.width + 2 + 'px', height: r.height + 2 + 'px' });
+      scopeLayer.appendChild(o);
+    }
+  }
+  scopeEl.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest('[data-scope]') as HTMLElement | null;
+    if (!b || !scope) return;
+    scope.mode = b.dataset.scope as 'instance' | 'component';
+    renderScope();
+  });
+  scopeEl.addEventListener('mouseenter', () => showInstances(true));
+  scopeEl.addEventListener('mouseleave', () => showInstances(false));
 
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   kbd.textContent = isMac ? '⌘↵' : 'Ctrl↵';
@@ -61,6 +104,7 @@ export function setupComposer(app: OverlayApp) {
     // The same place the pill names: the element's own line when React knows it, the component's otherwise.
     const at = state.selectionAt || state.selectionSource;
     fileEl.textContent = at ? at.file.split('/').pop() + ':' + at.line : '';
+    readScope();
     input.value = drafts.get(state.selectedTarget) || '';
     input.classList.remove('invalid');
     renderDest();
@@ -80,6 +124,8 @@ export function setupComposer(app: OverlayApp) {
     destMenu.hidden = true;
     followUp = null;
     api.stopVoice?.();
+    api.clearTalk?.('composer');
+    showInstances(false);
     box.querySelector('.ah-voice-note')?.remove();
   }
 
@@ -120,13 +166,22 @@ export function setupComposer(app: OverlayApp) {
     const previous = followUp;
     sendBtn.disabled = true;
     try {
+      // Talk & point from Ask: elements clicked while the mic listened go as one task, the selection as [1].
+      const talk = api.talkItemsFor?.('composer') || [];
+      if (talk.length > 1) {
+        api.stopVoice?.();
+        const result = await api.sendTalk(text, dest, talk);
+        if (result) { drafts.delete(target); input.value = ''; closeComposer(false); }
+        return;
+      }
+      const sc = scope ? { mode: scope.mode, component: scope.component, count: scope.count } : undefined;
       const built = await api.buildPrompt(stack, index, text, previous
         ? { instruction: previous.instruction || '', summary: previous.result?.summary, files: previous.result?.filesChanged }
-        : undefined);
+        : undefined, sc);
       if (!built) return;
       const result = await api.dispatchToAgent(
         built.prompt,
-        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, display: api.nameFor(target), ...(dest.client ? { assignee: dest.client } : {}), ...(previous ? { followUpOf: previous.id } : {}) },
+        { type: 'component-context', instruction: text, component: built.component, file: built.file, line: built.line, selector: built.selector, hierarchy: built.hierarchy, label: built.label, display: api.nameFor(target), ...(sc ? { scope: sc.mode, instanceCount: sc.count } : {}), ...(dest.client ? { assignee: dest.client } : {}), ...(previous ? { followUpOf: previous.id } : {}) },
         { quiet: true, destination: dest.kind },
       );
       // The earlier change is now settled: this task carries it forward.

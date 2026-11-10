@@ -15,6 +15,9 @@ import { setupTasks } from './ui/tasks.js';
 import { setupVerify } from './ui/verify.js';
 import { setupComments } from './features/comments.js';
 import { setupBatch } from './features/batch.js';
+import { setupPlace } from './features/place.js';
+import { setupTalk } from './features/talk.js';
+import { setupPageErrors } from './features/page-errors.js';
 import { setupSidebar } from './ui/sidebar.js';
 import { setupInspectPanel } from './ui/panels/inspect.js';
 import { setupListPanels } from './ui/panels/lists.js';
@@ -33,6 +36,7 @@ export type { OverlayConfig };
  */
 export function bootstrapOverlay(config: OverlayConfig) {
   const app = createOverlayApp(config);
+  setupPageErrors(app);
   setupBridgeConnection(app);
   setupTheme(app);
   setupToast(app);
@@ -49,6 +53,8 @@ export function bootstrapOverlay(config: OverlayConfig) {
   setupVerify(app);
   setupComments(app);
   setupBatch(app);
+  setupPlace(app);
+  setupTalk(app);
   setupSidebar(app);
   setupInspectPanel(app);
   setupListPanels(app);

@@ -100,6 +100,10 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 
 ![A finished task that changed a locked component](docs/screenshots/v0.2/09-lock-guard.png)
 
+**Place.** Can't describe the image you want? Put it there. Select an element and press **P** (or drop a file on the page): an image, SVG, GIF or video shows up right on your page, before, after, inside or over the element, laid out by your own CSS. Try up to four variants, set the size, add alt text, and send. Your agent gets the file and exactly where it goes, and Compare shows your mock next to what it built.
+
+**Talk & point.** Click the mic in Ask and talk; while it listens, click other elements and they drop into your sentence as [2], [3] where you said them ("make this match [2]"). Or hold **V** anywhere in Agent Hover, talk, and click. One task goes out with every element's context. Without a mic (Firefox), V works for typing too.
+
 **Comment and Batch.** Press **C** to drop numbered notes anywhere and send them one at a time or all at once. Press **B** (or click elements while the Batch tab is open) to collect several elements into one task, each marked Change, Reference or Don't touch ("make these three cards consistent").
 
 **Inspect.** The sidebar shows the component, a clickable breadcrumb, live props (secrets redacted), hooks, text, box model and key styles, and the source, with the token count of what would be sent.
@@ -154,6 +158,8 @@ Long components send only the ~90 lines around the element by default (Settings 
 | Enter | Ask about the selection |
 | C | Comment mode (or comment on the selection) |
 | B | Add the selection to the batch |
+| P | Place an image or video at the selection |
+| V | Talk & point: hold to talk and click, tap to keep listening |
 | ⌘/Ctrl + C | Copy the selection's context |
 | O | Open in your editor |
 | ↑ / ↓ | Select parent / child |
@@ -178,6 +184,8 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 
 - Everything runs on your machine. The bridge listens on `127.0.0.1` only, checks the page's origin, and requires a per-session token (stored in `.agent-hover/session.json`, which `init` adds to `.gitignore`).
 - No telemetry. The only outbound request is a once-a-day update check to the npm registry, with no project data; turn it off with `AGENT_HOVER_NO_UPDATE_CHECK=1` (or the usual `NO_UPDATE_NOTIFIER=1`).
+- Page errors (console errors and failed requests since the page loaded) go into prompts so your agent can see what went wrong. Tokens in URLs are hidden. Turn it off in Settings › When you press Send.
+- Place sends the file you drop only to your own dev server, which keeps it in `.agent-hover/place/` until your agent copies it into the project.
 - Voice uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple (you are told once, before the first use). Agent Hover never receives or stores audio. Turn the mic off in Settings › Voice.
 - Undo never runs `git reset`, `clean` or `checkout`; it restores the listed files one by one from the checkpoint.
 

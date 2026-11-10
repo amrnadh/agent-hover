@@ -31,6 +31,8 @@ export function setupKeyboard(app: OverlayApp) {
     for (const id of ['ah-dest-menu', 'ah-pill-menu', 'ah-dock-menu', 'ah-conn']) {
       if (visible(id)) { hide(id); return true; }
     }
+    if (api.isPlaceOpen?.()) { api.closePlace(); return true; }
+    if (api.isTalkOpen?.()) { api.closeTalk(); return true; }
     if (visible('ah-comment-card')) { api.closeCommentCard(); return true; }
     if (visible('ah-task-card')) { api.closeTaskCard(); return true; }
     if (api.isComposerOpen?.()) { api.closeComposer(); return true; }
@@ -51,6 +53,8 @@ export function setupKeyboard(app: OverlayApp) {
         (active as HTMLElement).blur();
         // Escape in the composer closes it straight away (draft is kept).
         if (api.isComposerOpen?.() && shadow.contains(active)) api.closeComposer();
+        else if (api.isPlaceOpen?.() && shadow.contains(active)) api.closePlace();
+        else if (api.isTalkOpen?.() && shadow.contains(active)) api.closeTalk();
         return;
       }
       if (escape()) e.preventDefault();
@@ -81,7 +85,7 @@ export function setupKeyboard(app: OverlayApp) {
     // Zero interference: letter shortcuts only while Agent Hover is in use (a mode, a selection, or the sidebar).
     if (!state.mode && !sel && !state.side?.open) return;
     // Letter shortcuts open inputs; stop the key from also being typed into them.
-    if (['c', 'C', 'b', 'B', 'o', 'O', 'd', 'D', 't', 'T', '?'].includes(e.key)) e.preventDefault();
+    if (['c', 'C', 'b', 'B', 'o', 'O', 'd', 'D', 't', 'T', 'p', 'P', '?'].includes(e.key)) e.preventDefault();
     switch (e.key) {
       case 'Enter':
         if (sel) { e.preventDefault(); api.openComposer(); }
@@ -95,6 +99,10 @@ export function setupKeyboard(app: OverlayApp) {
       case 'B':
         if (sel) api.toggleBatch(sel, state.currentStack);
         else api.toggleSidebar('batch');
+        break;
+      case 'p':
+      case 'P':
+        if (sel) api.openPlace();
         break;
       case 'o':
       case 'O':

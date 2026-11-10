@@ -176,10 +176,11 @@ export function setupListPanels(app: OverlayApp) {
       foot.hidden = false;
       foot.classList.add('batch');
       foot.innerHTML = `<div class="ah-field" style="padding:0"><label for="ah-batch-goal">Goal</label><textarea id="ah-batch-goal" rows="2" placeholder="e.g. Make these cards use the same padding and heading size"></textarea></div>
-        <div class="ah-actions"><button class="ah-tbtn quiet" data-act="copy">${icon('copy', 14)}Copy prompt</button><span class="grow"></span><button class="ah-tbtn primary" data-act="send">${icon('send', 14)}${dest.kind === 'agent' ? 'Send to ' + esc(prettyAgentName(dest.client)) : 'Copy prompt'}</button></div>`;
+        <div class="ah-actions"><button class="ah-ibtn mic" data-act="mic" title="Speak instead of typing" aria-label="Speak instead of typing" hidden>${icon('mic')}</button><button class="ah-tbtn quiet" data-act="copy">${icon('copy', 14)}Copy prompt</button><span class="grow"></span><button class="ah-tbtn primary" data-act="send">${icon('send', 14)}${dest.kind === 'agent' ? 'Send to ' + esc(prettyAgentName(dest.client)) : 'Copy prompt'}</button></div>`;
       const goal = foot.querySelector('#ah-batch-goal') as HTMLTextAreaElement;
       goal.value = batchGoal;
       goal.oninput = () => { batchGoal = goal.value; };
+      api.attachVoice?.(goal, foot.querySelector('[data-act=mic]') as HTMLElement);
       goal.onkeydown = (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); (foot.querySelector('[data-act=send]') as HTMLElement).click(); } };
       body.onclick = (e) => {
         const b = (e.target as Element).closest('button') as HTMLElement | null;

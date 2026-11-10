@@ -84,6 +84,7 @@ export function setupAgentDispatch(app: OverlayApp) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: extra.type || 'component-context',
+          ...(extra.scope ? { scope: extra.scope } : {}),
           instruction: extra.instruction || extra.goal || promptText.split('\n')[0],
           target: {
             component: extra.component,
@@ -91,6 +92,7 @@ export function setupAgentDispatch(app: OverlayApp) {
             lineStart: extra.line,
             selector: extra.selector,
             hierarchy: extra.hierarchy,
+            ...(extra.instanceCount ? { instanceCount: extra.instanceCount } : {}),
           },
           payload: { prompt: promptText, ...extra },
           ...(assignee ? { assignee } : {}),

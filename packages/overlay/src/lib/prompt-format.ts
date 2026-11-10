@@ -44,6 +44,17 @@ export interface PromptFacts {
   frozen?: Array<{ component: string; file?: string }>;
   page?: { path: string; viewport?: { width: number; height: number } };
   level: DetailLevel;
+  /** A shared component used more than once on the page: change this one, or every one. */
+  scope?: { mode: 'instance' | 'component'; component: string; count: number };
+  /** Recent console errors and failed requests on the page, as prompt lines. */
+  pageErrors?: string[];
+}
+
+function pageErrorsSection(f: PromptFacts | undefined): string {
+  if (!f?.pageErrors?.length) return '';
+  return `## On this page
+Errors since the page loaded (they may or may not be related to this request):
+${f.pageErrors.join('\n')}`;
 }
 
 const TAILWIND = /^(-?(p|m|px|py|pt|pb|pl|pr|mx|my|mt|mb|ml|mr|w|h|min-w|max-w|min-h|max-h|gap|space-[xy]|text|bg|border|rounded|flex|grid|col|row|items|justify|font|leading|tracking|shadow|opacity|z|inset|top|left|right|bottom)(-|$)|(sm|md|lg|xl|2xl|hover|focus|dark):)/;
@@ -195,7 +206,11 @@ function constraints(f: PromptFacts, extra: string[] = []): string {
       ? '- Keep the change focused on what is asked; leave unrelated code as it is.'
       : `- Change this element only; keep the rest of <${f.component.name} /> as it is.`,
     usesTailwind(f.element.classes) ? '- Follow the existing styling approach (Tailwind utility classes in this file).' : '- Follow the styling approach already used in this file.',
-    '- If the change would also affect other places that use this component, say so and prefer a prop or a local override.',
+    f.scope?.mode === 'instance'
+      ? `- <${f.scope.component} /> is used in ${f.scope.count} places on this page: change only this one. Leave the other ${f.scope.count - 1} as they are (add an optional prop or a local override if the component itself must change).`
+      : f.scope?.mode === 'component'
+        ? `- <${f.scope.component} /> is used in ${f.scope.count} places on this page: change the component itself, so every one of them gets the change.`
+        : '- If the change would also affect other places that use this component, say so and prefer a prop or a local override.',
     ...extra,
   ];
   for (const z of f.frozen || []) lines.push(`- Do not modify <${z.component} />${z.file ? ` (${z.file})` : ''}: it is locked.`);
@@ -227,6 +242,8 @@ export function formatChangeRequest(f: PromptFacts, instruction: string, previou
     parts.push(`## Previous attempt\nThis is a follow-up. An earlier change to this element was kept on the page:\n${lines.join('\n')}\n\nBuild on that change instead of starting over, and don't undo it unless the request says so.`);
   }
   parts.push(formatElementSections(f, 2));
+  const errors = pageErrorsSection(f);
+  if (errors) parts.push(errors);
   parts.push(`## Constraints\n${constraints(f)}`);
   const src = sourceSection(f, 2);
   if (src) parts.push(src);
@@ -274,6 +291,130 @@ export function formatCommentsRequest(items: Array<{ facts: PromptFacts | null; 
     if (!c?.code || seen.has(c.file)) continue;
     seen.add(c.file);
     const src = sourceSection(it.facts!, 2);
+    if (src) parts.push(src);
+  }
+  return parts.join('\n\n') + '\n';
+}
+
+// ---------- Place ----------
+
+export type PlacePosition = 'before' | 'after' | 'inside-start' | 'inside-end' | 'over';
+
+/** An image or video you put on the page at a spot, for the agent to add for real. */
+export interface Placement {
+  /** Project-relative path of the staged file (.agent-hover/place/…). */
+  assetPath: string;
+  mime: string;
+  /** The file's name when you dropped it, for a sensible destination name. */
+  fileName?: string;
+  /** Where the app serves static files from (Vite's publicDir), project-relative; null when it has none. */
+  publicDir?: string | null;
+  position: PlacePosition;
+  /** Rendered size of the mock on the page, CSS px. */
+  width: number;
+  height: number;
+  /** The file's own size, px (video: its frame size). */
+  natural?: { width: number; height: number };
+  /** The target element's width, so the size can also be given as a share of it. */
+  targetWidth?: number;
+  /** Over: the top-left corner as a share of the target's box (0–1). */
+  offset?: { x: number; y: number };
+  alt?: string;
+  video?: { loop: boolean; muted: boolean; autoplay: boolean };
+}
+
+const POSITION: Record<PlacePosition, string> = {
+  before: 'directly before the element (as its previous sibling)',
+  after: 'directly after the element (as its next sibling)',
+  'inside-start': 'inside the element, as its first child',
+  'inside-end': 'inside the element, as its last child',
+  over: 'on top of the element, positioned over it',
+};
+
+const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
+
+/** Turns `My Logo (final).PNG` into `my-logo-final`, the base name suggested for the copy in the project. */
+export function placeBaseName(fileName: string | undefined, fallback: string): string {
+  const base = (fileName || '').replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return base || fallback;
+}
+
+/** Place: add this asset to the page here, at this size. The staged file is copied into the project by the agent. */
+export function formatPlaceRequest(f: PromptFacts, p: Placement, note = ''): string {
+  const isVideo = p.mime.startsWith('video/');
+  const isSvg = p.mime === 'image/svg+xml';
+  const kind = isVideo ? 'video' : isSvg ? 'SVG' : p.mime === 'image/gif' ? 'GIF' : 'image';
+  const ext = p.assetPath.split('.').pop() || '';
+  const name = `${placeBaseName(p.fileName, p.assetPath.split('/').pop()!.replace(/\.[^.]+$/, ''))}.${ext}`;
+  const dest = p.publicDir && p.publicDir !== '.' ? `${p.publicDir.replace(/\/+$/, '')}/${name}` : null;
+  const media = isVideo ? 'media' : 'images';
+
+  const what: string[] = [
+    `Add the ${kind} ${code(p.assetPath)} to the page, ${POSITION[p.position]}.`,
+    dest
+      ? `Copy it into the project first, e.g. to ${code(dest)} (served as ${code('/' + name)}), unless this project keeps ${media} somewhere else: then follow that pattern (an ${code('assets')} import, an icons folder, an image component).`
+      : `Copy it into the project first, where this project keeps its ${media} (follow the existing pattern: a public folder, an ${code('assets')} import, an icons folder, an image component).`,
+    `Don't reference ${code('.agent-hover/')} from the code: that folder is temporary and not committed.`,
+  ];
+  if (note.trim()) what.push('', note.trim());
+
+  const look: string[] = [];
+  const share = p.targetWidth && p.position !== 'over' ? ` (${pct(p.width / p.targetWidth)} of the element's width)` : '';
+  look.push(`- Size on the page: ${Math.round(p.width)}×${Math.round(p.height)}px${share}; keep the aspect ratio.`);
+  look.push(p.natural ? `- The file itself: ${Math.round(p.natural.width)}×${Math.round(p.natural.height)}px, ${p.mime}.` : `- The file itself: ${p.mime}.`);
+  if (p.position === 'over' && p.offset) {
+    look.push(`- Position: its top-left corner at ${pct(p.offset.x)} from the element's left and ${pct(p.offset.y)} from its top. Make the element the positioning context if it isn't one, and don't let the ${kind} change the layout around it.`);
+  } else {
+    look.push(`- It takes part in the layout ${p.position.startsWith('inside') ? 'of the element' : 'next to the element'}; keep the spacing consistent with the neighbouring content.`);
+  }
+  if (isVideo && p.video) {
+    const attrs = [p.video.autoplay && 'autoplay', p.video.loop && 'loop', p.video.muted && 'muted', 'playsInline'].filter(Boolean).join(', ');
+    look.push(`- Video attributes: ${attrs}.`);
+  }
+  if (p.alt?.trim()) look.push(`- Alt text: “${p.alt.trim()}”.`);
+  else if (!isVideo) look.push('- No alt text was given: treat it as decorative (alt="") unless it clearly carries meaning.');
+  if (isSvg) look.push('- It is an SVG: check it before inlining (no scripts or external references); an <img> works too.');
+
+  const article = kind === 'image' ? 'an image' : kind === 'SVG' ? 'an SVG' : `a ${kind}`;
+  const parts = [
+    `# Place ${article}: ${describeTarget(f)}`,
+    `## What to do\n${what.join('\n')}`,
+    `## The ${kind} as placed on the page\n${look.join('\n')}`,
+    formatElementSections(f, 2),
+    `## Constraints\n${constraints(f, [`- Add the ${kind} only; leave the element and its other content as they are.`])}`,
+  ];
+  const src = sourceSection(f, 2);
+  if (src) parts.push(src);
+  return parts.join('\n\n') + '\n';
+}
+
+// ---------- Talk & point ----------
+
+/**
+ * Talk & point: one sentence that names elements by number ("make [1] match [2], remove [3]"), and the elements.
+ * Element n in the list is [n] in the sentence. What each one is for (change it, copy it) comes from the sentence.
+ */
+export function formatTalkRequest(text: string, items: Array<{ facts: PromptFacts }>): string {
+  const parts = [
+    `# Change request: ${items.length} element${items.length === 1 ? '' : 's'}`,
+    `## What to do\n${text.trim()}\n\nThe numbers in brackets point at the elements below: [1] is element 1, [2] is element 2, and so on.`,
+    `## Elements\n${items.map((it, i) => `${i + 1}. ${describeTarget(it.facts)}`).join('\n')}`,
+  ];
+  items.forEach((it, i) => parts.push(`## [${i + 1}] ${it.facts.element.label}\n\n${formatElementSections(it.facts, 3)}`));
+  const errors = pageErrorsSection(items[0]?.facts);
+  if (errors) parts.push(errors);
+  const unnamed = items.map((_, i) => i + 1).filter((n) => !text.includes(`[${n}]`));
+  const extra = [
+    '- Change only what the request asks for. An element the request uses as an example (match it, like it) is a reference: read it, don\'t edit it.',
+    ...(unnamed.length ? [`- ${unnamed.map((n) => `[${n}]`).join(', ')} ${unnamed.length === 1 ? 'is' : 'are'} not named in the request: treat ${unnamed.length === 1 ? 'it' : 'them'} as context.`] : []),
+  ];
+  parts.push(`## Constraints\n${constraints({ ...items[0].facts, element: { ...items[0].facts.element, isComponent: true } }, extra)}`);
+  const seen = new Set<string>();
+  for (const it of items) {
+    const c = it.facts.component;
+    if (!c?.code || seen.has(c.file)) continue;
+    seen.add(c.file);
+    const src = sourceSection(it.facts, 2);
     if (src) parts.push(src);
   }
   return parts.join('\n\n') + '\n';
