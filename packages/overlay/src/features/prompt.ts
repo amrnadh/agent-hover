@@ -166,13 +166,16 @@ export function setupPrompt(app: OverlayApp) {
       page: { path: location.pathname + location.hash, viewport: { width: window.innerWidth, height: window.innerHeight } },
       level: state.level,
     };
+    const errors = api.pageErrorLines?.() || [];
+    if (errors.length) facts.pageErrors = errors;
     return { facts, tokens };
   }
 
-  async function buildPrompt(stack: any[], index: number, instruction: string, previous?: PreviousAttempt): Promise<BuiltPrompt | null> {
+  async function buildPrompt(stack: any[], index: number, instruction: string, previous?: PreviousAttempt, scope?: PromptFacts['scope']): Promise<BuiltPrompt | null> {
     const built = await buildFacts(stack, index);
     if (!built) return null;
     const { facts, tokens } = built;
+    if (scope) facts.scope = scope;
     return {
       prompt: formatChangeRequest(facts, instruction, previous),
       facts,
