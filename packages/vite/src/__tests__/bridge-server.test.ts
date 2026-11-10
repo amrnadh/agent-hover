@@ -305,6 +305,27 @@ describe('BridgeServer Integration Tests', () => {
     expect(saveRes.status).toBe(403);
   });
 
+  it('reads a slice of a project file by relative path (POST /api/source)', async () => {
+    const testPort = 36000 + Math.floor(Math.random() * 1000);
+    server = new BridgeServer(tempDir, testPort);
+    activePort = await server.start();
+    const token = server.getToken();
+    await fs.mkdir(path.join(tempDir, 'src'), { recursive: true });
+    await fs.writeFile(path.join(tempDir, 'src', 'Card.tsx'), 'line 1\nline 2\nline 3\nline 4\n');
+
+    const res = await fetch(`http://127.0.0.1:${activePort}/api/source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ file: 'src/Card.tsx', lineStart: 2, lineEnd: 3 }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.file).toBe('src/Card.tsx');
+    expect(data.source).toBe('line 2\nline 3');
+    expect(data.lineStart).toBe(2);
+    expect(data.totalLines).toBe(5);
+  });
+
   it('rejects unauthenticated requests on protected endpoints (P1-02)', async () => {
     const testPort = 37000 + Math.floor(Math.random() * 2000);
     server = new BridgeServer(tempDir, testPort);
