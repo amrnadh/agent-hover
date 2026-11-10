@@ -7,7 +7,7 @@ export function Testimonial() {
           about a week sooner.”
         </blockquote>
         <figcaption className="mt-8 flex items-center justify-center gap-3">
-          <span className="grid size-10 place-items-center rounded-full bg-brand-soft text-sm font-semibold text-brand">PN</span>
+          <span id="testimonial-avatar" className="grid size-10 place-items-center rounded-full bg-brand-soft text-sm font-semibold text-brand">PN</span>
           <span className="text-left text-sm leading-tight">
             <span className="block font-medium">Priya Nair</span>
             <span className="text-muted-foreground">Operations lead, Alder & Finch</span>

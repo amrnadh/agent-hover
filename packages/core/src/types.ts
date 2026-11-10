@@ -214,7 +214,7 @@ export interface ScreenshotDiff {
   createdAt: string;            // ISO timestamp
 }
 
-export type TaskType = 'component-context' | 'dom-element' | 'pinned-stack' | 'note';
+export type TaskType = 'component-context' | 'dom-element' | 'pinned-stack' | 'note' | 'place';
 export type TaskStatus =
   | 'queued' | 'delivered' | 'in_progress'
   | 'done' | 'failed' | 'cancelled' | 'expired' | 'superseded';
@@ -246,6 +246,20 @@ export interface AgentTaskPayload {
   followUpOf?: string;
   /** The failed or never-picked-up task this one sends again. */
   retryOf?: string;
+  /** Place: the staged asset (never its bytes) and where it goes. */
+  place?: PlacePayload;
+}
+
+export type PlacePosition = 'before' | 'after' | 'inside-start' | 'inside-end' | 'over';
+
+export interface PlacePayload {
+  /** Project-relative path of the staged file, under .agent-hover/place/. */
+  assetPath: string;
+  mime: string;
+  position: PlacePosition;
+  /** Rendered size on the page, in CSS px. */
+  width: number;
+  height: number;
 }
 
 export interface AgentTaskResult {

@@ -30,6 +30,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
   const port = options?.port ?? 9850;
   const editor = options?.editor ?? 'auto';
   let projectRoot: string;
+  let publicDir: string | null = null;
   let bridgeServer: BridgeServer | null = null;
 
   return {
@@ -48,6 +49,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
 
     configResolved(config) {
       projectRoot = config.root;
+      publicDir = config.publicDir || null;
     },
 
     configureServer(server) {
@@ -65,6 +67,7 @@ export default function componentPointer(options?: ComponentPointerOptions): Plu
         if (!server.httpServer) resolve();
       });
       bridgeServer = new BridgeServer(projectRoot, port, {
+        publicDir,
         onUpdateAvailable: (info) => {
           listening.then(() => server.config.logger.info(formatUpdateNotice(info, !!process.stdout.isTTY)));
         },
