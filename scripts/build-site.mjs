@@ -20,9 +20,18 @@ const files = [
   ['docs/brand/logo/favicon.svg', 'assets/brand/favicon.svg'],
   ['docs/brand/logo/apple-touch-icon.png', 'assets/brand/apple-touch-icon.png'],
   ['docs/brand/logo/social.png', 'assets/brand/social.png'],
-  ['docs/media/launch/agent-hover-launch.mp4', 'assets/media/agent-hover-launch.mp4'],
-  ['docs/media/launch/agent-hover-launch-thumbnail.png', 'assets/media/agent-hover-launch-thumbnail.png'],
 ];
+
+/** The hero video: the launch video once it's committed, the README demo until then. First one found wins. */
+const video = pick('docs/media/launch/agent-hover-launch.mp4', 'docs/media/agent-hover-demo.mp4');
+const poster = video.includes('/launch/')
+  ? pick('docs/media/launch/agent-hover-launch-thumbnail.png', 'docs/brand/logo/social.png')
+  : 'docs/brand/logo/social.png';
+files.push([video, 'assets/media/video.mp4'], [poster, 'assets/media/poster.png']);
+
+function pick(...candidates) {
+  return candidates.find((p) => existsSync(join(root, p))) ?? candidates[candidates.length - 1];
+}
 const screenshots = 'docs/screenshots/v0.2';
 
 const missing = [...files.map(([src]) => src), 'site', screenshots].filter((p) => !existsSync(join(root, p)));
@@ -42,4 +51,4 @@ for (const f of readdirSync(join(root, screenshots)).filter((f) => f.endsWith('.
   cpSync(join(root, screenshots, f), join(out, 'assets/screenshots', f));
 }
 
-console.log(`build-site: wrote ${out}`);
+console.log(`build-site: wrote ${out} (video: ${video})`);
