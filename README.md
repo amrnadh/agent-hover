@@ -10,6 +10,7 @@
 [![npm](https://img.shields.io/npm/v/@agent-hover/vite?label=%40agent-hover%2Fvite)](https://www.npmjs.com/package/@agent-hover/vite)
 [![CI](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnadh/agent-hover/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
+[![Website](https://img.shields.io/badge/website-docs%20%26%20live%20demo-black)](https://amrnadh.github.io/agent-hover/)
 
 **Can't describe it? Point at it.**
 
@@ -22,6 +23,8 @@ Works with Claude Code, Cursor, Codex, OpenCode and any other MCP agent, or with
 ![Agent Hover: the dock, a change request on the page, the agent's progress on the element, then before and after](docs/media/agent-hover.gif)
 
 **[Watch the full demo (1:54)](docs/media/agent-hover-demo.mp4)**: the dock, point instead of describe, "like this, not that", notes, adding a feature and reviewing it, and keeping agents off finished work.
+
+**[Try it in your browser and read the docs](https://amrnadh.github.io/agent-hover/)**: a live demo of the real overlay, and every feature explained.
 
 ## Quick start
 
