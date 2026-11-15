@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Hover Docs</title>
+<meta name="description" content="How to set up Agent Hover and use every feature: pointing, asking, tracking, review, Tasks, Comment, Batch, Lock and Inspect.">
+<link rel="icon" href="assets/brand/favicon.svg">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem('ah-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
+  <symbol id="i-npm" viewBox="0 0 24 24"><path fill="currentColor" d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 3l7 18 2.5-7.5L21 11z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3 21l2-5.3A8.5 8.5 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 12l10 5 10-5M2 17l10 5 10-5"/></g></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17" stroke-linejoin="round"/></g></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="8" height="8" rx="1"/></g></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></g></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></g></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 7v4M10 7v3M14 7v4M18 7v3" stroke-linecap="round"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="11" rx="1.5"/><path d="M2 19h20" stroke-linecap="round"/></g></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3 3.8M6.5 6.5A17 17 0 0 0 2.5 12S6 19 12 19a9.6 9.6 0 0 0 4.5-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></g></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-lockurl" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H20v-3"/></g></symbol>
+</svg>
+
+<header class="site-header" id="top">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Agent Hover home">
+      <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><g shape-rendering="crispEdges"><rect x="23" y="11" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="23" y="15" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="26" y="16" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="25" y="17" width="1" height="1"/><rect x="22" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="26" y="18" width="1" height="1"/><rect x="23" y="19" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="26" y="20" width="1" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="25" y="21" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="20" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="26" y="22" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="15" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="17" y="25" width="1" height="1"/><rect x="21" y="25" width="1" height="1"/><rect x="16" y="26" width="1" height="1"/><rect x="18" y="26" width="1" height="1"/><rect x="20" y="26" width="1" height="1"/><rect x="22" y="26" width="1" height="1"/></g></svg>
+      Agent Hover
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#agents">Agents</a>
+      <a href="docs.html" aria-current="page">Docs</a>
+      <a href="https://github.com/amrnadh/agent-hover/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+    <div class="header-right">
+      <a class="chip-link hide-md" href="https://www.npmjs.com/package/@agent-hover/vite" aria-label="npm package">
+        <svg class="npm-logo"><use href="#i-npm"/></svg><span class="muted" data-npm-version>v0.2.1</span>
+      </a>
+      <a class="chip-link" href="https://github.com/amrnadh/agent-hover" aria-label="GitHub repository">
+        <svg><use href="#i-github"/></svg><span class="hide-md">GitHub</span><span class="sep" data-stars-wrap hidden></span><span class="muted" data-stars hidden></span>
+      </a>
+      <button class="icon-btn theme-btn" type="button" aria-label="Switch light and dark theme">
+        <svg class="moon"><use href="#i-moon"/></svg><svg class="sun"><use href="#i-sun"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+
+<div class="wrap docs">
+  <aside class="docs-nav" aria-label="Docs">
+    <div class="docs-search"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></g></svg><input id="docSearch" type="search" placeholder="Search the docs  /" aria-label="Search the docs"></div>
+    <h5>Getting started</h5>
+    <a href="#overview">Overview</a>
+    <a href="#install">Install with init</a>
+    <a href="#first-task">Your first task</a>
+    <a href="#manual">Manual setup</a>
+    <a href="#requirements">Requirements</a>
+    <h5>Using it</h5>
+    <a href="#dock">The dock</a>
+    <a href="#point">Point and select</a>
+    <a href="#ask">Ask</a>
+    <a href="#track">Track</a>
+    <a href="#review">Review</a>
+    <a href="#tasks">Tasks</a>
+    <a href="#comment">Comment</a>
+    <a href="#batch">Batch</a>
+    <a href="#lock">Lock</a>
+    <a href="#inspect">Inspect</a>
+    <a href="#copy">Copy</a>
+    <a href="#voice">Voice</a>
+    <h5>Reference</h5>
+    <a href="#brief">What your agent receives</a>
+    <a href="#agents">Agents</a>
+    <a href="#keyboard">Keyboard</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+    <a href="#privacy">Privacy and security</a>
+  </aside>
+
+  <article class="prose">
+    <button class="btn btn-ghost docs-menu-btn" type="button"><svg><use href="#i-list"/></svg>All topics</button>
+
+    <section id="overview">
+      <p class="eyebrow">Getting started</p>
+      <h1>Agent Hover docs</h1>
+      <p class="lead">Agent Hover sits on your running React app in development. You point at an element, say what should change, and your coding agent gets the exact file, the line that renders it, how it looks now and what it must not touch.</p>
+      <p>It has two halves. <strong>Asking</strong>: point, describe, send. <strong>Reviewing</strong>: the task stays on the element while the agent works, and when it's done you compare, keep, undo or follow up, right where the change happened.</p>
+      <div class="flow"><span>Point</span><i>→</i><span>Ask</span><i>→</i><span>Agent works</span><i>→</i><span>Review</span><i>→</i><span>Keep or Undo</span></div>
+      <p>It works with Claude Code, Cursor, Codex, OpenCode, Windsurf, Antigravity, Claude Desktop and any other MCP agent. For chat tools like ChatGPT, Claude.ai, v0, Lovable and Bolt, Copy gives you a self-contained prompt.</p>
+    </section>
+
+    <section id="install">
+      <p class="eyebrow">Getting started</p>
+      <h2>Install with init</h2>
+      <p>In your Vite + React project, run:</p>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>npx agent-hover init</pre></div>
+      <p><code>init</code> does four things, and shows every change and asks before writing anything:</p>
+      <ol>
+        <li><strong>Installs <code>@agent-hover/vite</code></strong> as a dev dependency, with your package manager.</li>
+        <li><strong>Adds the plugin</strong> to your Vite config.</li>
+        <li><strong>Connects your agents.</strong> Pick them from a checklist (↑ ↓, space, <kbd>a</kbd> for all, Enter). The ones your project already uses are ticked, and each shows where its config goes. It writes the MCP config, a short rules note, and an <code>/agent-hover</code> command for each one.</li>
+        <li><strong>Keeps local data out of git</strong> by adding <code>.agent-hover/</code> to <code>.gitignore</code>.</li>
+      </ol>
+      <div class="callout"><svg><use href="#i-shield"/></svg><p><code>--dry-run</code> only shows the plan. In scripts and CI, where there's no terminal to ask in, use <code>--agent</code> and <code>--yes</code>. Esc or Ctrl+C cancels at any point.</p></div>
+      <p>Windsurf and Antigravity keep their config in your home folder, so <code>init</code> writes those globally, after showing them in the plan and asking.</p>
+    </section>
+
+    <section id="first-task">
+      <p class="eyebrow">Getting started</p>
+      <h2>Your first task</h2>
+      <ol>
+        <li>Start your dev server (<code>npm run dev</code>) and open the app. The dock appears at the bottom of the page.</li>
+        <li>Press <kbd>Alt</kbd>, or the pointer in the dock, and click anything.</li>
+        <li>Press <strong>Ask</strong>, type what to change, and press <kbd>⌘</kbd> <kbd>Enter</kbd> (<kbd>Ctrl</kbd> <kbd>Enter</kbd> on Windows and Linux).</li>
+        <li>In your agent, run <code>/agent-hover</code> (<code>$agent-hover</code> in Codex), or tell it “Listen for agent-hover tasks.” It picks up each task you send, does it, reports back and waits for the next one.</li>
+      </ol>
+      <p><code>/agent-hover-status</code> lists what's waiting and running without starting anything.</p>
+      <div class="callout"><svg><use href="#i-pulse"/></svg><p>Something not working? <code>npx agent-hover doctor</code> checks the plugin, the dev server, the token and the agent connection, and tells you what to fix.</p></div>
+    </section>
+
+    <section id="manual">
+      <p class="eyebrow">Getting started</p>
+      <h2>Manual setup</h2>
+      <p>If you'd rather not run <code>init</code>, install the plugin yourself:</p>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>npm install -D @agent-hover/vite</pre></div>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>vite.config.ts</div><pre><span class="k">import</span> { defineConfig } <span class="k">from</span> <span class="s">'vite'</span>;
+<span class="k">import</span> react <span class="k">from</span> <span class="s">'@vitejs/plugin-react'</span>;
+<span class="k">import</span> agentHover <span class="k">from</span> <span class="s">'@agent-hover/vite'</span>;
+
+<span class="k">export default</span> defineConfig({
+  plugins: [react(), agentHover()],
+});</pre></div>
+      <p>Then register the MCP server with your agent. For Claude Code:</p>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>claude mcp add agent-hover -- npx -y @agent-hover/mcp</pre></div>
+      <p><code>npx agent-hover mcp &lt;agent&gt;</code> prints the config for <code>cursor</code>, <code>codex</code>, <code>opencode</code>, <code>windsurf</code>, <code>antigravity</code> and <code>claude-desktop</code>.</p>
+    </section>
+
+    <section id="requirements">
+      <p class="eyebrow">Getting started</p>
+      <h2>Requirements</h2>
+      <ul>
+        <li>Node 20 or newer, Vite 5 or newer (tested up to Vite 8), React 18 or 19.</li>
+        <li>macOS, Linux and Windows 10/11.</li>
+        <li>Chrome, Edge, Firefox and Safari.</li>
+        <li>Dev only: the plugin runs with <code>vite dev</code> and adds nothing to production builds.</li>
+        <li>Compare and Undo need a git repository. Everything else works without one.</li>
+      </ul>
+      <p>Next.js support is next on the roadmap.</p>
+    </section>
+
+    <section id="dock">
+      <p class="eyebrow">Using it</p>
+      <h2>The dock</h2>
+      <p>The dock sits on your running app, in development only. It shows whether your agent is connected, starts everything else, and its Tasks dot tells you when something needs you.</p>
+      <figure><img src="assets/screenshots/00-dock.png" alt="The dock: agent status, Inspect, Comment, Tasks, Batch and More"><figcaption>From left: agent status, Inspect, Comment, Tasks, Batch, More, and the handle to move it.</figcaption></figure>
+      <ul>
+        <li><strong>Agent status</strong>: green when an agent is connected.</li>
+        <li><strong>Inspect</strong> turns pointing on and off (same as <kbd>Alt</kbd>).</li>
+        <li><strong>Comment</strong>, <strong>Tasks</strong> and <strong>Batch</strong> open their modes and tabs.</li>
+        <li><strong>More</strong> holds the rest. A vertical dock is an option in Settings.</li>
+      </ul>
+      <p><kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>X</kbd> hides or shows the dock.</p>
+    </section>
+
+    <section id="point">
+      <p class="eyebrow">Using it</p>
+      <h2>Point and select</h2>
+      <p>Press <kbd>Alt</kbd> (or the pointer in the dock) and move over the page. A blue outline and a tag show what's under the pointer and where it's rendered. Click to select it.</p>
+      <figure><img src="assets/screenshots/01-pill.png" alt="A selected button with its action pill"><figcaption>The pill names the selection in words and shows its file and line.</figcaption></figure>
+      <h3 id="pill">The pill</h3>
+      <p>A small pill appears above the selection with <strong>Ask</strong>, <strong>Comment</strong>, <strong>add to Batch</strong> and <strong>Copy</strong>. Under More: open in your editor, screenshot, lock from agents, parent and child, and details.</p>
+      <p>Cards and lists use plain names: “Book a demo” button, “Pricing” link, <code>&lt;StatCard /&gt;</code>. The code name (<code>button#hero-primary-cta</code>) stays in the hover tag, in prompts and in the pill's tooltip.</p>
+      <h3 id="moving">Moving around</h3>
+      <ul>
+        <li><kbd>↑</kbd> and <kbd>↓</kbd> select the parent or child.</li>
+        <li>Hold <kbd>⌘</kbd> (<kbd>Ctrl</kbd>) to show distances to nearby elements.</li>
+        <li>Hold <kbd>Shift</kbd> to click through to your page, for example to open a menu before selecting inside it.</li>
+        <li><kbd>O</kbd> opens the element's file in your editor.</li>
+      </ul>
+      <h3 id="exact-line">Exact file and line</h3>
+      <p>On React 19, the element's own creation stack is mapped back through the dev server's source maps to the exact file and line, in Chrome, Firefox and Safari. An element drawn by a shared UI block (<code>ui/button.tsx</code>) points to where the block is used (<code>&lt;Button&gt;</code> in <code>Hero.tsx</code>), so the agent changes this usage rather than every button.</p>
+    </section>
+
+    <section id="ask">
+      <p class="eyebrow">Using it</p>
+      <h2>Ask</h2>
+      <p>Press <strong>Ask</strong> or <kbd>Enter</kbd> on a selection. Describe the change in your own words (or click the mic and say it) and press <kbd>⌘</kbd> <kbd>Enter</kbd>.</p>
+      <ul>
+        <li><strong>Where it goes</strong>: to your connected agent. When none is connected, or when you prefer Copy, the prompt goes to the clipboard instead.</li>
+        <li><strong>Picking an agent</strong>: with several connected, pick which one gets it. Only that agent receives the task. Comments and Batch go to the same agent. Two sessions of one agent show as one agent with a session count.</li>
+        <li><strong>Not just styling</strong>: you can ask for what's missing, like “add an Export CSV button next to this header”.</li>
+      </ul>
+    </section>
+
+    <section id="track">
+      <p class="eyebrow">Using it</p>
+      <h2>Track</h2>
+      <p>When you send, a marker appears on the element and follows the task:</p>
+      <div class="flow"><span>Sent</span><i>→</i><span>Seen</span><i>→</i><span>Working</span><i>→</i><span>Done</span><i>→</i><span>Review</span></div>
+      <figure><img src="assets/screenshots/02-task-done.png" alt="A task card with the agent's summary"><figcaption>Open a marker for the request, the timeline, the agent's summary and the files it changed.</figcaption></figure>
+      <ul>
+        <li>While the agent works, the card counts how long it has been at it.</li>
+        <li>Markers come back after a reload.</li>
+        <li>A marker whose element is covered (your own dialog, a sticky header) is hidden until it's visible again.</li>
+        <li>A task no agent picked up shows “Not picked up” and can be <strong>sent again</strong>. A failed one gets <strong>Try again</strong>. Both offer <strong>Copy prompt</strong> for any AI tool.</li>
+      </ul>
+    </section>
+
+    <section id="review">
+      <p class="eyebrow">Using it</p>
+      <h2>Review</h2>
+      <p>A finished change that touched files waits on its element until you decide. The marker gets a ring, and the dock's Tasks dot stays on.</p>
+      <figure><img src="assets/screenshots/06-compare.png" alt="Before and after comparison"><figcaption>Compare shows the element before and after.</figcaption></figure>
+      <h3 id="keep">Keep <kbd>K</kbd></h3>
+      <p>Settles the change. The checkpoint stays, so Undo is still possible from Tasks until checkpoints are pruned.</p>
+      <h3 id="undo">Undo <kbd>U</kbd></h3>
+      <p>Restores exactly the files that changed, after showing you the list. When the agent picks up a task, Agent Hover takes a git checkpoint of your work tree, including uncommitted and untracked files, without touching them. Undo never runs <code>git reset</code>, <code>clean</code> or <code>checkout</code>: it restores the listed files one by one. Tasks that changed no files don't offer Undo.</p>
+      <figure><img src="assets/screenshots/07-undo-confirm.png" alt="Undo confirmation listing the file it restores"></figure>
+      <h3 id="follow-up">Follow up <kbd>F</kbd></h3>
+      <p>Opens Ask on the same element. The new prompt carries a “Previous attempt” section with the earlier request, the agent's summary and its files, so the agent builds on the change instead of starting over.</p>
+      <p>Your decision is saved with the task, so it survives reloads.</p>
+    </section>
+
+    <section id="tasks">
+      <p class="eyebrow">Using it</p>
+      <h2>Tasks</h2>
+      <p>Press <kbd>T</kbd> or the Tasks button in the dock. Everything you've sent is sorted by what it needs from you:</p>
+      <ul>
+        <li><strong>Needs you</strong>: changes to review, and failures.</li>
+        <li><strong>In progress</strong>: what agents are working on now.</li>
+        <li><strong>History</strong>: folded by default, with <strong>Clear</strong> to remove everything with nothing left to decide.</li>
+      </ul>
+      <figure><img src="assets/screenshots/10-tasks.png" alt="The Tasks tab next to the page"></figure>
+      <p>Rows show the status and the exact <code>file:line</code>. <kbd>↑</kbd> <kbd>↓</kbd> move between rows, <kbd>Enter</kbd> opens one, <kbd>Delete</kbd> removes it. Keep and Undo work from here too. Finished tasks older than a week leave the list on their own; changes still waiting for review stay.</p>
+    </section>
+
+    <section id="comment">
+      <p class="eyebrow">Using it</p>
+      <h2>Comment</h2>
+      <p>Press <kbd>C</kbd> to drop numbered notes anywhere on the page, or comment on the current selection. Use it for small things: a header that isn't aligned, an odd date format.</p>
+      <ul>
+        <li>A pin sits at the element's top-left corner, outside it, clear of any task marker.</li>
+        <li>Send notes one at a time, or all at once as a single task.</li>
+        <li>The Comments tab lists them with the same numbers as the pins.</li>
+      </ul>
+    </section>
+
+    <section id="batch">
+      <p class="eyebrow">Using it</p>
+      <h2>Batch</h2>
+      <p>Some changes are about several elements at once: “make this tile match those cards”. Batch lets you point at all of them in one task.</p>
+      <ul>
+        <li>Press <kbd>B</kbd> to add the selection, or click elements while the Batch tab is open (the cursor shows a +). Click again to take one out.</li>
+        <li>Mark each element <strong>Change</strong>, <strong>Reference</strong> or <strong>Don't touch</strong>.</li>
+        <li>Write the goal at the bottom of the sidebar and send.</li>
+      </ul>
+    </section>
+
+    <section id="lock">
+      <p class="eyebrow">Using it</p>
+      <h2>Lock</h2>
+      <p>“Don't let agents change this” on a component puts it in every prompt as off limits. That's the ask; Agent Hover also checks.</p>
+      <figure><img src="assets/screenshots/09-lock-guard.png" alt="A finished task that changed a locked component"><figcaption>If a finished task changed a locked component's file anyway, the marker turns amber and the card says which one, with Undo right there.</figcaption></figure>
+    </section>
+
+    <section id="inspect">
+      <p class="eyebrow">Using it</p>
+      <h2>Inspect</h2>
+      <p>The Inspect tab shows everything Agent Hover knows about the selection:</p>
+      <ul>
+        <li>The component and a clickable breadcrumb up the tree.</li>
+        <li>Live props (secrets redacted), hooks and text.</li>
+        <li>The box model and key styles.</li>
+        <li>The source, with the token count of what would be sent.</li>
+      </ul>
+      <figure><img src="assets/screenshots/04-inspect.png" alt="The Inspect sidebar"></figure>
+    </section>
+
+    <section id="copy">
+      <p class="eyebrow">Using it</p>
+      <h2>Copy</h2>
+      <p><kbd>⌘</kbd> <kbd>C</kbd> on a selection, or Copy in the pill, puts the full context on the clipboard. Every copied prompt is self-contained, so you can paste it into ChatGPT, Claude.ai, v0, Lovable, Bolt or anything else.</p>
+    </section>
+
+    <section id="voice">
+      <p class="eyebrow">Using it</p>
+      <h2>Voice</h2>
+      <p>The mic in Ask and in new comments lets you speak instead of typing. While it listens, it turns red and glows, and an empty box says “Listening…”. <kbd>Esc</kbd> stops and keeps what was said.</p>
+      <p>It uses your browser's speech recognition, in your browser's language. It's hidden where the browser has none (Firefox). Settings › Voice turns it off. See <a href="#privacy">Privacy</a> for where audio goes.</p>
+    </section>
+
+    <section id="brief">
+      <p class="eyebrow">Reference</p>
+      <h2>What your agent receives</h2>
+      <p>A short, ordered brief instead of a vague description. Real output for “Make this button larger with a subtle arrow icon”:</p>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>task.md</div><pre><span class="h"># Change request: &lt;button&gt; “Book a demo” in &lt;Hero /&gt;</span>
+
+<span class="h">## What to do</span>
+Make this button larger with a subtle arrow icon
+
+<span class="h">## Where</span>
+- Element: `button#hero-primary-cta` with text “Book a demo”
+- Rendered by: `&lt;Hero /&gt;` in `src/components/Hero.tsx`, lines 14–80
+- In the source, the element is around line 55
+- It is rendered through `&lt;Button&gt;` (line 54), a shared component: change this usage
+  (className or props) rather than `&lt;Button&gt;` itself, unless the request is about every Button.
+
+<span class="h">## The element now</span>
+- Rendered: 135×44px · font 14px/500 · color #ffffff on #17181a · padding 0px 24px · radius full
+
+<span class="h">## Constraints</span>
+- Change this element only; keep the rest of &lt;Hero /&gt; as it is.
+- Follow the existing styling approach (Tailwind utility classes in this file).
+
+<span class="h">## Source: src/components/Hero.tsx (lines 14–80)</span>
+<span class="d">…</span></pre></div>
+      <h3 id="context-detail">Context detail</h3>
+      <p>Long components send only the ~90 lines around the element by default. Settings › Context detail switches between <strong>Compact</strong>, <strong>Standard</strong> and <strong>Deep</strong>.</p>
+    </section>
+
+    <section id="agents">
+      <p class="eyebrow">Reference</p>
+      <h2>Agents</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Agent</th><th>Connection</th><th>Start listening</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>MCP, project <code>.mcp.json</code> (set up by init)</td><td><code>/agent-hover</code></td></tr>
+          <tr><td>Cursor</td><td>MCP, project <code>.cursor/mcp.json</code> (set up by init)</td><td><code>/agent-hover</code></td></tr>
+          <tr><td>Codex</td><td>MCP, project <code>.codex/config.toml</code> (set up by init)</td><td><code>$agent-hover</code></td></tr>
+          <tr><td>OpenCode</td><td>MCP, project <code>opencode.json</code> (set up by init)</td><td><code>/agent-hover</code></td></tr>
+          <tr><td>Windsurf, Antigravity</td><td>MCP, global config in your home folder (init, after asking)</td><td><code>/agent-hover</code></td></tr>
+          <tr><td>Claude Desktop</td><td>MCP, global config (<code>npx agent-hover mcp claude-desktop</code> prints it)</td><td>“Listen for agent-hover tasks.”</td></tr>
+          <tr><td>ChatGPT, Claude.ai, v0, Lovable, Bolt</td><td>Copy: every prompt is self-contained</td><td>Paste it</td></tr>
+        </tbody>
+      </table></div>
+      <p>Settings › Agents walks through each one in three steps: the <code>init</code> command, how to restart the agent so it loads the server, and its own listen and status commands.</p>
+    </section>
+
+    <section id="keyboard">
+      <p class="eyebrow">Reference</p>
+      <h2>Keyboard</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>Alt</kbd></td><td>Inspect on / off</td></tr>
+          <tr><td><kbd>Enter</kbd></td><td>Ask about the selection</td></tr>
+          <tr><td><kbd>C</kbd></td><td>Comment mode (or comment on the selection)</td></tr>
+          <tr><td><kbd>B</kbd></td><td>Add the selection to the batch</td></tr>
+          <tr><td><kbd>⌘</kbd> <kbd>C</kbd></td><td>Copy the selection's context</td></tr>
+          <tr><td><kbd>O</kbd></td><td>Open in your editor</td></tr>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Select parent / child</td></tr>
+          <tr><td>Hold <kbd>⌘</kbd></td><td>Show distances</td></tr>
+          <tr><td>Hold <kbd>Shift</kbd></td><td>Click through to the page</td></tr>
+          <tr><td><kbd>T</kbd></td><td>Tasks</td></tr>
+          <tr><td><kbd>K</kbd> <kbd>U</kbd> <kbd>F</kbd> <kbd>R</kbd></td><td>On an open task card: Keep, Undo, Follow up, Try again / Send again</td></tr>
+          <tr><td><kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>X</kbd></td><td>Hide / show the dock</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close the innermost thing</td></tr>
+        </tbody>
+      </table></div>
+      <p>Use <kbd>Ctrl</kbd> for <kbd>⌘</kbd> on Windows and Linux. Letter shortcuts only work while Agent Hover is in use, so they never take over your app's own shortcuts.</p>
+    </section>
+
+    <section id="troubleshooting">
+      <p class="eyebrow">Reference</p>
+      <h2>Troubleshooting</h2>
+      <h3>Start with doctor</h3>
+      <p><code>npx agent-hover doctor</code> checks the plugin, the dev server, the token and the agent connection, and says what to fix.</p>
+      <h3>“Restart your dev server to finish updating”</h3>
+      <p>After an update, the page loads the new Agent Hover right away, but the dev server keeps running the old one until it restarts. Restart it and the notice goes away.</p>
+      <h3>The agent connects but gets 401</h3>
+      <p>The MCP server looks for your dev server in its working folder, then in the workspace folders the agent reports, then in a list each running dev server keeps in <code>~/.agent-hover/bridges/</code>. Make sure the dev server is running, then restart the agent. Set <code>AGENT_HOVER_HOME</code> to move that list.</p>
+      <h3>A task says “Not picked up”</h3>
+      <p>No agent was listening. Run <code>/agent-hover</code> in your agent, then use <strong>Send again</strong> on the task.</p>
+    </section>
+
+    <section id="privacy">
+      <p class="eyebrow">Reference</p>
+      <h2>Privacy and security</h2>
+      <ul>
+        <li><strong>Everything runs on your machine.</strong> The bridge listens on <code>127.0.0.1</code> only, checks the page's origin, and requires a per-session token, stored in <code>.agent-hover/session.json</code>, which init adds to <code>.gitignore</code>.</li>
+        <li><strong>No telemetry.</strong> The only outbound request is a once-a-day update check to the npm registry, with no project data. Turn it off with <code>AGENT_HOVER_NO_UPDATE_CHECK=1</code> or the usual <code>NO_UPDATE_NOTIFIER=1</code>.</li>
+        <li><strong>Voice</strong> uses your browser's speech recognition: on the device when the browser can, otherwise Chrome and Edge send the audio to Google or Microsoft and Safari to Apple. You're told once, before the first use. Agent Hover never receives or stores audio.</li>
+        <li><strong>Undo</strong> never runs <code>git reset</code>, <code>clean</code> or <code>checkout</code>.</li>
+      </ul>
+      <p>Details: <a href="https://github.com/amrnadh/agent-hover/blob/main/SECURITY.md">SECURITY.md</a> and the <a href="https://github.com/amrnadh/agent-hover/blob/main/docs/bridge-api.md">bridge API</a>.</p>
+      <div class="pager"><a href="#overview"><small>Back to</small>Overview</a><a href="index.html"><small>Home</small>agent-hover</a></div>
+    </section>
+  </article>
+
+  <aside class="docs-toc" aria-label="On this page">
+    <h5>Jump to</h5>
+    <a href="#install">Install</a>
+    <a href="#point">Point and select</a>
+    <a href="#ask">Ask</a>
+    <a href="#review">Review</a>
+    <a href="#tasks">Tasks</a>
+    <a href="#batch">Batch</a>
+    <a href="#brief">What your agent receives</a>
+    <a href="#keyboard">Keyboard</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+  </aside>
+</div>
+
+<footer class="site-footer" style="margin-top:0">
+  <div class="wrap">
+    <div class="about"><a class="brand" href="index.html" style="display:inline-flex">Agent Hover</a><p>Point at elements in your running app and tell your coding agent what to change. MIT license.</p></div>
+    <div><h4>Product</h4><a href="index.html#features">Features</a><a href="index.html#agents">Agents</a><a href="https://github.com/amrnadh/agent-hover/blob/main/CHANGELOG.md">Changelog</a></div>
+    <div><h4>Docs</h4><a href="#install">Getting started</a><a href="#keyboard">Keyboard</a><a href="#troubleshooting">Troubleshooting</a></div>
+    <div><h4>Source</h4><a href="https://github.com/amrnadh/agent-hover">GitHub</a><a href="https://www.npmjs.com/package/@agent-hover/vite">npm</a><a href="https://github.com/amrnadh/agent-hover/blob/main/SECURITY.md">Security</a></div>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

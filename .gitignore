@@ -25,3 +25,6 @@ notes/
 
 # Private npm registry for trying unpublished versions (scripts/local-registry.mjs)
 .local-registry/
+
+# GitHub Pages build output (scripts/build-site.mjs)
+_site/
