@@ -38,6 +38,8 @@ export function isOverlayNode(node: Node | null, shadowRoot: ShadowRoot): boolea
     if (el.id === 'agent-hover-root') return true;
     if (typeof el.closest === 'function' && el.closest('#agent-hover-root')) return true;
     if (el.id === 'ah-capture-layer') return true;
+    // Place's mock image or video sits in the page but is ours: hovering it picks what is under it.
+    if (typeof el.closest === 'function' && el.closest('[data-ah-place]')) return true;
     if (typeof el.getRootNode === 'function' && el.getRootNode() === shadowRoot) return true;
   }
   return false;

@@ -3,7 +3,15 @@ import { icon } from '../lib/icon.js';
 import type { OverlayApp } from '../app/context.js';
 
 interface Size { w: number; h: number }
-interface Shots { before?: string; after?: string; beforeSize?: Size; afterSize?: Size }
+interface Shots {
+  before?: string; after?: string; beforeSize?: Size; afterSize?: Size;
+  /** Names for the two images: Before/After, or Mock/Built for Place. */
+  labels?: [string, string];
+  /** 'parent': the "after" image is of the element's parent (an asset placed next to the element). */
+  scope?: 'self' | 'parent';
+  /** Set by the sender (Place's mock): the "before" image is not taken again. */
+  fixed?: boolean;
+}
 interface FileChange { path: string; display: string; status: 'modified' | 'added' | 'deleted'; additions?: number; deletions?: number; reported: boolean }
 interface Changes { available: boolean; reason?: string; files: FileChange[]; undoneAt?: string }
 
@@ -19,7 +27,7 @@ const STORE_KEY = 'agent-hover-shots:';
  */
 export function setupVerify(app: OverlayApp) {
   const { BRIDGE, fetch, api } = app;
-  Object.assign(api, { captureBefore, precaptureBefore, renderTaskVerifyActions, renderCompareAction, renderUndoAction, renderTaskVerifyPanel, onTaskCardAction });
+  Object.assign(api, { setTaskShot, captureBefore, precaptureBefore, renderTaskVerifyActions, renderCompareAction, renderUndoAction, renderTaskVerifyPanel, onTaskCardAction });
 
   const shots = new Map<string, Shots>();
   const changes = new Map<string, Changes>();
@@ -74,8 +82,20 @@ export function setupVerify(app: OverlayApp) {
     early.set(el, { at: Date.now(), shot });
   }
 
+  /** The sender supplies the "before" image itself (Place: the mock on the page), with its own labels. */
+  function setTaskShot(taskId: string, shot: { before: string; beforeSize?: Size; labels?: [string, string]; scope?: 'self' | 'parent' }) {
+    save(taskId, { ...load(taskId), ...shot, fixed: true });
+  }
+
+  /** The element the images are of: the task's element, or its parent for an asset placed next to it. */
+  function shotElement(t: any): Element | null {
+    const el = api.elementForTask(t);
+    return load(t.id).scope === 'parent' ? el?.parentElement || el : el;
+  }
+
   /** Called when a task is sent from the page: use the image taken when the composer opened, or take one now. */
   async function captureBefore(taskId: string, el: Element | null | undefined) {
+    if (load(taskId).fixed) return;
     const pre = el ? early.get(el) : undefined;
     if (el && pre && Date.now() - pre.at < EARLY_MAX_AGE_MS) {
       early.delete(el);
@@ -96,7 +116,7 @@ export function setupVerify(app: OverlayApp) {
     changes.delete(task.id);
     setTimeout(() => {
       if (!load(task.id).before) return;
-      capture(task.id, api.elementForTask(task), 'after', false).then((ok) => { if (ok && panel?.id === task.id) api.renderTaskCard?.(); });
+      capture(task.id, shotElement(task), 'after', false).then((ok) => { if (ok && panel?.id === task.id) api.renderTaskCard?.(); });
     }, SETTLE_MS);
   };
 
@@ -137,6 +157,7 @@ export function setupVerify(app: OverlayApp) {
     }
     if (panel.kind === 'compare') {
       const s = load(t.id);
+      const [l0, l1] = s.labels || ['Before', 'After'];
       if (!s.after) {
         return `<div class="ah-compare-empty">No “after” image yet.<button class="ah-tbtn outline" data-act="capture-after">Capture now</button></div>`;
       }
@@ -153,10 +174,10 @@ export function setupVerify(app: OverlayApp) {
         aw = ` style="width:${Math.round(a.w * k)}px"`;
       }
       return `<div class="ah-compare${box ? ' sized' : ''}" style="--pos:50%${box}">
-          <img src="${s.before}" alt="Before"${bw}>
-          <div class="after"><img src="${s.after}" alt="After"${aw}></div>
-          <span class="tag before">Before</span><span class="tag after">After</span>
-          <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" data-compare-range>
+          <img src="${s.before}" alt="${esc(l0)}"${bw}>
+          <div class="after"><img src="${s.after}" alt="${esc(l1)}"${aw}></div>
+          <span class="tag before">${esc(l0)}</span><span class="tag after">${esc(l1)}</span>
+          <input type="range" min="0" max="100" value="50" aria-label="Compare ${esc(l0.toLowerCase())} and ${esc(l1.toLowerCase())}" data-compare-range>
         </div>`;
     }
     const ch = changes.get(t.id);
@@ -188,7 +209,7 @@ export function setupVerify(app: OverlayApp) {
       return;
     }
     if (act === 'capture-after') {
-      const el = api.elementForTask(t);
+      const el = shotElement(t);
       if (!el) { api.toast('That element is not on this page any more'); return; }
       await capture(t.id, el, 'after', true);
       api.renderTaskCard?.();

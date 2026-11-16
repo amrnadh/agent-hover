@@ -42,8 +42,8 @@ describe('UI tokens (ui.css)', () => {
   it('keeps blue for the on-page selector only', () => {
     expect(dark['--ui-select'].toLowerCase()).toBe('#0d99ff');
     const uses = css.split('\n').filter((l) => l.includes('var(--ui-select)'));
-    // On-page layers (hover, selection, batch, comment pins) and focus rings only.
-    expect(uses.every((l) => /#ah-hover|#ah-sel-frame|ah-batch|ah-cpin|focus-visible/.test(l))).toBe(true);
+    // On-page layers (hover, selection, batch, comment pins, Place's frame on the mock) and focus rings only.
+    expect(uses.every((l) => /#ah-hover|#ah-sel-frame|ah-batch|ah-cpin|ah-place-handle|focus-visible/.test(l))).toBe(true);
   });
 
   it('respects prefers-reduced-motion', () => {

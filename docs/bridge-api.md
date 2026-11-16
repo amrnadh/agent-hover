@@ -66,13 +66,15 @@ Response:
   "ok": true,
   "status": "ok",
   "version": "0.2.1",
-  "api": 2,
+  "api": 3,
   "port": 9850,
+  "publicDir": "public",
   "updateAvailable": null
 }
 ```
 - `version` comes from the installed `@agent-hover/vite` package.
-- `api` is the bridge's API level. The page compares it with the level it needs and, when the bridge is older (no `api` means 1), asks you to restart the dev server. That happens after an update: the page loads the new overlay at once, while the bridge runs old code until the dev server restarts. Level 2 (0.2.1) added removing tasks and Send again.
+- `api` is the bridge's API level. The page compares it with the level it needs and, when the bridge is older (no `api` means 1), asks you to restart the dev server. That happens after an update: the page loads the new overlay at once, while the bridge runs old code until the dev server restarts. Level 2 (0.2.1) added removing tasks and Send again. Level 3 (0.3) added Place assets and `publicDir`.
+- `publicDir` is the folder the app serves as-is (Vite's `publicDir`), relative to the project root, or `null` when it has none. Place suggests it as the destination for an asset.
 - `updateAvailable` is `{ "current", "latest", "command", "releaseUrl" }` once the daily registry check finds a newer stable release: `command` is the install command for the project's package manager, `releaseUrl` the GitHub release. The check uses the npm registry your npm settings name, caches its answer in `~/.agent-hover/update-check.json` for a day, and is off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1` or `NO_UPDATE_NOTIFIER=1`. It is also sent in `state-update` WebSocket messages.
 
 ### Agent Presence Heartbeat
@@ -144,6 +146,10 @@ Content-Type: application/json
 }
 ```
 `assignee` (optional) sends the task to one agent by its MCP client name: only that agent gets it from `next` or `?client=` lists. Without it any agent may take it.
+
+`scope` (optional, `instance` or `component`) records whether a change to a shared component is for this one only or for all of them; `target.instanceCount` says how many there are on the page. The prompt says the same in words.
+
+`type` is `place` for a Place task. Its `payload.place` is `{ assetPath, mime, position, width, height }`: where the staged file is and where it goes (`before`, `after`, `inside-start`, `inside-end` or `over`). Never the file's bytes.
 
 Response: `201 Created`
 ```json
@@ -339,6 +345,22 @@ Response: `200 OK`
   "source": "..."
 }
 ```
+
+### Place Assets
+```http
+POST /api/place/assets
+Authorization: Bearer <token>
+Content-Type: image/png
+
+<the file's bytes>
+```
+Stages an image or video you put on the page with Place, for the agent to copy into the project. Response:
+```json
+{ "id": "1a2b3c4d", "path": ".agent-hover/place/1a2b3c4d.png", "mime": "image/png", "bytes": 18933, "publicDir": "public" }
+```
+- The type comes from the file's own first bytes, not its name or `Content-Type`: PNG, JPEG, WebP, GIF, SVG, MP4 or WebM. Anything else gets `415`; over 50 MB gets `413`.
+- Files go to `.agent-hover/place/`, which version control, the dev server's watcher and Undo checkpoints ignore. The agent copies the file into the project after claiming the task, so the checkpoint sees it as new and Undo removes it.
+- A staged file leaves once no task refers to it (the task was removed, cleared or is a week old), after a one-hour grace for files not sent yet.
 
 ### Deprecated Compatibility Aliases
 - `POST /api/agent/send`: Legacy task dispatch endpoint. Internally creates a task in the TaskStore.

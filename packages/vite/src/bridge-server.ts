@@ -11,6 +11,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
 import type { LocationMapper } from './source-location.js';
+import { stageAsset, sweepAssets, PLACE_MAX_BYTES } from './place-assets.js';
 import {
   ContextBuilder,
   RelationshipResolver,
@@ -45,7 +46,12 @@ import type {
  * reloads when the dev server restarts; after an update the page compares this with what it needs and asks for a
  * restart instead of failing. Bump it with BRIDGE_API in packages/overlay/src/lib/bridge-api.ts when routes change.
  */
-export const BRIDGE_API = 2;
+export const BRIDGE_API = 3;
+
+function toProjectPath(root: string, p: string): string {
+  const rel = path.relative(path.resolve(root), path.resolve(root, p));
+  return rel.split(path.sep).join('/') || '.';
+}
 
 export function isSafeHost(hostHeader: string): boolean {
   if (!hostHeader) return false;
@@ -111,7 +117,15 @@ export class BridgeServer {
   private onUpdateAvailable: (info: UpdateInfo) => void;
   private updateTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(projectRoot: string, port: number = 9850, options?: { token?: string; onUpdateAvailable?: (info: UpdateInfo) => void }) {
+  /** The folder your app serves as-is (Vite's publicDir), project-relative; where Place suggests copying assets. */
+  private publicDir: string | null;
+
+  constructor(
+    projectRoot: string,
+    port: number = 9850,
+    options?: { token?: string; onUpdateAvailable?: (info: UpdateInfo) => void; publicDir?: string | null }
+  ) {
+    this.publicDir = options?.publicDir ? toProjectPath(projectRoot, options.publicDir) : null;
     this.onUpdateAvailable = options?.onUpdateAvailable ?? ((info) => console.log(formatUpdateNotice(info, !!process.stdout.isTTY)));
     this.projectRoot = projectRoot;
     this.port = port;
@@ -157,6 +171,7 @@ export class BridgeServer {
     // However a task leaves the list (removed, sent again, or a week old), its Undo checkpoint goes with it.
     this.taskStore.on('task:removed', (ids: string[]) => {
       ids.forEach((id) => this.checkpoints.remove(id).catch(() => {}));
+      this.sweepPlaceAssets();
       this.broadcast({ type: 'task.removed', data: { ids } });
     });
     this.taskStore.on('task:updated', (task: AgentTask) => {
@@ -286,8 +301,25 @@ export class BridgeServer {
         version: this.CURRENT_VERSION,
         api: BRIDGE_API,
         port: this.port,
+        publicDir: this.publicDir,
         updateAvailable: this.updateInfo,
       });
+    });
+
+    // Place: stage a dropped image or video for the agent (POST /api/place/assets, raw body). The type comes from the
+    // file's own bytes, not its name; the agent copies the staged file into the project when it does the task.
+    this.app.post('/api/place/assets', express.raw({ type: () => true, limit: PLACE_MAX_BYTES }), async (req, res) => {
+      try {
+        const body = req.body;
+        if (!Buffer.isBuffer(body) || body.length === 0) {
+          res.status(400).json({ error: 'Send the file as the request body' });
+          return;
+        }
+        const asset = await stageAsset(this.projectRoot, body);
+        res.json({ ...asset, publicDir: this.publicDir });
+      } catch (err: any) {
+        res.status(err.status || 500).json({ error: err.message });
+      }
     });
 
     // Resolve component name to file + line
@@ -1410,8 +1442,8 @@ export class BridgeServer {
           return;
         }
 
-        const fullPath = path.join(this.projectRoot, safePath);
-        const content = await fs.readFile(fullPath, 'utf-8');
+        // validateSafePath returns an absolute path; joining it onto the root again doubled it.
+        const content = await fs.readFile(safePath, 'utf-8');
         const lines = content.split('\n');
         let slice = lines;
         const start = typeof lineStart === 'number' && lineStart > 0 ? Math.max(0, lineStart - 1) : 0;
@@ -1419,7 +1451,7 @@ export class BridgeServer {
         slice = lines.slice(start, end);
 
         res.json({
-          file: safePath,
+          file: path.relative(path.resolve(this.projectRoot), safePath).split(path.sep).join('/'),
           lineStart: start + 1,
           lineEnd: end,
           totalLines: lines.length,
@@ -1662,6 +1694,7 @@ export class BridgeServer {
         }
         this.startedAt = new Date().toISOString();
         this.taskStore.pruneHistory().catch(() => {});
+        this.sweepPlaceAssets();
 
         // Write session file (0600 mode) (P1-01)
         try {
@@ -1816,6 +1849,16 @@ export class BridgeServer {
   }
 
   /** Drop agents not heard from in 25 s (a crash, or a server too old to say goodbye). True if any were dropped. */
+  /** Staged Place assets leave once no task refers to them (removed, cleared or a week old). */
+  private sweepPlaceAssets() {
+    const inUse = new Set<string>();
+    for (const t of this.taskStore.getSnapshot()) {
+      const p = (t.payload as any)?.place?.assetPath;
+      if (typeof p === 'string') inUse.add(p);
+    }
+    sweepAssets(this.projectRoot, inUse).catch(() => {});
+  }
+
   private prunePresence(): boolean {
     const cutoff = Date.now() - 25000;
     let removed = false;

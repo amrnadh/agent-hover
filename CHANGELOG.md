@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Place: put an image or video on the page before your agent builds it.** Select an element and press **P** (or Place on the pill), or drop a file on the page. The image, SVG, GIF or video shows up on your real page, laid out by your own CSS: before or after the element, inside it at the start or end, or over it (drag it and pull its corner to resize).
+  - Try up to four variants (drop or paste more onto the card, pick with 1–4), set the size (Original, Fit width or a custom width), add alt text, and for a video choose autoplay, loop and muted. The card has the mic too.
+  - Send stages the file in `.agent-hover/place/` and tells your agent where it is, where it goes, its size on the page and in the file, and where to copy it (your public folder, or wherever the project keeps images). The mock leaves the page when you send, so the built image never shows twice.
+  - **Compare shows Mock and Built.** Undo also removes the file the agent copied in.
+  - Bridge: `POST /api/place/assets` (the file's type is checked from its bytes; up to 50 MB), `publicDir` in `/api/health`, API level 3. A staged file leaves once no task uses it.
+  - The demo has a spot for it: the testimonial avatar shows only initials, and `demo/samples/` has a photo, an SVG logo and a short video to try.
+- **Talk & point.** The mic you already have in Ask now takes clicks: while it listens, click other elements and they go into your sentence as [2], [3] where you said them (the selection is [1]), with numbered badges on the page. Or hold **V** in Agent Hover to talk and click without opening Ask; a quick tap keeps it listening until the next tap or Esc. One task goes out with each element's context, like Batch. Remove an element and the numbers after it shift, in the sentence too. Without speech recognition (Firefox) V opens the card for typing, and clicks add the numbers where the cursor is. The mic itself works as before.
+- **The mic in more places**: the Place card and the Batch goal.
+- **This one or all of them.** When the element belongs to a component used more than once on the page, Ask says how many there are and lets you choose: this one (the default) or all of them. Hovering the choice outlines every one on the page. The prompt says which, and the task records `scope` and the count.
+- **Page errors in prompts.** Console errors, uncaught errors and failed requests since the page loaded go into the prompt under "On this page", newest last and repeats folded, with tokens in URLs hidden. Settings › When you press Send turns it off.
+
+### Fixed
+- `get_component_source` (the bridge's `POST /api/source`) read the wrong path for every file and failed: it joined the project folder onto a path that already had it.
+
 ### Changed
 - New message: "Can't describe it? Point at it." The README, npm descriptions, `init` header and demo video lead with the problem Agent Hover solves.
 - The README images, GIF and demo video put the dock first. The demo opens on the dock, the README explains it with an annotated image, and the Tasks tab has its own image. `npm run screenshots` now also makes the annotated dock and the poster (`e2e/media.spec.ts`).
+- CI also runs the unit tests on Node 24.
 - The poster says what Agent Hover is for ("Can't describe it? Point at it."), shows the real dock and the install command, and is sharper (2560×1280).
 
 ## [0.2.1] - 2026-10-31

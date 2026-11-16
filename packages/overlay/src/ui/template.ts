@@ -21,12 +21,16 @@ ${uiCss}
         <div id="ah-layer-measure"></div>
         <div id="ah-layer-markers"></div>
         <div id="ah-layer-pins"></div>
+        <div id="ah-layer-place"></div>
+        <div id="ah-layer-talk"></div>
+        <div id="ah-layer-scope"></div>
 
         <div id="ah-pill" class="ah-surface" hidden role="toolbar" aria-label="Selected element">
           <button class="who" id="ah-pill-who" title="Open in editor"><b id="ah-pill-name"></b><span id="ah-pill-file"></span></button>
           <span class="ah-sep"></span>
           <button class="ah-tbtn" id="ah-pill-ask" title="Ask your agent (Enter)">${icon('send', 14)}Ask</button>
           <button class="ah-ibtn" id="ah-pill-comment" title="Comment (C)" aria-label="Comment">${icon('comment')}</button>
+          <button class="ah-ibtn" id="ah-pill-place" title="Place an image or video here (P)" aria-label="Place an image or video">${icon('image')}</button>
           <button class="ah-ibtn" id="ah-pill-batch" title="Add to batch (B)" aria-label="Add to batch" aria-pressed="false">${icon('layers-plus')}</button>
           <button class="ah-ibtn" id="ah-pill-copy" title="Copy context (⌘C)" aria-label="Copy context">${icon('copy')}</button>
           <button class="ah-ibtn" id="ah-pill-more" title="More" aria-label="More actions" aria-haspopup="menu">${icon('more')}</button>
@@ -48,7 +52,9 @@ ${uiCss}
         <div id="ah-composer" class="ah-surface" hidden role="dialog" aria-label="Ask your agent">
           <div class="target">${icon('target', 14)}<b id="ah-comp-name"></b><span id="ah-comp-file" class="ah-mono"></span></div>
           <div class="follow" id="ah-comp-follow" hidden></div>
+          <div class="scope" id="ah-comp-scope" hidden></div>
           <textarea id="ah-comp-input" aria-label="What should change" placeholder="What should change? e.g. Make the amount larger and add a sparkline"></textarea>
+          <div class="refs" id="ah-comp-refs" hidden></div>
           <div class="foot">
             <button class="ah-tbtn outline dest" id="ah-comp-dest" aria-haspopup="menu"><span class="ah-dot" id="ah-comp-dest-dot"></span><span id="ah-comp-dest-label"></span>${icon('chev-down', 14)}</button>
             <button class="ah-ibtn mic" id="ah-comp-mic" title="Speak instead of typing" aria-label="Speak instead of typing" aria-pressed="false" hidden>${icon('mic')}</button>
@@ -58,6 +64,8 @@ ${uiCss}
           <div class="hint" id="ah-comp-hint" hidden></div>
         </div>
         <div id="ah-dest-menu" class="ah-menu ah-surface" hidden role="menu"></div>
+        <div id="ah-place" class="ah-card ah-surface" hidden role="dialog" aria-label="Place an image or video"></div>
+        <div id="ah-talk" class="ah-card ah-surface" hidden role="dialog" aria-label="Talk and point"></div>
 
         <div id="ah-task-card" class="ah-card ah-surface" hidden role="dialog" aria-label="Task"></div>
         <div id="ah-comment-card" class="ah-card ah-surface" hidden role="dialog" aria-label="Comment"></div>

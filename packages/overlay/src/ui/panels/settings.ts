@@ -66,10 +66,13 @@ export function setupSettingsPanel(app: OverlayApp) {
           ${seg('delivery', [['auto', 'Send if an agent is connected, else copy'], ['copy', 'Always copy']], state.delivery)}
           <p>Context detail</p>
           ${seg('level', [['minimal', 'Compact'], ['standard', 'Standard'], ['full', 'Deep']], state.level)}
+          <p>Page errors (console errors and failed requests since the page loaded)</p>
+          ${seg('page-errors', [['on', 'Add to prompts'], ['off', 'Off']], api.pageErrorsEnabled?.() === false ? 'off' : 'on')}
         </section>
         <section class="ah-set" id="ah-set-voice"><h4>Voice</h4>
           ${api.voiceSupported()
-            ? `${seg('voice', [['on', 'Mic in Ask and comments'], ['off', 'Off']], api.voiceEnabled() ? 'on' : 'off')}
+            ? `${seg('voice', [['on', 'Mic in Ask, comments, Place and Batch'], ['off', 'Off']], api.voiceEnabled() ? 'on' : 'off')}
+               <p><b>Talk &amp; point:</b> while the mic listens in Ask, click other elements as you talk and they go in as [2], [3]. Or hold <kbd>V</kbd> anywhere in Agent Hover to talk and click.</p>
                <p>Your browser turns speech into text: on the device when it can, otherwise Chrome and Edge send the audio to Google or Microsoft, Safari to Apple. Agent Hover never receives or stores audio.</p>`
             : '<p>This browser has no speech recognition.</p>'}
           <p>Your system's dictation works in any text box too: press Fn twice on macOS, or Windows + H.</p>
@@ -87,6 +90,8 @@ export function setupSettingsPanel(app: OverlayApp) {
           <span>Comment mode</span><kbd>C</kbd>
           <span>Ask about the selection</span><kbd>Enter</kbd>
           <span>Add selection to batch</span><kbd>B</kbd>
+          <span>Place an image or video at the selection</span><kbd>P</kbd>
+          <span>Talk &amp; point: hold to talk, tap to keep listening</span><kbd>V</kbd>
           <span>Copy context</span><kbd>${mod} C</kbd>
           <span>Open in editor</span><kbd>O</kbd>
           <span>Select parent / child</span><kbd>↑ ↓</kbd>
@@ -127,6 +132,7 @@ export function setupSettingsPanel(app: OverlayApp) {
           if (name === 'theme') api.setTheme(v);
           if (name === 'dock') api.setDockVertical(v === 'vertical');
           if (name === 'voice') api.setVoiceEnabled(v === 'on');
+          if (name === 'page-errors') api.setPageErrorsEnabled(v === 'on');
           api.renderSidebar();
           return;
         }
