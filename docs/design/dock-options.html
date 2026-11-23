@@ -1,0 +1,367 @@
+<title>Agent Hover Dock Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one column of "stages", each a slice of a sample app with a dock drawn in the product's real styles.
+   Tokens mirror packages/overlay (neutral ink; blue only for the selector). */
+:root {
+  --ov-bg: #ffffff; --ov-bg-2: #f4f5f6; --ov-bg-3: #e9ebee;
+  --ov-line: rgba(17, 18, 20, 0.09); --ov-line-2: rgba(17, 18, 20, 0.16);
+  --ov-fg: #111214; --ov-fg-2: #4b5058; --ov-fg-3: #6b7079;
+  --ov-ink: #111214; --ov-on-ink: #ffffff; --ov-hover: rgba(17, 18, 20, 0.06);
+  --ov-shadow: 0 12px 32px -6px rgba(17, 18, 20, 0.18), 0 2px 6px rgba(17, 18, 20, 0.06);
+  --sel: #0d99ff; --sel-fill: rgba(13, 153, 255, 0.06); --sel-on: #ffffff; --sel-halo: rgba(255, 255, 255, 0.9);
+  --ok: #16a065; --warn: #c98a12; --bad: #e5484d;
+  --page: #eceef0; --card: #ffffff;
+  --h-bg: #f6f7f9; --h-card: #ffffff; --h-fg: #0f1729; --h-fg-2: #5a6478; --h-line: #e3e7ee; --h-brand: #4338ca;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ov-bg: #141518; --ov-bg-2: #1b1c20; --ov-bg-3: #25272c;
+    --ov-line: rgba(255, 255, 255, 0.08); --ov-line-2: rgba(255, 255, 255, 0.15);
+    --ov-fg: #eeeff1; --ov-fg-2: #a7acb4; --ov-fg-3: #80858e;
+    --ov-ink: #eeeff1; --ov-on-ink: #111214; --ov-hover: rgba(255, 255, 255, 0.07);
+    --ov-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4);
+    --sel-halo: rgba(0, 0, 0, 0.85); --ok: #3dd68c; --warn: #f0b13c; --bad: #ff6369;
+    --page: #0b0c0e; --card: #111214;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ov-bg: #141518; --ov-bg-2: #1b1c20; --ov-bg-3: #25272c;
+  --ov-line: rgba(255, 255, 255, 0.08); --ov-line-2: rgba(255, 255, 255, 0.15);
+  --ov-fg: #eeeff1; --ov-fg-2: #a7acb4; --ov-fg-3: #80858e;
+  --ov-ink: #eeeff1; --ov-on-ink: #111214; --ov-hover: rgba(255, 255, 255, 0.07);
+  --ov-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --sel-halo: rgba(0, 0, 0, 0.85); --ok: #3dd68c; --warn: #f0b13c; --bad: #ff6369;
+  --page: #0b0c0e; --card: #111214;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ov-fg); font: 14px/1.5 var(--font-ui); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--sel); outline-offset: 1px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+header h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 0; color: var(--ov-fg-2); max-width: 68ch; }
+kbd { font: 11px var(--font-ui); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--ov-line-2); color: var(--ov-fg-2); background: var(--ov-bg-2); }
+
+.opt { background: var(--card); border: 1px solid var(--ov-line); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
+.opt.today { opacity: 0.92; }
+.info { padding: 20px; display: grid; gap: 10px; align-content: start; border-right: 1px solid var(--ov-line); }
+.info .k { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ov-fg-3); display: flex; gap: 8px; align-items: center; }
+.info .k .count { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+.info h2 { margin: 0; font-size: 17px; }
+.info p { margin: 0; color: var(--ov-fg-2); font-size: 13px; }
+.info ul { margin: 0; padding-left: 18px; color: var(--ov-fg-2); font-size: 13px; display: grid; gap: 4px; }
+.info .try { font-size: 12px; color: var(--ov-fg-3); border-top: 1px solid var(--ov-line); padding-top: 10px; }
+.pros b { color: var(--ok); font-weight: 600; } .cons b { color: var(--warn); font-weight: 600; }
+
+/* a slice of a sample app */
+.stage { position: relative; min-height: 300px; background: var(--h-bg); overflow: hidden; }
+.app { padding: 18px 20px; display: grid; gap: 12px; color: var(--h-fg); font-family: var(--font-ui); }
+.app .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.app .c { background: var(--h-card); border: 1px solid var(--h-line); border-radius: 12px; padding: 14px; min-width: 0; }
+.app .c small { color: var(--h-fg-2); font-size: 12px; }
+.app .c b { display: block; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.app h3 { margin: 0; font-size: 18px; }
+.app .bar { height: 8px; border-radius: 4px; background: var(--h-line); width: 60%; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stage { --h-bg: #0e1118; --h-card: #161b26; --h-fg: #e6e9f0; --h-fg-2: #8d97ab; --h-line: #252c3a; } }
+:root[data-theme="dark"] .stage { --h-bg: #0e1118; --h-card: #161b26; --h-fg: #e6e9f0; --h-fg-2: #8d97ab; --h-line: #252c3a; }
+
+/* overlay primitives (as in the product) */
+.surface { background: var(--ov-bg); border: 1px solid var(--ov-line-2); box-shadow: var(--ov-shadow); color: var(--ov-fg); }
+svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.sm { width: 12px; height: 12px; }
+.ibtn { width: 32px; height: 32px; border: 0; border-radius: 9px; background: transparent; color: var(--ov-fg-2); display: inline-grid; place-items: center; cursor: pointer; position: relative; flex: none; }
+.ibtn:hover { background: var(--ov-hover); color: var(--ov-fg); }
+.ibtn[aria-pressed="true"] { background: var(--ov-ink); color: var(--ov-on-ink); }
+.ibtn[aria-pressed="true"] .fill { fill: currentColor; }
+.sep { width: 1px; height: 18px; background: var(--ov-line-2); flex: none; margin: 0 2px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); position: absolute; right: 5px; bottom: 5px; box-shadow: 0 0 0 2px var(--ov-bg); }
+.badge { position: absolute; top: -2px; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--ov-ink); color: var(--ov-on-ink); font: 600 10px/16px var(--font-ui); box-shadow: 0 0 0 2px var(--ov-bg); }
+.grip { color: var(--ov-fg-3); display: grid; place-items: center; padding: 0 3px; }
+
+.dock { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); height: 44px; border-radius: 14px; display: flex; align-items: center; gap: 2px; padding: 0 6px; transition: width 0.18s cubic-bezier(0.2, 0, 0, 1); white-space: nowrap; }
+.dock .lbl { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font: 600 10.5px var(--font-ui); color: var(--ov-fg-3); letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* 1: the tool button (current tool + a small arrow) */
+.tool { display: inline-flex; align-items: center; border-radius: 9px; }
+.tool .ibtn:first-child { border-radius: 9px 0 0 9px; width: 30px; }
+.tool .more { width: 16px; border-radius: 0 9px 9px 0; color: var(--ov-fg-3); }
+.tool.on { background: var(--ov-ink); }
+.tool.on .ibtn { color: var(--ov-on-ink); }
+.tool.on .ibtn:hover { background: color-mix(in srgb, var(--ov-on-ink) 14%, transparent); }
+.menu { position: absolute; z-index: 5; border-radius: 10px; padding: 4px; min-width: 190px; display: grid; }
+.menu button { border: 0; background: transparent; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; }
+.menu button:hover, .menu button.cur { background: var(--ov-hover); }
+.menu button kbd { margin-left: auto; }
+.menu .check { width: 12px; color: var(--ov-fg); }
+
+/* 2: the pill on a selection */
+.selframe { position: absolute; border: 2px solid var(--sel); border-radius: 3px; box-shadow: 0 0 0 1px var(--sel-halo); pointer-events: none; }
+.pill { position: absolute; height: 36px; border-radius: 10px; display: flex; align-items: center; gap: 2px; padding: 0 4px; }
+.pill .who { font: 600 12px var(--font-mono); padding: 0 8px 0 6px; white-space: nowrap; }
+.pill .tb { height: 28px; border: 0; border-radius: 7px; background: transparent; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.pill .tb:hover { background: var(--ov-hover); }
+.pill .ibtn { width: 28px; height: 28px; border-radius: 7px; }
+.pill .ibtn.new { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ok) 70%, transparent); }
+.hint { position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); border-radius: 10px; padding: 7px 11px; font-size: 12.5px; white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+
+/* 3: collapsed until you reach for it */
+.dock.collapse .extra { display: none; }
+.dock.collapse.open .extra { display: contents; }
+
+/* 4: command bar */
+.palette { position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); width: min(340px, calc(100% - 32px)); border-radius: 12px; padding: 6px; display: grid; gap: 2px; }
+.palette input { border: 0; border-bottom: 1px solid var(--ov-line); background: transparent; color: var(--ov-fg); padding: 8px 8px 10px; font: 14px var(--font-ui); outline: none; margin-bottom: 4px; }
+.palette button { border: 0; background: transparent; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; }
+.palette button:hover, .palette button.cur { background: var(--ov-hover); }
+.palette button kbd { margin-left: auto; }
+#dList { display: grid; gap: 2px; }
+.palette .none { padding: 8px; color: var(--ov-fg-3); font-size: 13px; }
+
+.note { background: var(--card); border: 1px solid var(--ov-line); border-radius: 16px; padding: 20px; display: grid; gap: 8px; }
+.note h2 { margin: 0; font-size: 16px; }
+.note p { margin: 0; color: var(--ov-fg-2); font-size: 13.5px; max-width: 75ch; }
+@media (max-width: 760px) {
+  .opt { grid-template-columns: minmax(0, 1fr); }
+  .info { border-right: 0; border-bottom: 1px solid var(--ov-line); }
+  .app .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .app .row .c:nth-child(3) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-mark" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 24 24"><path class="fill" d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.43 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/></symbol>
+    <symbol id="i-comment" viewBox="0 0 24 24"><path class="fill" d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></symbol>
+    <symbol id="i-layers-plus" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="m2 12 10 5 4-2"/><path d="M19 15v6"/><path d="M16 18h6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.54 21.69a.5.5 0 0 0 .93-.03l6.5-19a.5.5 0 0 0-.63-.63l-19 6.5a.5.5 0 0 0-.03.93l7.93 3.18a2 2 0 0 1 1.11 1.11z"/><path d="m21.85 2.15-10.94 10.94"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 10 16"><g fill="currentColor" stroke="none"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1>A smaller dock</h1>
+    <p>Each panel draws a dock in the product's own styles on a slice of a sample app. They all keep every feature and every key (<kbd>Alt</kbd> <kbd>C</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>T</kbd> <kbd>B</kbd>); they differ in what stays on screen. Click and hover them.</p>
+  </header>
+
+  <!-- Today -->
+  <section class="opt today">
+    <div class="info">
+      <div class="k">For reference <span class="count">9 things on screen</span></div>
+      <h2>Today</h2>
+      <p>Status, then one button per feature, Tasks and Batch, More, and the grip. Every new feature makes it wider.</p>
+    </div>
+    <div class="stage">
+      <div class="app" aria-hidden="true"><h3>Good morning, Asha</h3><div class="row"><div class="c"><small>Revenue</small><b>$48,210</b></div><div class="c"><small>Outstanding</small><b>$12,880</b></div><div class="c"><small>Plan</small><b>Starter</b></div></div><div class="bar"></div></div>
+      <div class="dock surface" role="toolbar" aria-label="Today's dock">
+        <button class="ibtn" aria-label="Status"><svg class="i"><use href="#i-mark"/></svg><span class="dot"></span></button><span class="sep"></span>
+        <button class="ibtn" aria-label="Inspect"><svg class="i"><use href="#i-pointer"/></svg></button>
+        <button class="ibtn" aria-label="Comment"><svg class="i"><use href="#i-comment"/></svg></button>
+        <button class="ibtn" aria-label="Place"><svg class="i"><use href="#i-image"/></svg></button>
+        <button class="ibtn" aria-label="Talk"><svg class="i"><use href="#i-mic"/></svg></button><span class="sep"></span>
+        <button class="ibtn" aria-label="Tasks"><svg class="i"><use href="#i-tasks"/></svg></button>
+        <button class="ibtn" aria-label="Batch"><svg class="i"><use href="#i-layers"/></svg><span class="badge">2</span></button><span class="sep"></span>
+        <button class="ibtn" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button>
+        <span class="grip"><svg class="i" style="width:10px"><use href="#i-grip"/></svg></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- A: one tool button -->
+  <section class="opt" id="optA">
+    <div class="info">
+      <div class="k">A <span class="count">5 things on screen</span></div>
+      <h2>One tool button</h2>
+      <p>Inspect, Comment and Place are tools: you use one at a time, so they share one button that shows the tool you're using. The small arrow lists the others. Talk keeps its mic. Batch moves into Tasks (its count shows there).</p>
+      <ul class="pros"><li><b>+</b> Familiar from design tools; new tools never widen the dock.</li></ul>
+      <ul class="cons"><li><b>−</b> Comment and Place are one click further away (their keys still work).</li></ul>
+      <div class="try">Try: click the arrow next to the pointer and pick a tool.</div>
+    </div>
+    <div class="stage">
+      <div class="app" aria-hidden="true"><h3>Good morning, Asha</h3><div class="row"><div class="c"><small>Revenue</small><b>$48,210</b></div><div class="c"><small>Outstanding</small><b>$12,880</b></div><div class="c"><small>Plan</small><b>Starter</b></div></div><div class="bar"></div></div>
+      <div class="menu surface" id="aMenu" hidden role="menu"></div>
+      <div class="dock surface" role="toolbar" aria-label="Option A dock">
+        <button class="ibtn" aria-label="Status"><svg class="i"><use href="#i-mark"/></svg><span class="dot"></span></button><span class="sep"></span>
+        <span class="tool on" id="aTool"><button class="ibtn" id="aCur" aria-label="Inspect" title="Inspect (Alt)"><svg class="i"><use href="#i-pointer"/></svg></button><button class="ibtn more" id="aMore" aria-label="Choose a tool" aria-haspopup="menu"><svg class="i sm"><use href="#i-chev-up"/></svg></button></span>
+        <button class="ibtn" aria-label="Talk and point" title="Talk & point (V)"><svg class="i"><use href="#i-mic"/></svg></button><span class="sep"></span>
+        <button class="ibtn" aria-label="Tasks and batch" title="Tasks · 2 in Batch (T)"><svg class="i"><use href="#i-tasks"/></svg><span class="badge">2</span></button>
+        <button class="ibtn" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- B: point first -->
+  <section class="opt" id="optB">
+    <div class="info">
+      <div class="k">B <span class="count">4 things on screen</span></div>
+      <h2>Point first, act on the pill</h2>
+      <p>The dock only starts things: Point, Talk, Tasks. Everything you do to an element (comment, place an image, add to batch, copy) is on the pill that appears when you click it. Dropping a file anywhere on the page also starts Place.</p>
+      <ul class="pros"><li><b>+</b> The smallest dock that still has every feature one click away.</li></ul>
+      <ul class="cons"><li><b>−</b> Commenting on empty space needs <kbd>C</kbd>; the pill gets one button wider.</li></ul>
+      <div class="try">Try: click a card to select it.</div>
+    </div>
+    <div class="stage" id="bStage">
+      <div class="app"><h3>Good morning, Asha</h3><div class="row"><div class="c" data-sel><small>Revenue</small><b>$48,210</b></div><div class="c" data-sel><small>Outstanding</small><b>$12,880</b></div><div class="c" data-sel><small>Plan</small><b>Starter</b></div></div><div class="bar"></div></div>
+      <div class="selframe" id="bFrame" hidden></div>
+      <div class="pill surface" id="bPill" hidden role="toolbar" aria-label="Selected element">
+        <span class="who" id="bName">&lt;StatCard /&gt;</span>
+        <button class="tb"><svg class="i sm" style="width:14px;height:14px"><use href="#i-send"/></svg>Ask</button>
+        <button class="ibtn" title="Comment (C)" aria-label="Comment"><svg class="i"><use href="#i-comment"/></svg></button>
+        <button class="ibtn new" title="Place an image here (P)" aria-label="Place an image"><svg class="i"><use href="#i-image"/></svg></button>
+        <button class="ibtn" title="Add to batch (B)" aria-label="Add to batch"><svg class="i"><use href="#i-layers-plus"/></svg></button>
+        <button class="ibtn" title="Copy context" aria-label="Copy"><svg class="i"><use href="#i-copy"/></svg></button>
+        <button class="ibtn" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button>
+      </div>
+      <div class="hint surface" id="bHint">Drop an image anywhere on the page to place it</div>
+      <div class="dock surface" role="toolbar" aria-label="Option B dock">
+        <button class="ibtn" aria-label="Status"><svg class="i"><use href="#i-mark"/></svg><span class="dot"></span></button><span class="sep"></span>
+        <button class="ibtn" aria-pressed="true" aria-label="Point" title="Point (Alt)"><svg class="i"><use href="#i-pointer"/></svg></button>
+        <button class="ibtn" aria-label="Talk and point" title="Talk & point (V)"><svg class="i"><use href="#i-mic"/></svg></button><span class="sep"></span>
+        <button class="ibtn" aria-label="Tasks and batch" title="Tasks · 2 in Batch (T)"><svg class="i"><use href="#i-tasks"/></svg><span class="badge">2</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: collapsed -->
+  <section class="opt" id="optC">
+    <div class="info">
+      <div class="k">C <span class="count">2 at rest · 9 on hover</span></div>
+      <h2>Collapsed until you reach for it</h2>
+      <p>At rest you see the status mark and the pointer. Move onto the dock and the rest slides out; it tucks away again a moment after you leave.</p>
+      <ul class="pros"><li><b>+</b> Almost invisible while you look at your app.</li></ul>
+      <ul class="cons"><li><b>−</b> Things move under your pointer, and nothing is visible until you go looking, so new features are hard to discover.</li></ul>
+      <div class="try">Try: hover the dock.</div>
+    </div>
+    <div class="stage">
+      <div class="app" aria-hidden="true"><h3>Good morning, Asha</h3><div class="row"><div class="c"><small>Revenue</small><b>$48,210</b></div><div class="c"><small>Outstanding</small><b>$12,880</b></div><div class="c"><small>Plan</small><b>Starter</b></div></div><div class="bar"></div></div>
+      <div class="dock surface collapse" id="cDock" role="toolbar" aria-label="Option C dock" tabindex="0">
+        <button class="ibtn" aria-label="Status"><svg class="i"><use href="#i-mark"/></svg><span class="dot"></span></button>
+        <button class="ibtn" aria-label="Inspect"><svg class="i"><use href="#i-pointer"/></svg></button>
+        <span class="extra"><span class="sep"></span>
+          <button class="ibtn" aria-label="Comment"><svg class="i"><use href="#i-comment"/></svg></button>
+          <button class="ibtn" aria-label="Place"><svg class="i"><use href="#i-image"/></svg></button>
+          <button class="ibtn" aria-label="Talk"><svg class="i"><use href="#i-mic"/></svg></button><span class="sep"></span>
+          <button class="ibtn" aria-label="Tasks"><svg class="i"><use href="#i-tasks"/></svg></button>
+          <button class="ibtn" aria-label="Batch"><svg class="i"><use href="#i-layers"/></svg><span class="badge">2</span></button>
+          <button class="ibtn" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: command bar -->
+  <section class="opt" id="optD">
+    <div class="info">
+      <div class="k">D <span class="count">3 things on screen</span></div>
+      <h2>Command bar</h2>
+      <p>The dock is the status mark, the pointer and one more button (or <kbd>/</kbd>) that opens a search list of every action with its key. Type a few letters and press Enter.</p>
+      <ul class="pros"><li><b>+</b> Scales to any number of features; fast for keyboard people.</li></ul>
+      <ul class="cons"><li><b>−</b> Every action is two steps for mouse users; nothing tells you a feature exists until you open the list.</li></ul>
+      <div class="try">Try: click the ⌘ button, then type “pla”.</div>
+    </div>
+    <div class="stage">
+      <div class="app" aria-hidden="true"><h3>Good morning, Asha</h3><div class="row"><div class="c"><small>Revenue</small><b>$48,210</b></div><div class="c"><small>Outstanding</small><b>$12,880</b></div><div class="c"><small>Plan</small><b>Starter</b></div></div><div class="bar"></div></div>
+      <div class="palette surface" id="dPal" hidden role="dialog" aria-label="Actions">
+        <input id="dQuery" placeholder="Type an action…" aria-label="Search actions" autocomplete="off">
+        <div id="dList"></div>
+      </div>
+      <div class="dock surface" role="toolbar" aria-label="Option D dock">
+        <button class="ibtn" aria-label="Status"><svg class="i"><use href="#i-mark"/></svg><span class="dot"></span></button><span class="sep"></span>
+        <button class="ibtn" aria-label="Inspect"><svg class="i"><use href="#i-pointer"/></svg></button>
+        <button class="ibtn" id="dOpen" aria-label="All actions" title="All actions (/)"><svg class="i"><use href="#i-cmd"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="note">
+    <h2>What stays the same in every option</h2>
+    <p>Keys keep working everywhere. The status mark keeps showing whether your agent is connected, the Tasks badge keeps counting what needs you, and the grip (drag to move) moves into More so it no longer takes a slot. Blue stays reserved for what you select on the page.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const use = (name, cls = 'i') => `<svg class="${cls}"><use href="#i-${name}"/></svg>`;
+
+  // A: tool button
+  const TOOLS = [['pointer', 'Inspect', 'Alt'], ['comment', 'Comment', 'C'], ['image', 'Place an image', 'P']];
+  let tool = 0;
+  function renderA() {
+    $('aCur').innerHTML = use(TOOLS[tool][0]);
+    $('aCur').setAttribute('aria-label', TOOLS[tool][1]);
+    $('aMenu').innerHTML = TOOLS.map(([ic, l, k], i) => `<button role="menuitemradio" aria-checked="${i === tool}" data-i="${i}" class="${i === tool ? 'cur' : ''}"><span class="check">${i === tool ? use('check', 'i sm') : ''}</span>${use(ic)}${l}<kbd>${k}</kbd></button>`).join('');
+  }
+  $('aMore').onclick = (e) => {
+    e.stopPropagation();
+    const m = $('aMenu');
+    if (!m.hidden) { m.hidden = true; return; }
+    renderA(); m.hidden = false;
+    const stage = m.parentElement.getBoundingClientRect(), b = $('aTool').getBoundingClientRect();
+    m.style.left = Math.max(8, b.left - stage.left - 20) + 'px';
+    m.style.top = b.top - stage.top - m.offsetHeight - 10 + 'px';
+  };
+  $('aMenu').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; tool = +b.dataset.i; renderA(); $('aMenu').hidden = true; };
+  renderA();
+
+  // B: select a card, the pill appears on it
+  $('bStage').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-sel]');
+    const frame = $('bFrame'), pill = $('bPill');
+    if (!c) { frame.hidden = true; pill.hidden = true; $('bHint').hidden = false; return; }
+    const s = $('bStage').getBoundingClientRect(), r = c.getBoundingClientRect();
+    Object.assign(frame.style, { left: r.left - s.left - 1 + 'px', top: r.top - s.top - 1 + 'px', width: r.width + 2 + 'px', height: r.height + 2 + 'px' });
+    frame.hidden = false; pill.hidden = false; $('bHint').hidden = true;
+    $('bName').textContent = '<' + (c.querySelector('small').textContent === 'Plan' ? 'PlanCard' : 'StatCard') + ' />';
+    const left = Math.max(8, Math.min(r.left - s.left, s.width - pill.offsetWidth - 8));
+    Object.assign(pill.style, { left: left + 'px', top: Math.max(8, r.top - s.top - pill.offsetHeight - 8) + 'px' });
+  });
+
+  // C: expand on hover or focus, tuck away after leaving
+  const cDock = $('cDock'); let cTimer = 0;
+  const openC = () => { clearTimeout(cTimer); cDock.classList.add('open'); };
+  const closeC = () => { cTimer = setTimeout(() => cDock.classList.remove('open'), 500); };
+  cDock.addEventListener('mouseenter', openC); cDock.addEventListener('mouseleave', closeC);
+  cDock.addEventListener('focusin', openC); cDock.addEventListener('focusout', closeC);
+
+  // D: command bar
+  const ACTIONS = [['pointer', 'Inspect', 'Alt'], ['comment', 'Comment', 'C'], ['image', 'Place an image or video', 'P'], ['mic', 'Talk & point', 'V'], ['tasks', 'Tasks', 'T'], ['layers', 'Batch', 'B'], ['more', 'Settings', '?']];
+  let cur = 0;
+  function renderD() {
+    const q = $('dQuery').value.trim().toLowerCase();
+    const list = ACTIONS.filter(([, l]) => l.toLowerCase().includes(q));
+    cur = Math.min(cur, Math.max(0, list.length - 1));
+    $('dList').innerHTML = list.length ? list.map(([ic, l, k], i) => `<button class="${i === cur ? 'cur' : ''}">${use(ic)}${l}<kbd>${k}</kbd></button>`).join('') : '<div class="none">No action matches</div>';
+  }
+  $('dOpen').onclick = (e) => { e.stopPropagation(); const p = $('dPal'); p.hidden = !p.hidden; if (!p.hidden) { $('dQuery').value = ''; cur = 0; renderD(); $('dQuery').focus(); } };
+  $('dQuery').addEventListener('input', () => { cur = 0; renderD(); });
+  $('dQuery').addEventListener('keydown', (e) => {
+    const n = $('dList').querySelectorAll('button').length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); cur = (cur + 1) % Math.max(1, n); renderD(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); cur = (cur - 1 + Math.max(1, n)) % Math.max(1, n); renderD(); }
+    if (e.key === 'Enter' || e.key === 'Escape') { $('dPal').hidden = true; }
+  });
+  $('dList').onclick = () => { $('dPal').hidden = true; };
+
+  document.addEventListener('click', (e) => {
+    if (!$('aMenu').hidden && !$('aMenu').contains(e.target)) $('aMenu').hidden = true;
+    if (!$('dPal').hidden && !$('dPal').contains(e.target)) $('dPal').hidden = true;
+  });
+})();
+</script>

@@ -8,21 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Place: put an image or video on the page before your agent builds it.** Select an element and press **P** (or Place on the pill), or drop a file on the page. The image, SVG, GIF or video shows up on your real page, laid out by your own CSS: before or after the element, inside it at the start or end, or over it (drag it and pull its corner to resize).
-  - Try up to four variants (drop or paste more onto the card, pick with 1–4), set the size (Original, Fit width or a custom width), add alt text, and for a video choose autoplay, loop and muted. The card has the mic too.
-  - Send stages the file in `.agent-hover/place/` and tells your agent where it is, where it goes, its size on the page and in the file, and where to copy it (your public folder, or wherever the project keeps images). The mock leaves the page when you send, so the built image never shows twice.
-  - **Compare shows Mock and Built.** Undo also removes the file the agent copied in.
+- **Place: put images and video anywhere on your page, like a design tool, then send them to your agent.** The image button in the dock opens a palette right in the dock: add a file, drop one on the page, or paste one (⌘V). It lands where you dropped it.
+  - Drag it anywhere: it snaps to the edges and centers of what's around it, with guide lines (hold ⌥ to move freely; arrow keys nudge it). Pull a corner to resize, drag the round handle to rotate (Shift: 15° steps), and align it on the element under it from the dock.
+  - Place several at once. Each can have up to four versions to switch between, plus alt text and a note. Remove one with **Delete**, the × on its frame, or the dock.
+  - Placed images live in Agent Hover's own layer and stay with the element under them as the page scrolls; your page isn't changed until the agent does it. A tag under the image says where it sits ("On `<StatCard />`, 24px from its left, 10px from its top, top right").
+  - Send stages each file in `.agent-hover/place/` and gives your agent one task: for each image, the element it sits on, its offset from that element's edges, size, rotation, alignment, alt text, and where to copy the file (your public folder, or wherever the project keeps images). The mocks leave the page once sent.
+  - **Compare shows Mock and Built.** Undo also removes the files the agent copied in.
   - Bridge: `POST /api/place/assets` (the file's type is checked from its bytes; up to 50 MB), `publicDir` in `/api/health`, API level 3. A staged file leaves once no task uses it.
   - The demo has a spot for it: the testimonial avatar shows only initials, and `demo/samples/` has a photo, an SVG logo and a short video to try.
-- **Talk & point.** The mic you already have in Ask now takes clicks: while it listens, click other elements and they go into your sentence as [2], [3] where you said them (the selection is [1]), with numbered badges on the page. Or hold **V** in Agent Hover to talk and click without opening Ask; a quick tap keeps it listening until the next tap or Esc. One task goes out with each element's context, like Batch. Remove an element and the numbers after it shift, in the sentence too. Without speech recognition (Firefox) V opens the card for typing, and clicks add the numbers where the cursor is. The mic itself works as before.
-- **The mic in more places**: the Place card and the Batch goal.
-- **This one or all of them.** When the element belongs to a component used more than once on the page, Ask says how many there are and lets you choose: this one (the default) or all of them. Hovering the choice outlines every one on the page. The prompt says which, and the task records `scope` and the count.
+- **Talk while you point.** With Inspect on, hold **Space** and talk, and click the things you mean as you say them: each becomes [1], [2] in your sentence, with numbered badges on the page. A caption follows your pointer while you talk, and the pointer button in the dock glows. Let go and the sentence opens right there to edit and send as one task, like Batch. A quick tap keeps listening until the next tap or Esc. Without speech recognition (Firefox), Space opens the card for typing and clicks add the numbers. The mic in Ask takes clicks the same way (the selection is [1]); the mic itself works as before.
+- **The mic in more places**: the Batch goal.
+- **This one or all of them.** When the element belongs to a component used more than once on the page, Ask shows a small "1 of 3" chip: choose this one (the default) or all of them. Hovering it outlines every one on the page. The prompt says which, and the task records `scope` and the count.
 - **Page errors in prompts.** Console errors, uncaught errors and failed requests since the page loaded go into the prompt under "On this page", newest last and repeats folded, with tokens in URLs hidden. Settings › When you press Send turns it off.
 
 ### Fixed
 - `get_component_source` (the bridge's `POST /api/source`) read the wrong path for every file and failed: it joined the project folder onto a path that already had it.
 
 ### Changed
+- **Ask looks like a chat box.** One rounded surface: what you selected on a quiet line at the top, a large field that grows as you type, and a bottom bar with your agent as a chip, the mic, and a round send button that lights up once there's something to send. Close it with the × or Esc.
+- **Calmer cards and sidebar.** Rounder cards with softer shadows and a gentle entrance; the agent's summary reads as a quote instead of a grey box; changed files are chips; buttons are pills. Sidebar rows are soft rounded items, and group labels are plain sentence case.
+- **A smaller dock.** Place joins Inspect and Comment; Batch shows only once you've collected something (B opens it any time); there's no separate voice button.
 - New message: "Can't describe it? Point at it." The README, npm descriptions, `init` header and demo video lead with the problem Agent Hover solves.
 - The README images, GIF and demo video put the dock first. The demo opens on the dock, the README explains it with an annotated image, and the Tasks tab has its own image. `npm run screenshots` now also makes the annotated dock and the poster (`e2e/media.spec.ts`).
 - CI also runs the unit tests on Node 24.
