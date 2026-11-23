@@ -55,6 +55,8 @@ export function setupDock(app: OverlayApp) {
     const count = (state.batch || []).length;
     $('ah-d-batch-count').hidden = !count;
     $('ah-d-batch-count').textContent = String(count);
+    // Batch takes a place in the dock only once you've collected something (or its tab is open).
+    $('ah-d-batch').hidden = !count && !(side.open && !side.settings && side.tab === 'batch');
     if (!conn.hidden) renderConn();
   }
 

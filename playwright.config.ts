@@ -40,7 +40,7 @@ export default defineConfig({
       ? (['firefox', 'webkit'] as const).map((name) => ({
           name,
           use: { ...devices[name === 'firefox' ? 'Desktop Firefox' : 'Desktop Safari'] },
-          testMatch: /v02-(main-flow|dock-sidebar|comments-batch|verify|mcp-agent|source|voice)\.spec\.ts/,
+          testMatch: /v02-(main-flow|dock-sidebar|comments-batch|verify|mcp-agent|source|voice)\.spec\.ts|v03-(place|talk|scope-errors)\.spec\.ts/,
         }))
       : []),
   ],

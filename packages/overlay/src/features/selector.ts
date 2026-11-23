@@ -157,6 +157,7 @@ export function setupSelector(app: OverlayApp) {
     renderCursor();
     api.renderDock?.();
     if (state.mode === 'comment') api.toast?.('Click anywhere on the page to leave a comment');
+    if (state.mode === 'inspect') api.onInspectStart?.();
   }
 
   /** The page cursor says what a click does: select, comment, or (Batch tab open) add to the batch. */
@@ -250,6 +251,8 @@ export function setupSelector(app: OverlayApp) {
     if (!el || el === document.body || el === document.documentElement) return;
     if (state.mode === 'comment') { api.addCommentAt?.(el, e.clientX, e.clientY); return; }
     const stack = el === hoverEl && hoverStack.length ? hoverStack : buildHierarchyStack(el);
+    // Talk & point: while you talk (or the Talk card is open), a click adds the element as [n].
+    if (api.isTalking?.()) { api.talkAdd(stack, preferredIndex(stack)); return; }
     select(stack, preferredIndex(stack));
     if (api.isCollecting?.()) api.toggleBatch(state.selectedTarget, state.currentStack);
   }

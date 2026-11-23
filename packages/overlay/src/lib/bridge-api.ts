@@ -3,8 +3,9 @@
  * packages/vite/src/bridge-server.ts). The page reloads a new overlay right after an update, while the bridge keeps
  * running old code until the dev server restarts: a lower level means "restart your dev server".
  * 2: remove tasks, Clear finished, Send again (0.2.1).
+ * 3: Place assets (POST /api/place/assets) and publicDir in /api/health (0.3).
  */
-export const BRIDGE_API = 2;
+export const BRIDGE_API = 3;
 
 /** Whether the running bridge is older than this overlay. Bridges before 0.2.1 report no level. */
 export function bridgeIsOutdated(health: { api?: unknown } | null | undefined): boolean {
