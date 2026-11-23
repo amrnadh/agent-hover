@@ -1,6 +1,6 @@
 /**
  * The bridge features this overlay uses. The bridge reports its own level in /api/health (BRIDGE_API in
- * packages/vite/src/bridge-server.ts). The page reloads a new overlay right after an update, while the bridge keeps
+ * packages/bridge/src/bridge-server.ts). The page reloads a new overlay right after an update, while the bridge keeps
  * running old code until the dev server restarts: a lower level means "restart your dev server".
  * 2: remove tasks, Clear finished, Send again (0.2.1).
  * 3: Place assets (POST /api/place/assets) and publicDir in /api/health (0.3).

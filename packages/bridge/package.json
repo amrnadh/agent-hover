@@ -1,0 +1,65 @@
+{
+  "name": "@agent-hover/bridge",
+  "version": "0.2.1",
+  "description": "The local server behind Agent Hover: tasks, checkpoints, source lookup and the MCP bridge, shared by the Vite and Next.js integrations.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "prepack": "npx tsc",
+    "dev": "npx tsc --watch"
+  },
+  "dependencies": {
+    "@agent-hover/core": "^0.2.1",
+    "@agent-hover/overlay": "^0.2.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "tinyglobby": "^0.2.17",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.0",
+    "@types/express": "^5.0.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "agent-hover",
+    "react",
+    "ai-agent",
+    "mcp",
+    "devtools"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amrnadh/agent-hover.git",
+    "directory": "packages/bridge"
+  },
+  "homepage": "https://github.com/amrnadh/agent-hover#readme",
+  "bugs": {
+    "url": "https://github.com/amrnadh/agent-hover/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

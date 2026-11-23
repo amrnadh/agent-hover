@@ -1,18 +1,11 @@
 import path from 'path';
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping';
+import { projectRelative, type LocationMapper } from '@agent-hover/bridge';
 
-export interface SourceLocation { file: string; line: number; column: number }
-
-/** Maps a position in a module the dev server served (a browser stack frame) back to the original source. */
-export type LocationMapper = (url: string, line: number, column: number) => Promise<SourceLocation | null>;
+export { projectRelative, type LocationMapper, type SourceLocation } from '@agent-hover/bridge';
 
 interface ModuleLike { file?: string | null; transformResult?: { map?: any } | null }
 interface GraphLike { getModuleByUrl(url: string): Promise<ModuleLike | undefined> | ModuleLike | undefined }
-
-/** `file` relative to the project root, with forward slashes on every platform. */
-export function projectRelative(root: string, file: string): string {
-  return path.relative(root, file).split(path.sep).join('/');
-}
 
 /**
  * Uses the dev server's module graph: each transformed module keeps the source map Vite composed from every
