@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import path from 'node:path';
 
-const PACKAGES = ['core', 'overlay', 'vite', 'mcp', 'cli'];
+const PACKAGES = ['core', 'overlay', 'bridge', 'vite', 'next', 'mcp', 'cli'];
 const root = path.resolve(import.meta.dirname, '..');
 const version = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 const problems = [];

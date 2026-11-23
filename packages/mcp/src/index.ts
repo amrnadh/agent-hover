@@ -5,7 +5,7 @@
  * @description Agent Hover MCP (Model Context Protocol) Server.
  * Enables AI coding agents to query rich React component context,
  * inspect pinned component relationships, and generate task-focused context
- * by communicating with the Vite plugin bridge server.
+ * by communicating with the bridge server in the app's dev server (Vite or Next.js).
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -115,7 +115,7 @@ function handleBridgeError(error: unknown) {
           type: "text" as const,
           text:
             `Error: Could not connect to the Agent Hover bridge server at http://127.0.0.1:${port}.\n\n` +
-            `Please make sure your Vite dev server is running with the Agent Hover plugin enabled:\n` +
+            `Please make sure your dev server (Vite or Next.js) is running with Agent Hover set up:\n` +
             `  npm run dev\n\n` +
             `If your dev server is running on a different port, ensure .agent-hover/session.json is present or set COMPONENT_POINTER_PORT (current: ${port}).`,
         },
