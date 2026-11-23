@@ -48,7 +48,7 @@ describe('agent-hover CLI', () => {
 
   it('flags missing pieces in an unconfigured project', async () => {
     const r = await run([], fixture({ 'package.json': '{}' }), PLAIN);
-    expect(r.stdout).toContain('○ No Vite config found');
+    expect(r.stdout).toContain('○ No Vite config or Next.js app found');
     expect(r.stdout).toContain('○ MCP server not registered');
     expect(r.stdout).toContain('npm install -D @agent-hover/vite');
   });

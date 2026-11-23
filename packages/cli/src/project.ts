@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { BRAND, VITE_PACKAGE } from './brand.js';
+import { BRAND, NEXT_PACKAGE, VITE_PACKAGE } from './brand.js';
+import { inspectNext, NEXT_CONFIGS, type NextInfo } from './next-setup.js';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -8,8 +9,14 @@ export interface ProjectInfo {
   root: string;
   hasPackageJson: boolean;
   packageManager: PackageManager;
+  /** What the app runs on: Next.js when it depends on next (even with a vite.config for tests), else Vite when it has a Vite config. */
+  framework: 'vite' | 'next' | null;
+  /** The Agent Hover package for that framework: @agent-hover/vite or @agent-hover/next. */
+  pluginPackage: string;
   viteConfig: string | null;
-  /** The vite config file mentions the plugin package. */
+  /** Next.js details (config, app/ or pages/, instrumentation), when the app is a Next.js app. */
+  next: NextInfo | null;
+  /** Vite: the config mentions the plugin package. Next.js: config, instrumentation and layout or document are all set up. */
   pluginConfigured: boolean;
   pluginInstalled: boolean;
   usesReact: boolean;
@@ -56,6 +63,9 @@ export function inspectProject(root: string): ProjectInfo {
 
   const viteConfig = VITE_CONFIGS.find((f) => existsSync(path.join(root, f))) ?? null;
   const viteText = viteConfig ? readText(path.join(root, viteConfig)) ?? '' : '';
+  const next = 'next' in deps || NEXT_CONFIGS.some((f) => existsSync(path.join(root, f))) ? inspectNext(root, deps.next) : null;
+  const framework = next ? 'next' : viteConfig ? 'vite' : null;
+  const pluginPackage = framework === 'next' ? NEXT_PACKAGE : VITE_PACKAGE;
 
   const mcpConfigured = PROJECT_MCP_FILES.filter((f) => {
     const text = readText(path.join(root, f));
@@ -66,9 +76,12 @@ export function inspectProject(root: string): ProjectInfo {
     root,
     hasPackageJson: !!pkgText,
     packageManager: detectPackageManager(root),
+    framework,
+    pluginPackage,
     viteConfig,
-    pluginConfigured: viteText.includes(VITE_PACKAGE),
-    pluginInstalled: VITE_PACKAGE in deps,
+    next,
+    pluginConfigured: next ? next.configured : viteText.includes(VITE_PACKAGE),
+    pluginInstalled: pluginPackage in deps,
     usesReact: 'react' in deps,
     mcpConfigured,
   };

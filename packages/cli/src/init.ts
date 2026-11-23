@@ -1,11 +1,24 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { BRAND, DISPLAY_NAME, VITE_PACKAGE } from './brand.js';
+import { BRAND, DISPLAY_NAME, NEXT_PACKAGE } from './brand.js';
 import { findClient, MCP_CLIENTS, statusCommand, type McpClient } from './clients.js';
 import { inspectProject, installCommand, type ProjectInfo } from './project.js';
 import { mergeCommandFile, mergeGitignore, mergeJsonMcp, mergeOpencodeMcp, mergeRules, mergeTomlMcp, type Merge } from './setup-files.js';
 import { addPluginToViteConfig, VITE_MANUAL_STEPS } from './vite-config.js';
+import {
+  addToDocument,
+  addToInstrumentation,
+  addToLayout,
+  DOCUMENT_MANUAL,
+  INSTRUMENTATION_MANUAL,
+  LAYOUT_MANUAL,
+  newDocument,
+  newInstrumentation,
+  NEXT_CONFIG_MANUAL,
+  wrapNextConfig,
+  type Edit,
+} from './next-setup.js';
 import type { Style } from './render.js';
 import type { Choice } from './prompt.js';
 
@@ -83,25 +96,63 @@ function fileStep(root: string, title: string, rel: string, merge: (existing: st
   return { title, state: 'todo', detail: `${existing === null ? 'create' : 'update'} ${shown}`, write: { file, content: result.content, backup: rewrites && !!existing?.trim() } };
 }
 
+/** Edit (or create) one file of a Next.js app; `manual` is what to add by hand when it can't be edited. */
+function editStep(root: string, title: string, rel: string, edit: (src: string) => Edit, create: string | null, what: string, manual: string): Step {
+  const file = path.join(root, rel);
+  const existing = read(file);
+  if (existing === null) {
+    if (create === null) return { title, state: 'manual', detail: `${rel} not found. Add:\n${manual}` };
+    return { title, state: 'todo', detail: `create ${rel}`, write: { file, content: create, backup: false } };
+  }
+  const result = edit(existing);
+  if (!result.ok) return { title, state: 'manual', detail: `${rel}: not edited automatically (${result.reason}). Add:\n${manual}` };
+  if (result.code === existing) return { title, state: 'done', detail: rel };
+  return { title, state: 'todo', detail: `${what} in ${rel}`, write: { file, content: result.code, backup: false } };
+}
+
+/** Next.js: wrap next.config, start the bridge from instrumentation.ts, show the dock from the root layout or _document. */
+function planNext(p: ProjectInfo): Step[] {
+  const n = p.next!;
+  const root = p.root;
+  const steps: Step[] = [];
+  const configRel = n.config ?? (n.typescript ? 'next.config.ts' : 'next.config.mjs');
+  const newConfig = `import { withAgentHover } from '${NEXT_PACKAGE}';\n\nexport default withAgentHover({});\n`;
+  steps.push(editStep(root, `Wrap ${configRel}`, configRel, wrapNextConfig, newConfig, 'withAgentHover(...)', NEXT_CONFIG_MANUAL));
+  steps.push(editStep(root, `Start it from ${n.instrumentation}`, n.instrumentation, addToInstrumentation, newInstrumentation(), 'register() starts the bridge', INSTRUMENTATION_MANUAL));
+  if (n.appDir) {
+    const layout = n.layout ?? `${n.appDir}/layout.tsx`;
+    steps.push(editStep(root, `Show the dock in ${layout}`, layout, addToLayout, null, '<AgentHover /> at the end of <body>', LAYOUT_MANUAL));
+  }
+  if (n.pagesDir) {
+    steps.push(editStep(root, `Show the dock in ${n.document}`, n.document!, addToDocument, newDocument(), '<AgentHover /> after <NextScript />', DOCUMENT_MANUAL));
+  }
+  if (!n.appDir && !n.pagesDir) steps.push({ title: 'Show the dock', state: 'manual', detail: `No app/ or pages/ folder found. In your root layout add:\n${LAYOUT_MANUAL}` });
+  return steps;
+}
+
 /** Everything `init` would do in this project, without doing any of it. */
 export function planInit(p: ProjectInfo, agents: McpClient[], opts: InitOptions = {}): Step[] {
   const steps: Step[] = [];
   const root = p.root;
 
-  if (p.pluginInstalled) steps.push({ title: `Install ${VITE_PACKAGE}`, state: 'done', detail: 'already in package.json' });
-  else if (opts.install === false) steps.push({ title: `Install ${VITE_PACKAGE}`, state: 'manual', detail: installCommand(p.packageManager, VITE_PACKAGE) });
+  const pkg = p.pluginPackage;
+  if (p.pluginInstalled) steps.push({ title: `Install ${pkg}`, state: 'done', detail: 'already in package.json' });
+  else if (opts.install === false) steps.push({ title: `Install ${pkg}`, state: 'manual', detail: installCommand(p.packageManager, pkg) });
   else {
-    const display = installCommand(p.packageManager, VITE_PACKAGE);
+    const display = installCommand(p.packageManager, pkg);
     const [cmd, ...args] = display.split(' ');
-    steps.push({ title: `Install ${VITE_PACKAGE}`, state: 'todo', detail: display, command: { cmd, args, display } });
+    steps.push({ title: `Install ${pkg}`, state: 'todo', detail: display, command: { cmd, args, display } });
   }
 
-  const configRel = p.viteConfig!;
-  const configFile = path.join(root, configRel);
-  const edit = addPluginToViteConfig(readFileSync(configFile, 'utf8'));
-  if (p.pluginConfigured) steps.push({ title: `Add the plugin to ${configRel}`, state: 'done' });
-  else if (!edit.ok) steps.push({ title: `Add the plugin to ${configRel}`, state: 'manual', detail: `Not edited automatically (${edit.reason}). Add:\n${VITE_MANUAL_STEPS}` });
-  else steps.push({ title: `Add the plugin to ${configRel}`, state: 'todo', detail: `import agentHover and add agentHover() to plugins`, write: { file: configFile, content: edit.code, backup: false } });
+  if (p.framework === 'next') steps.push(...planNext(p));
+  else {
+    const configRel = p.viteConfig!;
+    const configFile = path.join(root, configRel);
+    const edit = addPluginToViteConfig(readFileSync(configFile, 'utf8'));
+    if (p.pluginConfigured) steps.push({ title: `Add the plugin to ${configRel}`, state: 'done' });
+    else if (!edit.ok) steps.push({ title: `Add the plugin to ${configRel}`, state: 'manual', detail: `Not edited automatically (${edit.reason}). Add:\n${VITE_MANUAL_STEPS}` });
+    else steps.push({ title: `Add the plugin to ${configRel}`, state: 'todo', detail: `import agentHover and add agentHover() to plugins`, write: { file: configFile, content: edit.code, backup: false } });
+  }
 
   const home = opts.home ?? os.homedir();
   // Agents can share a rules file (Codex and OpenCode both read AGENTS.md): plan each file once.
@@ -173,15 +224,19 @@ function applyWrite(w: FileWrite) {
   writeFileSync(w.file, w.content);
 }
 
-/** `agent-hover init`: install the plugin, add it to the Vite config, connect agents, ignore local data. */
+/** `agent-hover init`: install the package, add it to the Vite or Next.js app, connect agents, ignore local data. */
 export async function runInit(root: string, opts: InitOptions, io: InitIO, s: Style): Promise<number> {
   const p = inspectProject(root);
   if (!p.hasPackageJson) {
     io.out(`\n  No package.json here. Run ${BRAND.cliName} init in your app's folder.\n`);
     return 1;
   }
-  if (!p.viteConfig) {
-    io.out(`\n  No Vite config found. ${BRAND.name} 0.2 supports Vite + React (Next.js is planned).\n`);
+  if (!p.framework) {
+    io.out(`\n  No Vite config or Next.js app found. ${DISPLAY_NAME} works with Vite + React and Next.js.\n`);
+    return 1;
+  }
+  if (p.framework === 'next' && p.next?.major && p.next.major < 15) {
+    io.out(`\n  ${DISPLAY_NAME} needs Next.js 15 or later (this app has Next.js ${p.next.major}).\n`);
     return 1;
   }
 

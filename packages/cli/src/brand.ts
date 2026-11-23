@@ -14,4 +14,5 @@ export const BRAND = {
 
 export const DISPLAY_NAME = 'Agent Hover';
 export const VITE_PACKAGE = `${BRAND.npmScope}/vite`;
+export const NEXT_PACKAGE = `${BRAND.npmScope}/next`;
 export const MCP_PACKAGE = `${BRAND.npmScope}/mcp`;
