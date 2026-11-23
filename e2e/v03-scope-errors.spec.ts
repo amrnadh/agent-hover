@@ -27,17 +27,24 @@ test.describe('0.3 scope and page errors', () => {
     await openDemo(page);
     const api = bridge(request);
     await api.post('/agent/presence', { client: 'claude-code' });
-    // The amount inside the second <StatCard />.
+    // The amount inside the second <StatCard /> (brought into view, clear of the hint above the dock).
+    await page.locator('text=$3,150').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(300);
     await selectHost(page, 'text=$3,150');
     const text = `Make the amount red ${Date.now()}`;
     await ask(page, text);
     const scope = page.locator('#ah-comp-scope');
     await expect(scope).toBeVisible();
-    await expect(scope).toContainText('<StatCard /> is used 3 times here');
-    await expect(scope.locator('[data-scope=instance]')).toHaveAttribute('aria-pressed', 'true');
+    // A quiet chip next to the name; its menu says how many there are and offers this one or all.
+    await expect(scope).toHaveText('1 of 3');
     await scope.hover();
     await expect(page.locator('#ah-layer-scope .ah-batch-outline')).toHaveCount(3);
-    await scope.locator('[data-scope=component]').click();
+    await scope.click();
+    const menu = page.locator('#ah-scope-menu');
+    await expect(menu).toContainText('<StatCard /> is used 3 times here');
+    await expect(menu.locator('[data-scope=instance]')).toHaveAttribute('aria-pressed', 'true');
+    await menu.locator('[data-scope=component]').click();
+    await expect(scope).toHaveText('All 3');
     await page.locator('#ah-comp-send').click();
     const task = await findTask(api, text);
     expect(task.scope).toBe('component');

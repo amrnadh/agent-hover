@@ -41,11 +41,26 @@ export function setupComposer(app: OverlayApp) {
     renderScope();
   }
 
+  const scopeMenu = shadow.getElementById('ah-scope-menu') as HTMLElement;
+  /** A quiet chip next to the name: "1 of 3", or "All 3" once you choose every one. */
   function renderScope() {
     scopeEl.hidden = !scope;
+    scopeMenu.hidden = true;
     if (!scope) { scopeEl.innerHTML = ''; return; }
-    const seg = (v: 'instance' | 'component', l: string) => `<button data-scope="${v}" aria-pressed="${scope!.mode === v}">${esc(l)}</button>`;
-    scopeEl.innerHTML = `<span class="used">${esc('<' + scope.component + ' />')} is used ${scope.count} times here</span><div class="ah-seg" role="radiogroup" aria-label="Change which">${seg('instance', 'This one')}${seg('component', 'All ' + scope.count)}</div>`;
+    scopeEl.classList.toggle('all', scope.mode === 'component');
+    scopeEl.innerHTML = `${scope.mode === 'component' ? `All ${scope.count}` : `1 of ${scope.count}`}${icon('chev-down', 12)}`;
+    scopeEl.title = `<${scope.component} /> is used ${scope.count} times on this page`;
+    scopeEl.setAttribute('aria-label', `<${scope.component} /> is used ${scope.count} times here: change ${scope.mode === 'component' ? 'all of them' : 'only this one'}`);
+  }
+  function openScopeMenu() {
+    if (!scope) return;
+    const row = (v: 'instance' | 'component', title: string, sub: string) =>
+      `<button data-scope="${v}" role="menuitemradio" aria-checked="${scope!.mode === v}" aria-pressed="${scope!.mode === v}"><span class="ck">${scope!.mode === v ? icon('check', 14) : ''}</span><span>${esc(title)}<span class="sub">${esc(sub)}</span></span></button>`;
+    scopeMenu.innerHTML = `<div class="mh">${esc('<' + scope.component + ' />')} is used ${scope.count} times here</div>`
+      + row('instance', 'Only this one', `The other ${scope.count - 1} stay as they are`)
+      + row('component', `All ${scope.count}`, 'Change the component itself');
+    anchorTo(scopeMenu, scopeEl.getBoundingClientRect(), api.insets(), 6);
+    showInstances(true);
   }
 
   /** Hovering the choice outlines every instance on the page. */
@@ -62,14 +77,17 @@ export function setupComposer(app: OverlayApp) {
       scopeLayer.appendChild(o);
     }
   }
-  scopeEl.addEventListener('click', (e) => {
+  scopeEl.addEventListener('click', () => { if (scopeMenu.hidden) openScopeMenu(); else { scopeMenu.hidden = true; showInstances(false); } });
+  scopeMenu.addEventListener('click', (e) => {
     const b = (e.target as Element).closest('[data-scope]') as HTMLElement | null;
     if (!b || !scope) return;
     scope.mode = b.dataset.scope as 'instance' | 'component';
     renderScope();
+    showInstances(false);
+    input.focus();
   });
   scopeEl.addEventListener('mouseenter', () => showInstances(true));
-  scopeEl.addEventListener('mouseleave', () => showInstances(false));
+  scopeEl.addEventListener('mouseleave', () => { if (scopeMenu.hidden) showInstances(false); });
 
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   kbd.textContent = isMac ? '⌘↵' : 'Ctrl↵';
@@ -87,6 +105,8 @@ export function setupComposer(app: OverlayApp) {
     destLabel.textContent = d.kind === 'agent' ? prettyAgentName(d.client) : 'Copy prompt';
     destDot.className = 'ah-dot' + (d.kind === 'agent' ? ' ok' : '');
     sendLabel.textContent = d.kind === 'agent' ? 'Send' : 'Copy';
+    sendBtn.title = `${d.kind === 'agent' ? 'Send' : 'Copy'} (${kbd.textContent})`;
+    sendBtn.setAttribute('aria-label', d.kind === 'agent' ? `Send to ${prettyAgentName(d.client)}` : 'Copy prompt');
     hint.hidden = agents().length > 0 || state.delivery === 'copy';
     hint.textContent = 'No agent connected. The prompt goes to your clipboard for any AI tool. Connect one in Settings › Agents.';
   }
@@ -106,6 +126,7 @@ export function setupComposer(app: OverlayApp) {
     fileEl.textContent = at ? at.file.split('/').pop() + ':' + at.line : '';
     readScope();
     input.value = drafts.get(state.selectedTarget) || '';
+    fit();
     input.classList.remove('invalid');
     renderDest();
     box.hidden = false;
@@ -122,6 +143,7 @@ export function setupComposer(app: OverlayApp) {
     }
     box.hidden = true;
     destMenu.hidden = true;
+    scopeMenu.hidden = true;
     followUp = null;
     api.stopVoice?.();
     api.clearTalk?.('composer');
@@ -209,10 +231,15 @@ export function setupComposer(app: OverlayApp) {
       send();
     }
   });
+  /** Grows with the text, like a chat box; the send button lights up once there is something to send. */
+  function fit() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(220, Math.max(44, input.scrollHeight)) + 'px';
+    box.classList.toggle('has-text', !!input.value.trim());
+  }
   input.addEventListener('input', () => {
     input.classList.remove('invalid');
-    input.style.height = 'auto';
-    input.style.height = Math.min(200, input.scrollHeight + 2) + 'px';
+    fit();
     position();
   });
 
