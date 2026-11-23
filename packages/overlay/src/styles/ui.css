@@ -510,7 +510,12 @@ pre.ah-src { margin: 0 16px 14px; padding: 10px; border-radius: 8px; background:
 /* the palette that opens in the dock */
 .ah-pal { display: flex; align-items: center; gap: 4px; padding: 0 2px 0 6px; margin-left: 2px; border-left: 1px solid var(--ui-line-2); animation: ah-pal-in 0.16s cubic-bezier(0.2, 0, 0, 1); }
 @keyframes ah-pal-in { from { opacity: 0; transform: translateX(-6px); } }
-#ah-dock.vertical .ah-pal { flex-direction: column; border-left: 0; border-top: 1px solid var(--ui-line-2); padding: 6px 0 2px; margin: 2px 0 0; }
+/* Vertical dock: the palette stacks as icons only, inside the dock's width (labels and hints are in the tooltips). */
+#ah-dock.vertical .ah-pal { flex-direction: column; align-items: center; align-self: stretch; border-left: 0; border-top: 1px solid var(--ui-line-2); border-bottom: 1px solid var(--ui-line-2); padding: 6px 0; margin: 4px 6px; }
+#ah-dock.vertical .ah-pal .vers { flex-direction: column; }
+#ah-dock.vertical .ah-pal .palhint, #ah-dock.vertical .ah-pal .placed, #ah-dock.vertical .ah-pal .lbl, #ah-dock.vertical .ah-pal kbd { display: none; }
+#ah-dock.vertical .ah-pal .ah-tbtn { width: 32px; padding: 0; justify-content: center; }
+#ah-dock.vertical .ah-pal [data-a="alt"], #ah-dock.vertical .ah-pal [data-a="note"] { font-size: 10.5px; }
 .ah-pal .pt { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--ui-line-2); background: var(--ui-bg-2) center/cover no-repeat; cursor: grab; padding: 0; flex: none; touch-action: none; }
 .ah-pal .pt:hover { border-color: var(--ui-fg-3); }
 .ah-pal .pt.sm { width: 26px; height: 26px; cursor: pointer; }

@@ -283,11 +283,11 @@ export function setupPlace(app: OverlayApp) {
     if (!shown) { api.renderDock?.(); return; }
     const it = act();
     const send = items.length
-      ? `<span class="placed">${items.length} placed</span><button class="ah-tbtn primary send" data-a="send" data-tip="${esc(sendTip())}" data-key="⌘↵" ${sending ? 'disabled' : ''}>${icon('send', 14)}${api.destination().kind === 'agent' ? 'Send' : 'Copy'}</button>`
+      ? `<span class="placed">${items.length} placed</span><button class="ah-tbtn primary send" data-a="send" data-tip="${esc(sendTip())}" data-key="⌘↵" ${sending ? 'disabled' : ''}>${icon('send', 14)}<span class="lbl">${api.destination().kind === 'agent' ? 'Send' : 'Copy'}</span></button>`
       : '';
     if (!it) {
       const thumbs = recent.map((a, i) => `<button class="pt" data-r="${i}" data-tip="Drag onto the page, or click to add" aria-label="Add ${esc(a.name)} again" style="background-image:url('${a.url}')"></button>`).join('');
-      pal.innerHTML = `${thumbs}<button class="ah-tbtn add" data-a="pick" data-tip="Add an image or video from your computer">${icon('plus', 14)}${recent.length ? '' : 'Add image'}</button>`
+      pal.innerHTML = `${thumbs}<button class="ah-tbtn add" data-a="pick" data-tip="Add an image or video from your computer">${icon('plus', 14)}${recent.length ? '' : '<span class="lbl">Add image</span>'}</button>`
         + (items.length ? `<span class="ah-sep"></span>${send}` : `<span class="palhint">or drop / paste it on the page</span>`)
         + `<button class="ah-ibtn" data-a="close" data-tip="${items.length ? 'Remove all' : 'Close'}" aria-label="${items.length ? 'Remove all placed images' : 'Close'}">${icon(items.length ? 'trash' : 'back', 14)}</button>`;
     } else {
