@@ -28,10 +28,10 @@ export function setupKeyboard(app: OverlayApp) {
 
   function escape(): boolean {
     if (api.isLightboxOpen?.()) { api.closeLightbox(); return true; }
-    for (const id of ['ah-dest-menu', 'ah-pill-menu', 'ah-dock-menu', 'ah-conn']) {
+    for (const id of ['ah-dest-menu', 'ah-scope-menu', 'ah-pill-menu', 'ah-dock-menu', 'ah-conn']) {
       if (visible(id)) { hide(id); return true; }
     }
-    if (api.isPlaceOpen?.()) { api.closePlace(); return true; }
+    if (api.placeEscape?.()) return true;
     if (api.isTalkOpen?.()) { api.closeTalk(); return true; }
     if (visible('ah-comment-card')) { api.closeCommentCard(); return true; }
     if (visible('ah-task-card')) { api.closeTaskCard(); return true; }
@@ -53,7 +53,7 @@ export function setupKeyboard(app: OverlayApp) {
         (active as HTMLElement).blur();
         // Escape in the composer closes it straight away (draft is kept).
         if (api.isComposerOpen?.() && shadow.contains(active)) api.closeComposer();
-        else if (api.isPlaceOpen?.() && shadow.contains(active)) api.closePlace();
+        else if (api.isPlaceOpen?.() && shadow.contains(active)) api.placeEscape();
         else if (api.isTalkOpen?.() && shadow.contains(active)) api.closeTalk();
         return;
       }
@@ -78,12 +78,14 @@ export function setupKeyboard(app: OverlayApp) {
       return;
     }
     if (e.altKey || e.shiftKey && e.key !== '?') return;
+    // A selected placed image takes Delete, the arrows and ⌘↵.
+    if (api.placeKey?.(e)) return;
     // An open task card takes its own keys: K Keep, U Undo, F Follow up, R Try again.
     if (visible('ah-task-card') && api.taskCardKey?.(e.key.toLowerCase())) { e.preventDefault(); return; }
 
     const sel = state.selectedTarget;
     // Zero interference: letter shortcuts only while Agent Hover is in use (a mode, a selection, or the sidebar).
-    if (!state.mode && !sel && !state.side?.open) return;
+    if (!state.mode && !sel && !state.side?.open && !api.isPlaceOpen?.()) return;
     // Letter shortcuts open inputs; stop the key from also being typed into them.
     if (['c', 'C', 'b', 'B', 'o', 'O', 'd', 'D', 't', 'T', 'p', 'P', '?'].includes(e.key)) e.preventDefault();
     switch (e.key) {
@@ -102,7 +104,7 @@ export function setupKeyboard(app: OverlayApp) {
         break;
       case 'p':
       case 'P':
-        if (sel) api.openPlace();
+        api.togglePlace();
         break;
       case 'o':
       case 'O':

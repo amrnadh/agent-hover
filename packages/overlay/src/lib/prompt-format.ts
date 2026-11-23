@@ -298,38 +298,36 @@ export function formatCommentsRequest(items: Array<{ facts: PromptFacts | null; 
 
 // ---------- Place ----------
 
-export type PlacePosition = 'before' | 'after' | 'inside-start' | 'inside-end' | 'over';
-
-/** An image or video you put on the page at a spot, for the agent to add for real. */
+/**
+ * An image or video you put on the page, anywhere (like a design tool), for the agent to add for real.
+ * Its position is described against the element under it, so the agent can find the spot in the code.
+ */
 export interface Placement {
   /** Project-relative path of the staged file (.agent-hover/place/…). */
   assetPath: string;
   mime: string;
-  /** The file's name when you dropped it, for a sensible destination name. */
+  /** The file's name when you added it, for a sensible destination name. */
   fileName?: string;
   /** Where the app serves static files from (Vite's publicDir), project-relative; null when it has none. */
   publicDir?: string | null;
-  position: PlacePosition;
-  /** Rendered size of the mock on the page, CSS px. */
+  /** Size on the page, CSS px. */
   width: number;
   height: number;
   /** The file's own size, px (video: its frame size). */
   natural?: { width: number; height: number };
-  /** The target element's width, so the size can also be given as a share of it. */
-  targetWidth?: number;
-  /** Over: the top-left corner as a share of the target's box (0–1). */
-  offset?: { x: number; y: number };
+  /** 'on': over the element; 'below': in the space under it. */
+  relation: 'on' | 'below';
+  /** Its top-left corner from the element's top-left ('on'), or from the element's bottom-left ('below'), px. */
+  offset: { x: number; y: number };
+  /** The element's size, px. */
+  box: { width: number; height: number };
+  /** Degrees, clockwise. */
+  rotation?: number;
+  /** Snapped alignment on the element, in words: "top right", "center". */
+  align?: string;
   alt?: string;
   video?: { loop: boolean; muted: boolean; autoplay: boolean };
 }
-
-const POSITION: Record<PlacePosition, string> = {
-  before: 'directly before the element (as its previous sibling)',
-  after: 'directly after the element (as its next sibling)',
-  'inside-start': 'inside the element, as its first child',
-  'inside-end': 'inside the element, as its last child',
-  over: 'on top of the element, positioned over it',
-};
 
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
 
@@ -339,52 +337,73 @@ export function placeBaseName(fileName: string | undefined, fallback: string): s
   return base || fallback;
 }
 
-/** Place: add this asset to the page here, at this size. The staged file is copied into the project by the agent. */
-export function formatPlaceRequest(f: PromptFacts, p: Placement, note = ''): string {
-  const isVideo = p.mime.startsWith('video/');
-  const isSvg = p.mime === 'image/svg+xml';
-  const kind = isVideo ? 'video' : isSvg ? 'SVG' : p.mime === 'image/gif' ? 'GIF' : 'image';
+function kindOf(mime: string) {
+  return mime.startsWith('video/') ? 'video' : mime === 'image/svg+xml' ? 'SVG' : mime === 'image/gif' ? 'GIF' : 'image';
+}
+
+/** Where one placed asset goes, in words: the spot, its size and look, and where to copy the file. */
+function placementLines(p: Placement): string[] {
+  const kind = kindOf(p.mime);
   const ext = p.assetPath.split('.').pop() || '';
   const name = `${placeBaseName(p.fileName, p.assetPath.split('/').pop()!.replace(/\.[^.]+$/, ''))}.${ext}`;
   const dest = p.publicDir && p.publicDir !== '.' ? `${p.publicDir.replace(/\/+$/, '')}/${name}` : null;
-  const media = isVideo ? 'media' : 'images';
+  const out: string[] = [];
+  out.push(dest
+    ? `- File: ${code(p.assetPath)}. Copy it into the project, e.g. to ${code(dest)} (served as ${code('/' + name)}), unless the project keeps ${kind === 'video' ? 'media' : 'images'} elsewhere: then follow that pattern.`
+    : `- File: ${code(p.assetPath)}. Copy it to where this project keeps its ${kind === 'video' ? 'media' : 'images'} (a public folder, an ${code('assets')} import, an image component).`);
+  const { x, y } = p.offset;
+  const { width: bw, height: bh } = p.box;
+  if (p.relation === 'on') {
+    const past = [x < 0 && `${-x}px past its left edge`, y < 0 && `${-y}px past its top edge`, x + p.width > bw && `${Math.round(x + p.width - bw)}px past its right edge`, y + p.height > bh && `${Math.round(y + p.height - bh)}px past its bottom edge`].filter(Boolean);
+    out.push(`- Spot: on top of the element. Its top-left corner is ${Math.round(x)}px from the element's left and ${Math.round(y)}px from its top (${pct(x / (bw || 1))} across, ${pct(y / (bh || 1))} down).${past.length ? ` It sticks out ${past.join(' and ')}.` : ''}`);
+  } else {
+    out.push(`- Spot: in the space below the element, ${Math.round(y)}px under it, ${Math.round(x)}px from its left edge.`);
+  }
+  if (p.align) out.push(`- It was aligned ${p.align} ${p.relation === 'on' ? 'on the element' : 'to the element'}.`);
+  out.push(`- Size on the page: ${Math.round(p.width)}×${Math.round(p.height)}px${p.relation === 'on' && bw ? ` (${pct(p.width / bw)} of the element's width)` : ''}; keep the aspect ratio.${p.natural ? ` The file itself is ${Math.round(p.natural.width)}×${Math.round(p.natural.height)}px.` : ''}`);
+  if (p.rotation) out.push(`- Rotated ${Math.round(p.rotation)}° clockwise.`);
+  if (kind === 'video' && p.video) {
+    const attrs = [p.video.autoplay && 'autoplay', p.video.loop && 'loop', p.video.muted && 'muted', 'playsInline'].filter(Boolean).join(', ');
+    out.push(`- Video attributes: ${attrs}.`);
+  }
+  if (p.alt?.trim()) out.push(`- Alt text: “${p.alt.trim()}”.`);
+  else if (kind !== 'video') out.push('- No alt text was given: treat it as decorative (alt="") unless it clearly carries meaning.');
+  if (kind === 'SVG') out.push('- It is an SVG: check it before inlining (no scripts or external references); an <img> works too.');
+  return out;
+}
 
-  const what: string[] = [
-    `Add the ${kind} ${code(p.assetPath)} to the page, ${POSITION[p.position]}.`,
-    dest
-      ? `Copy it into the project first, e.g. to ${code(dest)} (served as ${code('/' + name)}), unless this project keeps ${media} somewhere else: then follow that pattern (an ${code('assets')} import, an icons folder, an image component).`
-      : `Copy it into the project first, where this project keeps its ${media} (follow the existing pattern: a public folder, an ${code('assets')} import, an icons folder, an image component).`,
+/**
+ * Place: add these assets where they were put on the page. Each one names the element under it; the agent picks
+ * the right technique (normal layout where it lines up with the layout, positioning where it overlaps).
+ */
+export function formatPlaceRequest(items: Array<{ facts: PromptFacts; placement: Placement }>, note = ''): string {
+  if (!items.length) return '';
+  const one = items.length === 1;
+  const kinds = new Set(items.map((i) => kindOf(i.placement.mime)));
+  const noun = kinds.size === 1 ? [...kinds][0] : 'asset';
+  const title = one ? `# Place ${noun === 'image' ? 'an image' : noun === 'SVG' ? 'an SVG' : `a ${noun}`}: ${describeTarget(items[0].facts)}` : `# Place ${items.length} ${noun === 'SVG' ? 'SVGs' : noun + 's'}`;
+  const what = [
+    one
+      ? `Add the ${kindOf(items[0].placement.mime)} below to the page so it appears where it was placed, at the same size.`
+      : `Add each ${noun === 'asset' ? 'image or video' : noun} below to the page so it appears where it was placed, at the same size.`,
+    'Use the layout the component already has where the spot lines up with it (a corner, the center, the next spot in a row or column); use positioning inside the element only where it overlaps other content. Keep the rest of the page as it is.',
     `Don't reference ${code('.agent-hover/')} from the code: that folder is temporary and not committed.`,
   ];
   if (note.trim()) what.push('', note.trim());
-
-  const look: string[] = [];
-  const share = p.targetWidth && p.position !== 'over' ? ` (${pct(p.width / p.targetWidth)} of the element's width)` : '';
-  look.push(`- Size on the page: ${Math.round(p.width)}×${Math.round(p.height)}px${share}; keep the aspect ratio.`);
-  look.push(p.natural ? `- The file itself: ${Math.round(p.natural.width)}×${Math.round(p.natural.height)}px, ${p.mime}.` : `- The file itself: ${p.mime}.`);
-  if (p.position === 'over' && p.offset) {
-    look.push(`- Position: its top-left corner at ${pct(p.offset.x)} from the element's left and ${pct(p.offset.y)} from its top. Make the element the positioning context if it isn't one, and don't let the ${kind} change the layout around it.`);
-  } else {
-    look.push(`- It takes part in the layout ${p.position.startsWith('inside') ? 'of the element' : 'next to the element'}; keep the spacing consistent with the neighbouring content.`);
+  const parts = [title, `## What to do\n${what.join('\n')}`];
+  items.forEach((it, i) => {
+    const head = one ? '## Where it goes' : `## ${i + 1}. ${it.placement.fileName || it.placement.assetPath.split('/').pop()}`;
+    parts.push(`${head}\nOn ${describeTarget(it.facts)}.\n${placementLines(it.placement).join('\n')}\n\n${formatElementSections(it.facts, 3)}`);
+  });
+  parts.push(`## Constraints\n${constraints({ ...items[0].facts, element: { ...items[0].facts.element, isComponent: true } }, [`- Add the ${one ? kindOf(items[0].placement.mime) : 'assets'} only; leave the elements under ${one ? 'it' : 'them'} as they are.`])}`);
+  const seen = new Set<string>();
+  for (const it of items) {
+    const c = it.facts.component;
+    if (!c?.code || seen.has(c.file)) continue;
+    seen.add(c.file);
+    const src = sourceSection(it.facts, 2);
+    if (src) parts.push(src);
   }
-  if (isVideo && p.video) {
-    const attrs = [p.video.autoplay && 'autoplay', p.video.loop && 'loop', p.video.muted && 'muted', 'playsInline'].filter(Boolean).join(', ');
-    look.push(`- Video attributes: ${attrs}.`);
-  }
-  if (p.alt?.trim()) look.push(`- Alt text: “${p.alt.trim()}”.`);
-  else if (!isVideo) look.push('- No alt text was given: treat it as decorative (alt="") unless it clearly carries meaning.');
-  if (isSvg) look.push('- It is an SVG: check it before inlining (no scripts or external references); an <img> works too.');
-
-  const article = kind === 'image' ? 'an image' : kind === 'SVG' ? 'an SVG' : `a ${kind}`;
-  const parts = [
-    `# Place ${article}: ${describeTarget(f)}`,
-    `## What to do\n${what.join('\n')}`,
-    `## The ${kind} as placed on the page\n${look.join('\n')}`,
-    formatElementSections(f, 2),
-    `## Constraints\n${constraints(f, [`- Add the ${kind} only; leave the element and its other content as they are.`])}`,
-  ];
-  const src = sourceSection(f, 2);
-  if (src) parts.push(src);
   return parts.join('\n\n') + '\n';
 }
 

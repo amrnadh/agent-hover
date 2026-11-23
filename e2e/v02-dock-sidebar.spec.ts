@@ -12,7 +12,7 @@ test.describe('0.2 dock', () => {
     const dock = (await page.locator('#ah-dock').boundingBox())!;
     expect(Math.abs(dock.x + dock.width / 2 - 640)).toBeLessThan(2);
     expect(800 - (dock.y + dock.height)).toBeLessThan(30);
-    for (const id of ['#ah-d-mark', '#ah-d-inspect', '#ah-d-comment', '#ah-d-tasks', '#ah-d-batch', '#ah-d-more', '#ah-d-grip']) {
+    for (const id of ['#ah-d-mark', '#ah-d-inspect', '#ah-d-comment', '#ah-d-place', '#ah-d-tasks', '#ah-d-more', '#ah-d-grip']) {
       await expect(page.locator(id)).toBeVisible();
     }
     await page.locator('#ah-d-inspect').hover();

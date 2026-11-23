@@ -89,7 +89,9 @@ test.describe('0.2 cursor', () => {
     await expect(layer).toHaveAttribute('data-cursor', 'inspect');
     expect(await layer.evaluate((el) => getComputedStyle(el).cursor)).toMatch(/^url\("data:image\/svg\+xml,.*crosshair$/);
 
-    await page.locator('#ah-d-batch').click();
+    // Batch has a place in the dock only once it holds something; B opens its tab.
+    await expect(page.locator('#ah-d-batch')).toBeHidden();
+    await page.keyboard.press('b');
     await expect(layer).toHaveAttribute('data-cursor', 'batch');
     await clickHost(page, '#hero-primary-cta');
     await clickHost(page, '#hero-badge');

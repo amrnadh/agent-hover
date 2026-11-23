@@ -1853,8 +1853,8 @@ export class BridgeServer {
   private sweepPlaceAssets() {
     const inUse = new Set<string>();
     for (const t of this.taskStore.getSnapshot()) {
-      const p = (t.payload as any)?.place?.assetPath;
-      if (typeof p === 'string') inUse.add(p);
+      const place = (t.payload as any)?.place;
+      for (const p of Array.isArray(place) ? place : place ? [place] : []) if (typeof p?.assetPath === 'string') inUse.add(p.assetPath);
     }
     sweepAssets(this.projectRoot, inUse).catch(() => {});
   }
