@@ -118,8 +118,8 @@
       <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>npx agent-hover init</pre></div>
       <p><code>init</code> does four things, and shows every change and asks before writing anything:</p>
       <ol>
-        <li><strong>Installs <code>@agent-hover/vite</code></strong> as a dev dependency, with your package manager.</li>
-        <li><strong>Adds the plugin</strong> to your Vite config.</li>
+        <li><strong>Installs <code>@agent-hover/vite</code></strong> (or <code>@agent-hover/next</code> in a Next.js app) as a dev dependency, with your package manager.</li>
+        <li><strong>Adds it to your app</strong>: the plugin in your Vite config, or in Next.js, <code>withAgentHover()</code> in <code>next.config</code>, a call in <code>instrumentation.ts</code> and <code>&lt;AgentHover /&gt;</code> in your root layout.</li>
         <li><strong>Connects your agents.</strong> Pick them from a checklist (↑ ↓, space, <kbd>a</kbd> for all, Enter). The ones your project already uses are ticked, and each shows where its config goes. It writes the MCP config, a short rules note, and an <code>/agent-hover</code> command for each one.</li>
         <li><strong>Keeps local data out of git</strong> by adding <code>.agent-hover/</code> to <code>.gitignore</code>.</li>
       </ol>
@@ -155,19 +155,35 @@
       <p>Then register the MCP server with your agent. For Claude Code:</p>
       <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>claude mcp add agent-hover -- npx -y @agent-hover/mcp</pre></div>
       <p><code>npx agent-hover mcp &lt;agent&gt;</code> prints the config for <code>cursor</code>, <code>codex</code>, <code>opencode</code>, <code>windsurf</code>, <code>antigravity</code> and <code>claude-desktop</code>.</p>
+      <h3 id="manual-next">Next.js</h3>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>Terminal</div><pre>npm install -D @agent-hover/next</pre></div>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>next.config.ts</div><pre><span class="k">import</span> { withAgentHover } <span class="k">from</span> <span class="s">'@agent-hover/next'</span>;
+
+<span class="k">export default</span> withAgentHover(nextConfig);</pre></div>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>instrumentation.ts</div><pre><span class="k">export async function</span> register() {
+  <span class="k">if</span> (process.env.NEXT_RUNTIME === <span class="s">'nodejs'</span> &amp;&amp; process.env.NODE_ENV === <span class="s">'development'</span>) {
+    <span class="k">await</span> (<span class="k">await import</span>(<span class="s">'@agent-hover/next/register'</span>)).register();
+  }
+}</pre></div>
+      <div class="code"><div class="code-bar"><div class="dots"><i></i><i></i><i></i></div>app/layout.tsx</div><pre><span class="k">import</span> { AgentHover } <span class="k">from</span> <span class="s">'@agent-hover/next/script'</span>;
+
+&lt;body&gt;
+  {children}
+  &lt;AgentHover /&gt;
+&lt;/body&gt;</pre></div>
+      <p>With the Pages Router, put <code>&lt;AgentHover /&gt;</code> in <code>pages/_document.tsx</code> after <code>&lt;NextScript /&gt;</code>, imported from <code>@agent-hover/next/document</code>. All three only do something under <code>next dev</code>.</p>
     </section>
 
     <section id="requirements">
       <p class="eyebrow">Getting started</p>
       <h2>Requirements</h2>
       <ul>
-        <li>Node 20 or newer, Vite 5 or newer (tested up to Vite 8), React 18 or 19.</li>
+        <li>Node 20 or newer, and React 18 or 19 with Vite 5 or newer (tested up to Vite 8), or Next.js 15 or newer with React 19 (App Router or Pages Router, Turbopack or webpack).</li>
         <li>macOS, Linux and Windows 10/11.</li>
         <li>Chrome, Edge, Firefox and Safari.</li>
-        <li>Dev only: the plugin runs with <code>vite dev</code> and adds nothing to production builds.</li>
+        <li>Dev only: it runs with <code>vite dev</code> or <code>next dev</code> and adds nothing to production builds.</li>
         <li>Compare and Undo need a git repository. Everything else works without one.</li>
       </ul>
-      <p>Next.js support is next on the roadmap.</p>
     </section>
 
     <section id="dock">
