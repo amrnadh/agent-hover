@@ -157,6 +157,7 @@ export function setupSelector(app: OverlayApp) {
     renderCursor();
     api.renderDock?.();
     if (state.mode === 'comment') api.toast?.('Click anywhere on the page to leave a comment');
+    if (state.mode === 'inspect') api.onInspectStart?.();
   }
 
   /** The page cursor says what a click does: select, comment, or (Batch tab open) add to the batch. */

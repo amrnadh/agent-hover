@@ -19,7 +19,7 @@ const HOLD_MS = 350;
  */
 export function setupTalk(app: OverlayApp) {
   const { shadow, state, api } = app;
-  Object.assign(api, { isTalking, talkAdd, openTalk, closeTalk, isTalkOpen: () => !card.hidden, talkItemsFor, clearTalk, sendTalk });
+  Object.assign(api, { isTalking, talkAdd, openTalk, closeTalk, isTalkOpen: () => source === 'card', talkItemsFor, clearTalk, sendTalk, onInspectStart });
 
   const card = shadow.getElementById('ah-talk') as HTMLElement;
   const layer = shadow.getElementById('ah-layer-talk') as HTMLElement;
@@ -40,7 +40,7 @@ export function setupTalk(app: OverlayApp) {
 
   /** Whether a click on the page adds an element to the talk instead of selecting it. */
   function isTalking(): boolean {
-    if (!card.hidden) return true;
+    if (source === 'card') return true;
     // Ask: only while its mic listens, or once elements were added that way.
     return !!api.isComposerOpen?.() && (api.voiceField?.() === compInput || (source === 'composer' && items.length > 0));
   }
@@ -55,7 +55,7 @@ export function setupTalk(app: OverlayApp) {
   function talkAdd(stack: any[], index: number) {
     const item = stack[index];
     if (!item) return;
-    if (card.hidden) {
+    if (source !== 'card') {
       // In Ask: the selected element is [1].
       if (source !== 'composer') { source = 'composer'; items = []; }
       if (!items.length && state.selectedTarget) items.push({ stack: state.currentStack, index: state.currentStackIndex, name: api.nameFor(state.selectedTarget) });
@@ -97,30 +97,34 @@ export function setupTalk(app: OverlayApp) {
 
   // ---------- the card ----------
 
-  function openTalk() {
-    if (card.hidden) {
+  /** Opens a talk. While you talk the card stays out of the way and a caption follows the pointer. */
+  function openTalk(listening = false) {
+    if (source !== 'card') {
       api.closeComposer?.();
-      api.closePlace?.();
+      api.placeEscape?.();
       api.closeCommentCard?.();
       api.closeTaskCard?.();
+      api.deselect?.();
       clearTalk();
       source = 'card';
       card.hidden = false;
       renderCard();
     }
+    card.hidden = listening;
     if (state.mode !== 'inspect') api.setMode('inspect');
   }
 
   function closeTalk() {
-    if (card.hidden) return;
+    if (source !== 'card') return;
     if (api.voiceField?.() === field()) api.stopVoice?.();
     card.hidden = true;
+    hideCaption();
     clearTalk('card');
     api.requestLayout();
   }
 
   function renderCard() {
-    if (card.hidden) return;
+    if (source !== 'card') return;
     const keep = (card.querySelector('#ah-talk-input') as HTMLTextAreaElement | null)?.value || '';
     const d = api.destination();
     const voice = api.voiceEnabled?.();
@@ -139,7 +143,7 @@ export function setupTalk(app: OverlayApp) {
   /** The element list (card or Ask), the badges on the page, and where the card sits. */
   function render() {
     const rows = items.map((t, i) => `<li><span class="n">${i + 1}</span><span class="name">${esc(t.name)}</span><button class="ah-ibtn" data-remove="${i}" aria-label="Remove ${esc(t.name)}" title="Remove">${icon('x', 12)}</button></li>`).join('');
-    if (!card.hidden) {
+    if (source === 'card') {
       const list = card.querySelector('.ah-talk-list') as HTMLElement | null;
       if (list) { list.innerHTML = rows; list.hidden = !items.length; }
       const send = card.querySelector('[data-act=send]') as HTMLButtonElement | null;
@@ -172,10 +176,50 @@ export function setupTalk(app: OverlayApp) {
     });
   }
 
+  /** The card opens where you stopped talking (the pointer), next to what you pointed at. */
   function position() {
     if (card.hidden) return;
-    const dock = (shadow.getElementById('ah-dock') as HTMLElement).getBoundingClientRect();
-    anchorTo(card, dock, api.insets(), 10);
+    anchorTo(card, { left: pointer.x, top: pointer.y, width: 1, height: 1 }, api.insets(), 14);
+  }
+
+  // ---------- the live caption at the pointer ----------
+  const caption = shadow.getElementById('ah-caption') as HTMLElement;
+  const inspectBtn = shadow.getElementById('ah-d-inspect') as HTMLElement | null;
+  const pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const chips = (t: string) => esc(t).replace(/\[(\d+)\]/g, '<span class="ah-chip">$1</span>');
+  function renderCaption() {
+    const f = field();
+    const listening = source === 'card' && !!f && api.voiceField?.() === f;
+    inspectBtn?.classList.toggle('talking', listening);
+    if (!listening) { caption.hidden = true; return; }
+    const text = f!.value.trim();
+    caption.innerHTML = `<div class="lab"><span class="ah-dot pulse"></span>Listening · click what you mean · let go of <kbd>Space</kbd> when done</div><div class="txt"><span>${text ? chips(text) : '<span class="empty">Say what should change, and click what you mean</span>'}</span></div>`;
+    caption.hidden = false;
+    moveCaption();
+  }
+  function moveCaption() {
+    if (caption.hidden) return;
+    const w = caption.offsetWidth, h = caption.offsetHeight;
+    let left = pointer.x + 18, top = pointer.y + 22;
+    if (left + w > window.innerWidth - 12) left = pointer.x - w - 14;
+    if (top + h > window.innerHeight - 70) top = pointer.y - h - 16;
+    caption.style.left = Math.max(8, left) + 'px';
+    caption.style.top = Math.max(8, top) + 'px';
+  }
+  function hideCaption() { caption.hidden = true; inspectBtn?.classList.remove('talking'); }
+  window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; moveCaption(); }, true);
+  card.addEventListener('input', () => { if (card.hidden) renderCaption(); });
+  // Dictation ended (let go, tap, Esc, or the browser stopped): the caption becomes the card, right there.
+  shadow.addEventListener('ah-voice-ended', () => {
+    if (source !== 'card') return;
+    hideCaption();
+    if (card.hidden) { card.hidden = false; position(); (field() as HTMLTextAreaElement | null)?.focus(); }
+  });
+
+  /** The first time Inspect comes on in a session, say how to talk while pointing. */
+  function onInspectStart() {
+    try { if (sessionStorage.getItem('agent-hover-space-hint')) return; sessionStorage.setItem('agent-hover-space-hint', '1'); } catch { /* storage blocked: say it anyway */ }
+    api.toast(api.voiceEnabled?.() ? 'Click to select · hold Space to talk while you point' : 'Click to select · hold Space to point at several things and type', { ms: 3200 });
   }
   api.onLayout(() => { renderMarks(); position(); });
 
@@ -271,22 +315,35 @@ export function setupTalk(app: OverlayApp) {
     while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement as HTMLElement;
     return !!el && (el.matches('input, textarea, select') || el.isContentEditable);
   }
-  const inUse = () => !!(state.mode || state.selectedTarget || state.side?.open || !card.hidden);
+  const inUse = () => state.mode === 'inspect' || source === 'card';
 
+  /** Space while pointing (Inspect on); V works too. */
+  const isTalkKey = (e: KeyboardEvent) => e.key === ' ' || e.key === 'v' || e.key === 'V';
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'v' && e.key !== 'V') return;
+    if (!isTalkKey(e)) return;
     if (holding) { e.preventDefault(); e.stopPropagation(); return; } // key repeat while held
     if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || typingIn() || !inUse()) return;
     e.preventDefault();
     e.stopPropagation();
     const f = field();
     // A tap while listening stops.
-    if (!card.hidden && f && api.voiceField?.() === f) { api.stopVoice(); f.focus(); return; }
-    openTalk();
+    if (source === 'card' && f && api.voiceField?.() === f) { api.stopVoice(); return; }
+    const voice = !!api.voiceEnabled?.();
+    // The first time, the card shows so its note on where the audio goes can be read; after that it's caption only.
+    let agreed = false;
+    try { agreed = localStorage.getItem('agent_hover_voice_ok') === 'yes'; } catch { /* storage blocked */ }
+    openTalk(voice && agreed);
     holding = true;
     downAt = Date.now();
     const ta = field();
-    if (ta) api.startVoice?.(ta, card.querySelector('[data-act=mic]') as HTMLElement, { focus: false }).then((ok: boolean) => { if (!ok && !holding) ta.focus(); });
+    if (!ta) return;
+    if (!voice) { position(); ta.focus(); return; }
+    api.startVoice?.(ta, card.querySelector('[data-act=mic]') as HTMLElement, { focus: false }).then((ok: boolean) => {
+      if (ok && card.hidden) { renderCaption(); return; }
+      if (ok) return;
+      card.hidden = false; position();
+      if (!holding) ta.focus();
+    });
   }, true);
 
   function release() {
@@ -295,9 +352,8 @@ export function setupTalk(app: OverlayApp) {
     const f = field();
     // Held: stop when the key comes up. Tapped: keep listening until the next tap or Esc.
     if (Date.now() - downAt >= HOLD_MS && f && api.voiceField?.() === f) api.stopVoice();
-    if (f && !api.isVoiceActive?.()) f.focus();
   }
-  window.addEventListener('keyup', (e) => { if ((e.key === 'v' || e.key === 'V') && holding) { e.preventDefault(); release(); } }, true);
+  window.addEventListener('keyup', (e) => { if (isTalkKey(e) && holding) { e.preventDefault(); release(); } }, true);
   window.addEventListener('blur', release);
 
   // Ask's elements go once Ask closes.

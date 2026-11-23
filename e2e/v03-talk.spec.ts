@@ -50,7 +50,7 @@ test.afterEach(async ({ request }) => {
 });
 
 test.describe('0.3 Talk & point', () => {
-  test('hold V, talk, click two elements: the sentence gets [1] and [2] where you clicked, and Send makes one task', async ({ page, request }) => {
+  test('in Inspect, hold Space, talk, click two elements: a caption follows the pointer; let go and the card opens with [1] and [2]', async ({ page, request }) => {
     await scriptedSpeech(page);
     await openDemo(page);
     await consented(page);
@@ -59,25 +59,33 @@ test.describe('0.3 Talk & point', () => {
     await startInspect(page);
     await restPointer(page);
 
-    await page.keyboard.down('v');
+    await page.keyboard.down(' ');
     const card = page.locator('#ah-talk');
-    await expect(card).toBeVisible();
-    await expect(card.locator('[data-act=mic]')).toHaveAttribute('aria-pressed', 'true');
+    const caption = page.locator('#ah-caption');
+    // While talking: no card, just a caption at the pointer, and the pointer button glows.
+    await expect(caption).toBeVisible();
+    await expect(card).toBeHidden();
+    await expect(page.locator('#ah-d-inspect')).toHaveClass(/talking/);
     await say(page, 'make');
     await clickHost(page, '#hero-secondary-cta');
     await say(page, 'make this look like');
     await clickHost(page, '#hero-primary-cta');
     await say(page, 'make this look like that one', true);
+    await expect(caption.locator('.ah-chip')).toHaveCount(2);
+    await page.screenshot({ path: path.join(shotsDir('v0.3'), '02-talk-caption.png') });
     await page.waitForTimeout(400);
-    await page.keyboard.up('v');
+    await page.keyboard.up(' ');
+    await expect(caption).toBeHidden();
+    await expect(card).toBeVisible();
+    await expect(page.locator('#ah-d-inspect')).not.toHaveClass(/talking/);
 
     const input = card.locator('#ah-talk-input');
     await expect(input).toHaveValue('make [1] this look like [2] that one');
     await expect(card.locator('[data-act=mic]')).toHaveAttribute('aria-pressed', 'false');
     await expect(card.locator('.ah-talk-list li')).toHaveCount(2);
     await expect(page.locator('#ah-layer-talk .ah-batch-num')).toHaveCount(2);
-    // Holding V never typed a "v" anywhere.
-    expect(await input.inputValue()).not.toContain('v ');
+    // Holding Space never typed a space or scrolled anything.
+    expect(await input.inputValue()).not.toMatch(/^\s/);
     // A click while talking adds, it doesn't select.
     await expect(page.locator('#ah-pill')).toBeHidden();
     await page.screenshot({ path: path.join(shotsDir('v0.3'), '02-talk-and-point.png') });
@@ -129,7 +137,7 @@ test.describe('0.3 Talk & point', () => {
     expect(p.slice(p.indexOf('## [1] '), p.indexOf('## [2] '))).toContain('hero-primary-cta');
   });
 
-  test('without speech recognition, V opens the card for typing and clicks add the numbers', async ({ page, request }) => {
+  test('without speech recognition, Space opens the card for typing and clicks add the numbers', async ({ page, request }) => {
     await page.addInitScript(() => {
       delete (window as any).SpeechRecognition;
       delete (window as any).webkitSpeechRecognition;
@@ -139,10 +147,11 @@ test.describe('0.3 Talk & point', () => {
     await api.post('/agent/presence', { client: 'claude-code' });
     await startInspect(page);
     await restPointer(page);
-    await page.keyboard.press('v');
+    await page.keyboard.press(' ');
     const card = page.locator('#ah-talk');
     await expect(card).toBeVisible();
     await expect(card.locator('[data-act=mic]')).toBeHidden();
+    await card.locator('#ah-talk-input').blur();
     await clickHost(page, '#hero-primary-cta');
     await clickHost(page, '#hero-secondary-cta');
     const input = card.locator('#ah-talk-input');
@@ -150,7 +159,7 @@ test.describe('0.3 Talk & point', () => {
     await input.fill('swap [1] and [2]');
     await card.locator('[data-act=send]').click();
     await findTask(api, (t) => t.instruction === 'swap [1] and [2]');
-    await page.keyboard.press('v');
+    await page.keyboard.press(' ');
     await expect(card).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(card).toBeHidden();
