@@ -2,8 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { bridge, openDemo, restPointer, shotsDir } from './helpers/overlay';
+import { demoDir } from './helpers/bridge';
 
-const demoDir = path.resolve(process.env.AH_DEMO_DIR || 'demo');
 const samples = path.resolve('demo/samples');
 
 /** Tasks a test sent, removed afterwards so the next test (or browser) starts with no markers or queued tasks. */
@@ -27,10 +27,14 @@ async function dropFile(page: Page, at: { x: number; y: number }, file: string, 
 const center = async (page: Page, sel: string) => { const b = (await page.locator(sel).first().boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
 
 test.describe('0.3 Place', () => {
-  const testimonial = path.join(demoDir, 'src/components/Testimonial.tsx');
-  const placed = path.join(demoDir, 'public/priya-nair.png');
+  let testimonial = '';
+  let placed = '';
   let original = '';
-  test.beforeAll(() => { original = fs.readFileSync(testimonial, 'utf8'); });
+  test.beforeAll(() => {
+    testimonial = path.join(demoDir(), 'src/components/Testimonial.tsx');
+    placed = path.join(demoDir(), 'public/priya-nair.png');
+    original = fs.readFileSync(testimonial, 'utf8');
+  });
   test.afterAll(() => { fs.writeFileSync(testimonial, original); fs.rmSync(placed, { force: true }); });
 
   test('drop images anywhere, move with guides, align, rotate, remove one, send; the agent builds it; Mock and Built; Undo', async ({ page, request }) => {
@@ -104,7 +108,7 @@ test.describe('0.3 Place', () => {
     expect(task.payload.place).toHaveLength(1);
     const asset = task.payload.place[0].assetPath as string;
     expect(asset).toMatch(/^\.agent-hover\/place\/.+\.png$/);
-    expect(fs.existsSync(path.join(demoDir, asset))).toBe(true);
+    expect(fs.existsSync(path.join(demoDir(), asset))).toBe(true);
     expect(task.payload.prompt).toContain(asset);
     expect(task.payload.prompt).toContain('It was aligned center');
     expect(task.payload.prompt).toContain('Rotated 90° clockwise');
@@ -114,7 +118,7 @@ test.describe('0.3 Place', () => {
     // The "agent": claim (checkpoint), copy the file in, add the image, complete.
     expect(await api.takeTask(task.id)).toBeTruthy();
     await api.post(`/agent/tasks/${task.id}/claim`, { client: 'claude-code' });
-    fs.copyFileSync(path.join(demoDir, asset), placed);
+    fs.copyFileSync(path.join(demoDir(), asset), placed);
     fs.writeFileSync(testimonial, original
       .replace('>PN</span>', '>PN<img src="/priya-nair.png" alt="Priya Nair" className="absolute inset-0 size-full rounded-full object-cover rotate-90" /></span>')
       .replace('id="testimonial-avatar" className="', 'id="testimonial-avatar" className="relative overflow-hidden '));

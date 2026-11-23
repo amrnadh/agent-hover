@@ -31,12 +31,13 @@ jobs:
       - run: npm run pack:check
 
   smoke:
-    name: Fresh project · ${{ matrix.os }}
+    name: Fresh project · ${{ matrix.app }} · ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        app: [vite, next]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -45,7 +46,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: node scripts/smoke-fresh.mjs
+      - run: node scripts/smoke-fresh.mjs ${{ matrix.app == 'next' && '--next' || '' }}
 
   e2e:
     name: E2E · Chromium
@@ -66,6 +67,31 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  e2e-next:
+    name: E2E · Next.js · Chromium
+    runs-on: ubuntu-latest
+    env:
+      AGENT_HOVER_NO_UPDATE_CHECK: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:isolated -- --fixture=next
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-next
           path: |
             playwright-report/
             test-results/
