@@ -1,6 +1,6 @@
 # Agent Hover Bridge API v2
 
-The Agent Hover bridge is an authenticated, local-only HTTP and WebSocket server running inside the Vite dev process on `127.0.0.1` (default port 9850, auto-incrementing if occupied).
+The Agent Hover bridge (`@agent-hover/bridge`) is an authenticated, local-only HTTP and WebSocket server running inside your dev server's process on `127.0.0.1` (default port 9850, auto-incrementing if occupied): the Vite dev server with `@agent-hover/vite`, or the Next.js dev server with `@agent-hover/next`, which starts it from `instrumentation.ts`. One bridge runs per dev server process.
 
 It serves as the communication hub between:
 1. The **Browser Overlay** running inside your web app.
@@ -72,10 +72,10 @@ Response:
   "updateAvailable": null
 }
 ```
-- `version` comes from the installed `@agent-hover/vite` package.
+- `version` comes from the installed Agent Hover packages (they share one version).
 - `api` is the bridge's API level. The page compares it with the level it needs and, when the bridge is older (no `api` means 1), asks you to restart the dev server. That happens after an update: the page loads the new overlay at once, while the bridge runs old code until the dev server restarts. Level 2 (0.2.1) added removing tasks and Send again. Level 3 (0.3) added Place assets and `publicDir`.
-- `publicDir` is the folder the app serves as-is (Vite's `publicDir`), relative to the project root, or `null` when it has none. Place suggests it as the destination for an asset.
-- `updateAvailable` is `{ "current", "latest", "command", "releaseUrl" }` once the daily registry check finds a newer stable release: `command` is the install command for the project's package manager, `releaseUrl` the GitHub release. The check uses the npm registry your npm settings name, caches its answer in `~/.agent-hover/update-check.json` for a day, and is off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1` or `NO_UPDATE_NOTIFIER=1`. It is also sent in `state-update` WebSocket messages.
+- `publicDir` is the folder the app serves as-is (Vite's `publicDir`, or `public` in a Next.js app), relative to the project root, or `null` when it has none. Place suggests it as the destination for an asset.
+- `updateAvailable` is `{ "current", "latest", "command", "releaseUrl" }` once the daily registry check finds a newer stable release: `command` is the install command for the project's package manager and the package it installs (`@agent-hover/vite` or `@agent-hover/next`), `releaseUrl` the GitHub release. The check uses the npm registry your npm settings name, caches its answer in `~/.agent-hover/update-check.json` for a day, and is off in CI or with `AGENT_HOVER_NO_UPDATE_CHECK=1` or `NO_UPDATE_NOTIFIER=1`. It is also sent in `state-update` WebSocket messages.
 
 ### Agent Presence Heartbeat
 ```http
@@ -321,7 +321,18 @@ Content-Type: application/json
 
 { "url": "http://localhost:5173/src/components/Hero.tsx?t=1729", "line": 30, "column": 9 }
 ```
-Maps a position in a served module (from React 19's element creation stack) back through the dev server's source map to the original file: `{ "file": "src/components/Hero.tsx", "line": 54, "column": 9 }`, or `null` for dependencies and unknown modules.
+Maps a position in a served module (from React 19's element creation stack) back through the dev server's source map to the original file: `{ "file": "src/components/Hero.tsx", "line": 54, "column": 9 }`, or a 404 for dependencies and unknown modules.
+
+What `url` can be depends on the dev server:
+
+| Dev server | `url` | Mapped through |
+|---|---|---|
+| Vite | `http://localhost:5173/src/components/Hero.tsx?t=…` | Vite's module graph |
+| Next.js, Turbopack | `http://localhost:3000/_next/static/chunks/<chunk>.js` | `<chunk>.js.map` in the dev build (`.next/dev/static/…`, or `.next/static/…` in Next 15) |
+| Next.js, Server Component | `file:///…/.next/dev/server/chunks/ssr/<chunk>.js?3` | the `.map` beside it |
+| Next.js, webpack | `webpack-internal:///(app-pages-browser)/./components/Hero.tsx` | the module's inline map in its chunk |
+
+The overlay drops React's Server Component wrapper (`about://React/Server/…`, `rsc://React/Server/…`) before sending. The Next.js mapper reads only files inside the build folder (`.next`, or your `distDir`) and never fetches a URL. Next's own chunks (`node_modules_…`, `…_next_dist_…`) and React's frames are skipped in the overlay.
 
 ### Component Source Slice
 ```http

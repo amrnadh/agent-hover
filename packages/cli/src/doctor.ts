@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { BRAND, DISPLAY_NAME, VITE_PACKAGE } from './brand.js';
+import { BRAND, DISPLAY_NAME } from './brand.js';
 import { MCP_CLIENTS } from './clients.js';
 import { inspectProject, installCommand } from './project.js';
 import { gitignoreCoversSession, RULES_MARKER } from './setup-files.js';
@@ -63,16 +63,25 @@ export async function runChecks(root: string, io: DoctorIO): Promise<Check[]> {
     add('fail', 'No package.json here', `Run ${BRAND.cliName} doctor in your app's folder.`);
     return checks;
   }
-  if (!p.viteConfig) add('fail', 'No Vite config found', 'Agent Hover 0.2 supports Vite + React.');
+  const n = p.next;
+  if (!p.framework) add('fail', 'No Vite config or Next.js app found', `${DISPLAY_NAME} works with Vite + React and Next.js.`);
+  else if (n) add(n.major && n.major < 15 ? 'fail' : 'ok', `Next.js${n.major ? ' ' + n.major : ''}${n.appDir ? ` (${n.appDir}/)` : ''}${n.pagesDir ? ` (${n.pagesDir}/)` : ''}`, n.major && n.major < 15 ? `${DISPLAY_NAME} needs Next.js 15 or later.` : undefined);
   else add('ok', `Vite config: ${p.viteConfig}`);
   add(p.usesReact ? 'ok' : 'warn', p.usesReact ? 'React found' : 'React not found in dependencies', p.usesReact ? undefined : 'Component names and props need React.');
 
-  const installed = read(path.join(root, 'node_modules', '@agent-hover', 'vite', 'package.json'));
+  const pkg = p.pluginPackage;
+  const installed = read(path.join(root, 'node_modules', ...pkg.split('/'), 'package.json'));
   const installedVersion = installed ? (() => { try { return JSON.parse(installed).version as string; } catch { return null; } })() : null;
-  if (!p.pluginInstalled) add('fail', `${VITE_PACKAGE} is not a dependency`, `${installCommand(p.packageManager, VITE_PACKAGE)}  (or ${BRAND.cliName} init)`);
-  else if (!installedVersion) add('fail', `${VITE_PACKAGE} is in package.json but not installed`, `Run ${p.packageManager} install.`);
-  else add('ok', `${VITE_PACKAGE} ${installedVersion} installed`);
-  if (p.viteConfig) add(p.pluginConfigured ? 'ok' : 'fail', p.pluginConfigured ? 'Plugin is in the Vite config' : 'Plugin is not in the Vite config', p.pluginConfigured ? undefined : `${BRAND.cliName} init adds it.`);
+  if (!p.pluginInstalled) add('fail', `${pkg} is not a dependency`, `${installCommand(p.packageManager, pkg)}  (or ${BRAND.cliName} init)`);
+  else if (!installedVersion) add('fail', `${pkg} is in package.json but not installed`, `Run ${p.packageManager} install.`);
+  else add('ok', `${pkg} ${installedVersion} installed`);
+  const fix = `${BRAND.cliName} init adds it.`;
+  if (n) {
+    add(n.configConfigured ? 'ok' : 'fail', n.configConfigured ? `${n.config} uses withAgentHover` : `${n.config ?? 'next.config'} does not use withAgentHover`, n.configConfigured ? undefined : fix);
+    add(n.instrumentationConfigured ? 'ok' : 'fail', n.instrumentationConfigured ? `${n.instrumentation} starts the bridge` : `${n.instrumentation} does not start the bridge`, n.instrumentationConfigured ? undefined : fix);
+    if (n.appDir) add(n.layoutConfigured ? 'ok' : 'fail', n.layoutConfigured ? `<AgentHover /> is in ${n.layout}` : `<AgentHover /> is not in ${n.layout ?? n.appDir + '/layout'}`, n.layoutConfigured ? undefined : fix);
+    if (n.pagesDir) add(n.documentConfigured ? 'ok' : 'fail', n.documentConfigured ? `<AgentHover /> is in ${n.document}` : `<AgentHover /> is not in ${n.document}`, n.documentConfigured ? undefined : fix);
+  } else if (p.viteConfig) add(p.pluginConfigured ? 'ok' : 'fail', p.pluginConfigured ? 'Plugin is in the Vite config' : 'Plugin is not in the Vite config', p.pluginConfigured ? undefined : fix);
 
   // The running dev server (bridge) and the agent connection.
   const sessionText = read(path.join(root, BRAND.dataDir, 'session.json'));
@@ -93,7 +102,7 @@ export async function runChecks(root: string, io: DoctorIO): Promise<Check[]> {
         add('warn', `The running bridge is ${health.body.version} but ${installedVersion} is installed`, 'Restart the dev server.');
       }
       const update = health.body?.updateAvailable;
-      if (update?.latest) add('warn', `${DISPLAY_NAME} ${update.latest} is available (you have ${update.current})`, `${update.command || `npm i -D ${VITE_PACKAGE}@latest`}, then restart the dev server.${update.releaseUrl ? ` What's new: ${update.releaseUrl}` : ''}`);
+      if (update?.latest) add('warn', `${DISPLAY_NAME} ${update.latest} is available (you have ${update.current})`, `${update.command || `npm i -D ${pkg}@latest`}, then restart the dev server.${update.releaseUrl ? ` What's new: ${update.releaseUrl}` : ''}`);
       const presence = await getJson(io, `${base}/api/agent/presence`, session.token);
       if (!presence || presence.status === 401) add('fail', 'The session token was rejected', 'Restart the dev server to write a fresh session file.');
       else {

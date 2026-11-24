@@ -12,9 +12,10 @@ cd agent-hover
 npm install
 npm run build
 npm run dev        # the demo app on http://localhost:5173 with the overlay
+npm run dev:next   # the same app in Next.js on http://localhost:3100
 ```
 
-The demo (`demo/`) is a small React + Vite app used for development and as the e2e fixture. After changing a package, rebuild it (`npm run build`, or `npm run dev --workspace=@agent-hover/overlay` for a watch build of the overlay) and reload the page; restart `npm run dev` after bridge changes.
+The demo (`demo/`) is a small React + Vite app used for development and as the e2e fixture. `demo-next/` runs the same app in Next.js: it holds only the Next.js shell (layout, page, config, `instrumentation.ts`), and `scripts/demo-next.mjs` copies `demo/src` and `demo/public` into it (git-ignored there), so change the app in `demo/`. After changing a package, rebuild it (`npm run build`, or `npm run dev --workspace=@agent-hover/overlay` for a watch build of the overlay) and reload the page; restart `npm run dev` after bridge changes.
 
 To try the agent side, register the local MCP server with your agent (for Claude Code: `claude mcp add agent-hover -- node /path/to/agent-hover/packages/mcp/dist/index.js`) and start the agent in `demo/`.
 
@@ -23,7 +24,9 @@ To try the agent side, register the local MCP server with your agent (for Claude
 | Path | |
 |------|--|
 | `packages/core` | Shared types, source parsing, prompt formatting, session discovery |
-| `packages/vite` | Vite plugin and bridge server (Express + WebSocket on 127.0.0.1), task store, git checkpoints |
+| `packages/bridge` | The bridge server (Express + WebSocket on 127.0.0.1), task store, git checkpoints; `startBridge()` and `overlayScripts()` for the integrations |
+| `packages/vite` | Vite plugin: starts the bridge, injects the overlay, maps sources through Vite's module graph |
+| `packages/next` | Next.js: `withAgentHover()`, `register()` for `instrumentation.ts`, `<AgentHover />`, and the source-map reader for Turbopack and webpack builds |
 | `packages/overlay` | The in-page UI, one shadow root. `src/client.ts` wires the modules in `app/`, `bridge/`, `features/`, `ui/`, `lib/` |
 | `packages/mcp` | MCP server (stdio) |
 | `packages/cli` | `npx agent-hover` (init, doctor, mcp, rules). No runtime dependencies on purpose |
@@ -40,7 +43,7 @@ npm run pack:check           # what each package would publish
 npm run screenshots          # refresh the README images in docs/screenshots (tests otherwise save to test-results/)
 ```
 
-Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not collide with a dev server you have running. The first time, install the browser with `npx playwright install chromium`. The suite includes the full agent loop through the real MCP server, an accessibility scan (axe) and a performance budget. `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit` runs the user flows in Firefox and WebKit too (`npx playwright install firefox webkit`). CI runs all of it on every pull request.
+Run the e2e suite with `test:e2e:isolated`: it never edits `demo/` and does not collide with a dev server you have running. The first time, install the browser with `npx playwright install chromium`. The suite includes the full agent loop through the real MCP server, an accessibility scan (axe) and a performance budget. `AH_BROWSERS=all npm run test:e2e:isolated -- --project=firefox --project=webkit` runs the user flows in Firefox and WebKit too (`npx playwright install firefox webkit`). `npm run test:e2e:isolated -- --fixture=next` runs them against the Next.js demo (`--fixture=all` for both), and `node scripts/smoke-fresh.mjs --next` sets up a fresh Next.js app from packed tarballs. CI runs all of it on every pull request.
 
 ## Guidelines
 

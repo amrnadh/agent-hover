@@ -13,7 +13,8 @@ export interface UpdateInfo {
   releaseUrl: string;
 }
 
-const PACKAGE = '@agent-hover/vite';
+/** The package update notices name when the integration doesn't say (the Vite plugin, the first integration). */
+export const DEFAULT_PACKAGE = '@agent-hover/vite';
 const SCOPE = '@agent-hover';
 const RELEASES = 'https://github.com/amrnadh/agent-hover/releases';
 const NPMJS = 'https://registry.npmjs.org/';
@@ -42,8 +43,8 @@ export function isNewer(latest: string, current: string): boolean {
 }
 
 /** How this project installs packages, from its lockfile (the project folder or a monorepo root above it). */
-export function updateCommand(projectRoot: string): string {
-  const spec = `${PACKAGE}@latest`;
+export function updateCommand(projectRoot: string, packageName: string = DEFAULT_PACKAGE): string {
+  const spec = `${packageName}@latest`;
   for (let dir = path.resolve(projectRoot); ; dir = path.dirname(dir)) {
     const has = (f: string) => existsSync(path.join(dir, f));
     if (has('pnpm-lock.yaml')) return `pnpm add -D ${spec}`;
@@ -62,6 +63,8 @@ export function registryUrl(env: Record<string, string | undefined>): string {
 
 export interface UpdateCheckOptions {
   projectRoot?: string;
+  /** The package the app installs (`@agent-hover/vite`, `@agent-hover/next`): asked about and named in the command. */
+  packageName?: string;
   /** Where the last answer is cached; at most one registry request per day. */
   cacheFile?: string;
   fetchImpl?: typeof fetch;
@@ -70,7 +73,7 @@ export interface UpdateCheckOptions {
 }
 
 /**
- * Ask the registry for the latest @agent-hover/vite, like other npm tools do: one GET for the package's public
+ * Ask the registry for the latest version of the app's Agent Hover package, like other npm tools do: one GET for the package's public
  * metadata, at most once a day, nothing about the project. Off with AGENT_HOVER_NO_UPDATE_CHECK or NO_UPDATE_NOTIFIER
  * (the usual switch), in CI and in tests.
  */
@@ -80,29 +83,30 @@ export async function checkForUpdate(current: string, options: UpdateCheckOption
   const cacheFile = options.cacheFile ?? path.join(userDataDir(), 'update-check.json');
   const now = options.now ?? Date.now();
   const registry = registryUrl(env);
+  const packageName = options.packageName ?? DEFAULT_PACKAGE;
 
   let latest: string | null = null;
   try {
     const cached = JSON.parse(await fs.readFile(cacheFile, 'utf8'));
-    if (typeof cached.latest === 'string' && cached.registry === registry && now - cached.checkedAt < UPDATE_CHECK_INTERVAL) latest = cached.latest;
+    if (typeof cached.latest === 'string' && cached.registry === registry && (cached.package ?? DEFAULT_PACKAGE) === packageName && now - cached.checkedAt < UPDATE_CHECK_INTERVAL) latest = cached.latest;
   } catch { /* no cache yet */ }
 
   if (!latest) {
     try {
-      const res = await (options.fetchImpl ?? fetch)(`${registry}${PACKAGE.replace('/', '%2F')}/latest`, {
+      const res = await (options.fetchImpl ?? fetch)(`${registry}${packageName.replace('/', '%2F')}/latest`, {
         headers: { accept: 'application/json' },
         signal: AbortSignal.timeout(3000),
       });
       if (!res.ok) return null;
       latest = String((await res.json()).version || '');
       await fs.mkdir(path.dirname(cacheFile), { recursive: true }).catch(() => {});
-      await fs.writeFile(cacheFile, JSON.stringify({ latest, registry, checkedAt: now })).catch(() => {});
+      await fs.writeFile(cacheFile, JSON.stringify({ latest, registry, package: packageName, checkedAt: now })).catch(() => {});
     } catch {
       return null; // offline or blocked: say nothing
     }
   }
   if (!latest || !isNewer(latest, current)) return null;
-  return { current, latest, command: updateCommand(options.projectRoot ?? process.cwd()), releaseUrl: `${RELEASES}/tag/v${latest}` };
+  return { current, latest, command: updateCommand(options.projectRoot ?? process.cwd(), packageName), releaseUrl: `${RELEASES}/tag/v${latest}` };
 }
 
 /**

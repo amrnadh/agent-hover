@@ -6,11 +6,11 @@ import { launchEditorSafely } from './editor-launcher.js';
 import { validateSafePath } from './path-validator.js';
 import { TaskStore } from './task-store.js';
 import { CheckpointStore } from './checkpoints.js';
-import { checkForUpdate, formatUpdateNotice, packageVersion, UPDATE_CHECK_INTERVAL, type UpdateInfo } from './update-check.js';
+import { checkForUpdate, DEFAULT_PACKAGE, formatUpdateNotice, packageVersion, UPDATE_CHECK_INTERVAL, type UpdateInfo } from './update-check.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
-import type { LocationMapper } from './source-location.js';
+import type { LocationMapper } from './location.js';
 import { stageAsset, sweepAssets, PLACE_MAX_BYTES } from './place-assets.js';
 import {
   ContextBuilder,
@@ -47,6 +47,25 @@ import type {
  * restart instead of failing. Bump it with BRIDGE_API in packages/overlay/src/lib/bridge-api.ts when routes change.
  */
 export const BRIDGE_API = 3;
+
+/** Folders the source search never looks in (build output, dependencies, git). */
+export const DEFAULT_IGNORE = ['node_modules/**', 'dist/**', '.git/**', '.next/**'];
+
+export interface BridgeServerOptions {
+  token?: string;
+  /** The package the app installs, named in update notices: `@agent-hover/vite` or `@agent-hover/next`. */
+  packageName?: string;
+  /** Reported in /api/health and compared in update checks. Default: this package's version. */
+  version?: string;
+  /** Maps a browser stack frame to the original file and line (React 19 sources). */
+  locationMapper?: LocationMapper | null;
+  /** More globs (project-relative) the source search skips, besides DEFAULT_IGNORE. */
+  ignore?: string[];
+  /** The folder the app serves as-is (Vite's publicDir, Next's public/); where Place suggests copying assets. */
+  publicDir?: string | null;
+  /** Prints the update notice; the default logs it. */
+  onUpdateAvailable?: (info: UpdateInfo) => void;
+}
 
 function toProjectPath(root: string, p: string): string {
   const rel = path.relative(path.resolve(root), path.resolve(root, p));
@@ -93,7 +112,7 @@ export class BridgeServer {
   private presenceTimer: ReturnType<typeof setInterval> | null = null;
   /** Ports tried after the first one (busy or reserved), at most 10. */
   private portAttempts = 0;
-  /** Set by the Vite plugin: maps a browser stack frame to the original file and line (React 19 sources). */
+  /** Maps a browser stack frame to the original file and line (React 19 sources); set by the framework integration. */
   private mapLocation: LocationMapper | null = null;
   private cleanupExitHandler?: () => void;
   private lastMcpHello = 0;
@@ -109,7 +128,9 @@ export class BridgeServer {
   private screenshotStore: Map<string, { before?: ScreenshotSnapshot; after?: ScreenshotSnapshot; diff?: ScreenshotDiff }> = new Map();
   private pendingCaptures: Map<string, { resolve: (value: any) => void; timer: ReturnType<typeof setTimeout> }> = new Map();
   private readonly MAX_SCREENSHOT_ENTRIES = 20;
-  private readonly CURRENT_VERSION = packageVersion();
+  private readonly CURRENT_VERSION: string;
+  private readonly packageName: string;
+  private readonly extraIgnore: string[];
   private updateInfo: UpdateInfo | null = null;
   private clients: Set<WebSocket> = new Set();
 
@@ -123,8 +144,12 @@ export class BridgeServer {
   constructor(
     projectRoot: string,
     port: number = 9850,
-    options?: { token?: string; onUpdateAvailable?: (info: UpdateInfo) => void; publicDir?: string | null }
+    options?: BridgeServerOptions
   ) {
+    this.CURRENT_VERSION = options?.version || packageVersion();
+    this.packageName = options?.packageName || DEFAULT_PACKAGE;
+    this.extraIgnore = options?.ignore ?? [];
+    this.mapLocation = options?.locationMapper ?? null;
     this.publicDir = options?.publicDir ? toProjectPath(projectRoot, options.publicDir) : null;
     this.onUpdateAvailable = options?.onUpdateAvailable ?? ((info) => console.log(formatUpdateNotice(info, !!process.stdout.isTTY)));
     this.projectRoot = projectRoot;
@@ -337,7 +362,7 @@ export class BridgeServer {
           `**/${componentName}.{tsx,jsx,ts,js}`,
           {
             cwd: this.projectRoot,
-            ignore: ['node_modules/**', 'dist/**'],
+            ignore: this.globIgnore(),
           }
         );
 
@@ -370,7 +395,7 @@ export class BridgeServer {
               for (const ancestorName of ancestors) {
                 const ancestorFiles = await glob(
                   `**/${ancestorName}.{tsx,jsx,ts,js}`,
-                  { cwd: this.projectRoot, ignore: ['node_modules/**', 'dist/**'] }
+                  { cwd: this.projectRoot, ignore: this.globIgnore() }
                 );
                 if (ancestorFiles.length > 0) {
                   // Check if this ancestor file actually imports/uses the component
@@ -426,7 +451,7 @@ export class BridgeServer {
         // Fallback: scan all files for the component name as a function/const declaration
         const allFiles = await glob('**/*.{tsx,jsx}', {
           cwd: this.projectRoot,
-          ignore: ['node_modules/**', 'dist/**'],
+          ignore: this.globIgnore(),
         });
         const fs = await import('fs/promises');
         const path = await import('path');
@@ -1339,7 +1364,7 @@ export class BridgeServer {
         if (!targetFile || !existsSync(targetFile)) {
           const files = await glob('**/*.{tsx,jsx,ts,js}', {
             cwd: this.projectRoot,
-            ignore: ['node_modules/**', 'dist/**', '.git/**'],
+            ignore: this.globIgnore(),
           });
 
           if (component) {
@@ -1488,7 +1513,7 @@ export class BridgeServer {
           const path = await import('path');
           const files = await glob('**/*.{tsx,jsx}', {
             cwd: this.projectRoot,
-            ignore: ['node_modules/**', 'dist/**', '.git/**'],
+            ignore: this.globIgnore(),
           });
 
           if (component) {
@@ -1532,7 +1557,7 @@ export class BridgeServer {
 
           const files = await glob('**/*.{tsx,jsx}', {
             cwd: this.projectRoot,
-            ignore: ['node_modules/**', 'dist/**', targetFile],
+            ignore: this.globIgnore(targetFile),
           });
 
           // Priority 1: Files matching component name
@@ -1652,7 +1677,12 @@ export class BridgeServer {
     return this.port;
   }
 
-  /** The Vite plugin passes its dev server's source maps in (see source-location.ts). */
+  /** Globs the source search skips: DEFAULT_IGNORE, the `ignore` option, and any extra for one search. */
+  private globIgnore(...extra: string[]): string[] {
+    return [...DEFAULT_IGNORE, ...this.extraIgnore, ...extra];
+  }
+
+  /** The framework integration passes its dev server's source maps in (also the `locationMapper` option). */
   public setLocationMapper(mapper: LocationMapper | null) {
     this.mapLocation = mapper;
   }
@@ -1791,7 +1821,7 @@ export class BridgeServer {
         resolve(this.port);
         // Now, then once a day for dev servers that stay up for days. The page and the terminal hear about each
         // new version once.
-        const check = () => checkForUpdate(this.CURRENT_VERSION, { projectRoot: this.projectRoot }).then((info) => {
+        const check = () => checkForUpdate(this.CURRENT_VERSION, { projectRoot: this.projectRoot, packageName: this.packageName }).then((info) => {
           if (!info || info.latest === this.updateInfo?.latest) return;
           this.updateInfo = info;
           this.onUpdateAvailable(info);

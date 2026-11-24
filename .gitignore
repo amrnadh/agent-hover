@@ -28,3 +28,6 @@ notes/
 
 # GitHub Pages build output (scripts/build-site.mjs)
 _site/
+
+# Throwaway Next.js demo copies for e2e (scripts/e2e-isolated.mjs): inside the repo so Turbopack sees node_modules
+/.e2e/

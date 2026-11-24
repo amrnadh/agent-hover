@@ -2,14 +2,18 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { bridge, openDemo, restPointer, selectHost, shotsDir, unique } from './helpers/overlay';
+import { demoDir } from './helpers/bridge';
 
 /** P3-01: before/after compare and Undo, with a scripted "agent" that really edits a demo file. */
 test.describe('0.2 compare and undo', () => {
-  const heroFile = path.resolve(process.env.AH_DEMO_DIR || 'demo', 'src/components/Hero.tsx');
   const shots = shotsDir('v0.2');
+  let heroFile = '';
   let original = '';
 
-  test.beforeAll(() => { original = fs.readFileSync(heroFile, 'utf8'); });
+  test.beforeAll(() => {
+    heroFile = path.join(demoDir(), 'src/components/Hero.tsx');
+    original = fs.readFileSync(heroFile, 'utf8');
+  });
   // Never leave the demo modified, even when an assertion fails.
   test.afterAll(() => { fs.writeFileSync(heroFile, original); });
 

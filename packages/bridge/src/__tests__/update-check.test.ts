@@ -66,6 +66,17 @@ describe('update check', () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it('asks about the package the app installs (Next.js apps install @agent-hover/next)', async () => {
+    const fetchImpl = registry('0.3.0');
+    const info = await checkForUpdate('0.2.0', { cacheFile, fetchImpl, env: {}, packageName: '@agent-hover/next', projectRoot: os.tmpdir() });
+    expect((fetchImpl as any).mock.calls[0][0]).toBe('https://registry.npmjs.org/@agent-hover%2Fnext/latest');
+    expect(info?.command).toMatch(/@agent-hover\/next@latest$/);
+    // The cached answer is for that package only.
+    const vite = registry('0.3.1');
+    expect((await checkForUpdate('0.2.0', { cacheFile, fetchImpl: vite, env: {} }))?.latest).toBe('0.3.1');
+    expect(vite).toHaveBeenCalledTimes(1);
+  });
+
   it('prints a box in the terminal with the versions, the command and the release notes', () => {
     const box = formatUpdateNotice({ current: '0.2.0', latest: '0.2.1', command: 'pnpm add -D @agent-hover/vite@latest', releaseUrl: 'https://github.com/amrnadh/agent-hover/releases/tag/v0.2.1' });
     const lines = box.split('\n').filter((l) => l.trim());

@@ -219,7 +219,7 @@ Remove `agentHover()` and its import from your Vite config, remove the `agent-ho
 - macOS, Linux and Windows 10/11.
 - Chrome, Edge, Firefox or Safari.
 - Compare and Undo need a git repository; everything else works without one.
-- Next.js support is planned.
+- Using Next.js? Use [`@agent-hover/next`](https://www.npmjs.com/package/@agent-hover/next) (`npx agent-hover init` picks the right one).
 
 ## Privacy and security
 

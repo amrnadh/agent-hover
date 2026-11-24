@@ -12,7 +12,7 @@ No dependencies, so `npx` starts instantly.
 
 | Command | What it does |
 |---------|--------------|
-| `npx agent-hover init` | Installs `@agent-hover/vite`, adds it to your Vite config, connects your agents, and keeps local data out of git |
+| `npx agent-hover init` | Installs `@agent-hover/vite` (or `@agent-hover/next`), adds it to your Vite config (or Next.js app), connects your agents, and keeps local data out of git |
 | `npx agent-hover doctor` | Checks the setup, the running dev server and the agent connection, and says how to fix each problem |
 | `npx agent-hover` | Lists the setup steps still missing in this project |
 | `npx agent-hover mcp [agent]` | Prints the MCP command and config for `claude`, `cursor`, `codex`, `opencode`, `windsurf`, `antigravity` or `claude-desktop` |
@@ -53,6 +53,8 @@ What it changes:
 
 It merges into files that exist (JSON configs keep a `.bak` copy), never removes anything, and running it again changes nothing. If your Vite config isn't a plain `plugins: [...]` list, it prints the two lines to add instead of guessing.
 
+In a Next.js app it wraps `next.config` in `withAgentHover()`, creates `instrumentation.ts` (or adds one call to your `register()`), and adds `<AgentHover />` to the root layout (App Router) or `pages/_document` (Pages Router, created if missing). Anything it can't edit safely, it prints instead.
+
 After `init`:
 
 1. Start your dev server and open the app. Press **Alt** (or the pointer in the dock) and click anything.
@@ -65,7 +67,7 @@ After `init`:
 npx agent-hover doctor
 ```
 
-Checks, in order: Node version, Vite config, React, `@agent-hover/vite` installed and in the config, the dev server (running, reachable, same version as installed), the session token, connected agents, MCP registration (project and global configs, read only), the rules note, `.gitignore`, and git (needed for Undo). Exits with code 1 when something needs fixing. Run it with the dev server running to check the agent connection too.
+Checks, in order: Node version, Vite config or Next.js app, React, `@agent-hover/vite` (or `@agent-hover/next`) installed and added to the app, the dev server (running, reachable, same version as installed), the session token, connected agents, MCP registration (project and global configs, read only), the rules note, `.gitignore`, and git (needed for Undo). Exits with code 1 when something needs fixing. Run it with the dev server running to check the agent connection too.
 
 ## Updating
 
@@ -78,7 +80,7 @@ Restart your dev server after updating, and restart your agent to pick up the la
 
 ## Requirements
 
-Node 20 or newer, a Vite 5+ project with React 18 or 19.
+Node 20 or newer, and a Vite 5+ project with React 18 or 19, or a Next.js 15+ project.
 
 ## License
 

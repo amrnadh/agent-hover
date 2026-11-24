@@ -4,18 +4,23 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import fs from 'fs';
 import path from 'path';
 import { bridge, openDemo, selectHost } from './helpers/overlay';
+import { demoDir as appDir } from './helpers/bridge';
 
 /**
  * The full agent loop through the real MCP server (packages/mcp/dist) over stdio, as Claude Code, Cursor or
  * Codex would run it: listen → the user sends from the browser → claim → edit → complete → Done on the page.
  */
 test.describe('0.2 agent loop over MCP', () => {
-  const demoDir = path.resolve(process.env.AH_DEMO_DIR || 'demo');
-  const heroFile = path.join(demoDir, 'src/components/Hero.tsx');
+  let demoDir = '';
+  let heroFile = '';
   let original = '';
   let client: Client | null = null;
 
-  test.beforeAll(() => { original = fs.readFileSync(heroFile, 'utf8'); });
+  test.beforeAll(() => {
+    demoDir = appDir();
+    heroFile = path.join(demoDir, 'src/components/Hero.tsx');
+    original = fs.readFileSync(heroFile, 'utf8');
+  });
   test.afterAll(async () => {
     fs.writeFileSync(heroFile, original);
     await client?.close();

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Next.js.** Agent Hover now works in Next.js 15 and later: App Router and Pages Router, Turbopack and webpack. `npx agent-hover init` finds a Next.js app and sets it up: it installs `@agent-hover/next`, wraps `next.config` in `withAgentHover()`, starts Agent Hover from `instrumentation.ts`, and adds `<AgentHover />` to the root layout (or `pages/_document`). `doctor` checks each of these.
+  - Clicking an element gives the exact file and line in Client Components and in Server Components, read from the dev build's source maps (Turbopack's chunks, webpack's modules). Next's own code is skipped. When a line can't be read, the component is found by its name, as before.
+  - Tasks, the agent loop over MCP, Compare, Undo and Place work as they do with Vite. Place suggests copying files into `public/`.
+  - Only `next dev`: production builds are unchanged, and nothing runs in the Edge runtime.
+  - The repository has a Next.js demo (`demo-next/`, `npm run dev:next`): the same Sorrel app in a Next.js shell. The e2e suite runs on it too (`node scripts/e2e-isolated.mjs --fixture=next`), and so does the fresh-project check (`node scripts/smoke-fresh.mjs --next`).
 - **Place: put images and video anywhere on your page, like a design tool, then send them to your agent.** The image button in the dock opens a palette right in the dock: add a file, drop one on the page, or paste one (⌘V). It lands where you dropped it.
   - Drag it anywhere: it snaps to the edges and centers of what's around it, with guide lines (hold ⌥ to move freely; arrow keys nudge it). Pull a corner to resize, drag the round handle to rotate (Shift: 15° steps), and align it on the element under it from the dock.
   - Place several at once. Each can have up to four versions to switch between, plus alt text and a note. Remove one with **Delete**, the × on its frame, or the dock.
@@ -25,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `get_component_source` (the bridge's `POST /api/source`) read the wrong path for every file and failed: it joined the project folder onto a path that already had it.
 
 ### Changed
+- **The bridge is its own package, `@agent-hover/bridge`**, shared by `@agent-hover/vite` and `@agent-hover/next`. `@agent-hover/vite` re-exports what it exported before (`BridgeServer`, …), so nothing changes for Vite apps. The bridge's source search also skips `.next/`, and update notices name the package your app installs.
 - **Ask looks like a chat box.** One rounded surface: what you selected on a quiet line at the top, a large field that grows as you type, and a bottom bar with your agent as a chip, the mic, and a round send button that lights up once there's something to send. Close it with the × or Esc.
 - **Calmer cards and sidebar.** Rounder cards with softer shadows and a gentle entrance; the agent's summary reads as a quote instead of a grey box; changed files are chips; buttons are pills. Sidebar rows are soft rounded items, and group labels are plain sentence case.
 - **A smaller dock.** Place joins Inspect and Comment; Batch shows only once you've collected something (B opens it any time); there's no separate voice button.

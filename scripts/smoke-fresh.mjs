@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Fresh-project smoke test, as a new user would meet Agent Hover: a new Vite + React app, the packages as npm
-// would publish them (packed tarballs), `agent-hover init` for several agents (global configs go to a temp home),
-// the dev server, `agent-hover doctor`, and an MCP server that connects and shows up as an agent.
-// Needs the packages built (npm run build) and network access for React and Vite. Runs on macOS, Linux and Windows.
-// Usage: node scripts/smoke-fresh.mjs [--keep]
+// Fresh-project smoke test, as a new user would meet Agent Hover: a new Vite + React app (or Next.js app with
+// --next), the packages as npm would publish them (packed tarballs), `agent-hover init` for several agents (global
+// configs go to a temp home), the dev server, `agent-hover doctor`, and an MCP server that connects and shows up as
+// an agent. Needs the packages built (npm run build) and network access for React, Vite and Next.js.
+// Runs on macOS, Linux and Windows.
+// Usage: node scripts/smoke-fresh.mjs [--next] [--keep]
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -11,6 +12,7 @@ import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
 const keep = process.argv.includes('--keep');
+const next = process.argv.includes('--next');
 const win = process.platform === 'win32';
 // The real path: Windows CI's temp folder is C:\Users\RUNNER~1\…, a short name Vite won't serve files from.
 const tmp = realpathSync.native(mkdtempSync(path.join(os.tmpdir(), 'ah-smoke-')));
@@ -32,29 +34,43 @@ function run(cmd, args, cwd, opts = {}) {
   return r.stdout || '';
 }
 const check = (ok, what) => { if (!ok) throw new Error(`expected: ${what}`); console.log(`  ✓ ${what}`); };
-// The same React and Vite ranges the demo uses.
-const demoPkg = JSON.parse(readFileSync(path.join(root, 'demo', 'package.json'), 'utf8'));
+// The same React, Vite and Next.js ranges the demos use.
+const demoPkg = JSON.parse(readFileSync(path.join(root, next ? 'demo-next' : 'demo', 'package.json'), 'utf8'));
 const range = (pkg) => demoPkg.dependencies?.[pkg] || demoPkg.devDependencies?.[pkg];
+const devPort = next ? '5198' : '5199';
 
 let devServer = null;
 try {
   step('pack the packages');
-  for (const dir of ['core', 'overlay', 'vite', 'mcp', 'cli']) {
+  for (const dir of ['core', 'overlay', 'bridge', next ? 'next' : 'vite', 'mcp', 'cli']) {
     run('npm', ['pack', '--silent', '--ignore-scripts', '--pack-destination', tarballs], path.join(root, 'packages', dir), { stdio: ['ignore', 'pipe', 'pipe'] });
   }
   const tgz = readdirSync(tarballs).map((f) => path.join(tarballs, f));
 
-  step('create a Vite + React app');
-  writeFileSync(path.join(app, 'package.json'), JSON.stringify({
-    name: 'smoke-app', private: true, type: 'module', scripts: { dev: 'vite' },
-    dependencies: { react: range('react'), 'react-dom': range('react-dom') },
-    devDependencies: { vite: range('vite'), '@vitejs/plugin-react': range('@vitejs/plugin-react') },
-  }, null, 2));
-  writeFileSync(path.join(app, 'vite.config.ts'), `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n`);
-  writeFileSync(path.join(app, 'index.html'), '<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>\n');
-  mkdirSync(path.join(app, 'src'));
-  writeFileSync(path.join(app, 'src', 'main.jsx'), `import { createRoot } from 'react-dom/client';\nfunction App() { return <button id="cta">Hello</button>; }\ncreateRoot(document.getElementById('root')).render(<App />);\n`);
-  writeFileSync(path.join(app, '.gitignore'), 'node_modules\n');
+  if (next) {
+    step('create a Next.js app (App Router)');
+    writeFileSync(path.join(app, 'package.json'), JSON.stringify({
+      name: 'smoke-app', private: true, scripts: { dev: 'next dev' },
+      dependencies: { next: range('next'), react: range('react'), 'react-dom': range('react-dom') },
+    }, null, 2));
+    writeFileSync(path.join(app, 'next.config.mjs'), `/** @type {import('next').NextConfig} */\nconst nextConfig = {};\n\nexport default nextConfig;\n`);
+    mkdirSync(path.join(app, 'app'));
+    writeFileSync(path.join(app, 'app', 'layout.jsx'), `export default function RootLayout({ children }) {\n  return (\n    <html lang="en">\n      <body>\n        {children}\n      </body>\n    </html>\n  );\n}\n`);
+    writeFileSync(path.join(app, 'app', 'page.jsx'), `export default function Page() {\n  return <button id="cta">Hello</button>;\n}\n`);
+    writeFileSync(path.join(app, '.gitignore'), 'node_modules\n.next\n');
+  } else {
+    step('create a Vite + React app');
+    writeFileSync(path.join(app, 'package.json'), JSON.stringify({
+      name: 'smoke-app', private: true, type: 'module', scripts: { dev: 'vite' },
+      dependencies: { react: range('react'), 'react-dom': range('react-dom') },
+      devDependencies: { vite: range('vite'), '@vitejs/plugin-react': range('@vitejs/plugin-react') },
+    }, null, 2));
+    writeFileSync(path.join(app, 'vite.config.ts'), `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n`);
+    writeFileSync(path.join(app, 'index.html'), '<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>\n');
+    mkdirSync(path.join(app, 'src'));
+    writeFileSync(path.join(app, 'src', 'main.jsx'), `import { createRoot } from 'react-dom/client';\nfunction App() { return <button id="cta">Hello</button>; }\ncreateRoot(document.getElementById('root')).render(<App />);\n`);
+    writeFileSync(path.join(app, '.gitignore'), 'node_modules\n');
+  }
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], app);
   // What `init` would install from npm, here from the tarballs (the new version is not published yet).
   run('npm', ['install', '-D', '--no-audit', '--no-fund', '--loglevel=error', ...tgz], app);
@@ -63,7 +79,13 @@ try {
   const initOut = run('npx', ['agent-hover', 'init', '--yes', '--no-install', '--agent', 'claude,cursor,codex,antigravity'], app);
   const has = (rel, base = app) => existsSync(path.join(base, rel));
   const text = (rel, base = app) => readFileSync(path.join(base, rel), 'utf8');
-  check(text('vite.config.ts').includes('agentHover()'), 'the plugin is in vite.config.ts');
+  if (next) {
+    check(text('next.config.mjs').includes('export default withAgentHover(nextConfig);'), 'next.config.mjs is wrapped in withAgentHover');
+    check(text('instrumentation.js').includes("import('@agent-hover/next/register')"), 'instrumentation.js starts the bridge');
+    check(text('app/layout.jsx').includes('<AgentHover />'), '<AgentHover /> is in app/layout.jsx');
+  } else {
+    check(text('vite.config.ts').includes('agentHover()'), 'the plugin is in vite.config.ts');
+  }
   check(JSON.parse(text('.mcp.json')).mcpServers['agent-hover'], 'Claude Code: .mcp.json');
   check(JSON.parse(text('.cursor/mcp.json')).mcpServers['agent-hover'], 'Cursor: .cursor/mcp.json');
   check(text('.codex/config.toml').includes('[mcp_servers.agent-hover]'), 'Codex: .codex/config.toml');
@@ -73,11 +95,12 @@ try {
   check(/Start listening: .*\/agent-hover/.test(initOut), 'init tells you to run /agent-hover');
 
   step('dev server, doctor, and an agent connecting');
-  devServer = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: app, env, shell: win, detached: !win, stdio: 'ignore' });
+  const devArgs = next ? ['next', 'dev', '--port', devPort] : ['vite', '--port', devPort, '--strictPort'];
+  devServer = spawn('npx', devArgs, { cwd: app, env: { ...env, NEXT_TELEMETRY_DISABLED: '1' }, shell: win, detached: !win, stdio: 'ignore' });
   const sessionFile = path.join(app, '.agent-hover', 'session.json');
   for (let i = 0; i < 120 && !existsSync(sessionFile); i++) await new Promise((r) => setTimeout(r, 500));
   check(existsSync(sessionFile), 'the bridge wrote its session file');
-  const res = await fetch('http://localhost:5199/');
+  const res = await fetch(`http://localhost:${devPort}/`);
   const page = await res.text();
   if (!page.includes('__AGENT_HOVER_BOOTSTRAP__')) console.error(`  page (${res.status}): ${page.slice(0, 400)}`);
   check(page.includes('__AGENT_HOVER_BOOTSTRAP__'), 'the page loads the overlay');

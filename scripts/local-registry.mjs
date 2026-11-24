@@ -16,7 +16,7 @@ const dir = path.join(root, '.local-registry');
 const PORT = 4873;
 const URL_ = `http://127.0.0.1:${PORT}/`;
 const VERDACCIO = 'verdaccio@6.10.4';
-const PACKAGES = ['core', 'overlay', 'vite', 'mcp', 'cli'];
+const PACKAGES = ['core', 'overlay', 'bridge', 'vite', 'next', 'mcp', 'cli'];
 const win = process.platform === 'win32';
 const pidFile = path.join(dir, 'pid');
 
@@ -99,7 +99,7 @@ async function start() {
 Use it (in any terminal; agents read the same npm settings):
   npm config set registry ${URL_}
 
-Then in a real Vite + React project:
+Then in a real Vite + React or Next.js project:
   npx agent-hover@${version} init
 
 When you're done:

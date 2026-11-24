@@ -1,6 +1,6 @@
 **The MCP server for Agent Hover.**
 
-It connects your coding agent to the Agent Hover plugin ([`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite)) running in your Vite dev server. Tasks you send by clicking elements in your app reach the agent with full context, and the agent's progress (Seen, Working, Done) shows on the page.
+It connects your coding agent to Agent Hover running in your dev server ([`@agent-hover/vite`](https://www.npmjs.com/package/@agent-hover/vite) or [`@agent-hover/next`](https://www.npmjs.com/package/@agent-hover/next)). Tasks you send by clicking elements in your app reach the agent with full context, and the agent's progress (Seen, Working, Done) shows on the page.
 
 Works with Claude Code, Cursor, Codex, OpenCode, Antigravity, Windsurf, Claude Desktop and any other MCP client.
 

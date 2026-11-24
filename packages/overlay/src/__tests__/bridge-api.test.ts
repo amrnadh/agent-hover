@@ -5,7 +5,7 @@ import { BRIDGE_API, bridgeError, bridgeIsOutdated } from '../lib/bridge-api.js'
 
 describe('bridge API level', () => {
   it('matches what the bridge reports', () => {
-    const bridge = readFileSync(path.resolve(__dirname, '../../../vite/src/bridge-server.ts'), 'utf8');
+    const bridge = readFileSync(path.resolve(__dirname, '../../../bridge/src/bridge-server.ts'), 'utf8');
     expect(Number(/export const BRIDGE_API = (\d+);/.exec(bridge)?.[1])).toBe(BRIDGE_API);
   });
 

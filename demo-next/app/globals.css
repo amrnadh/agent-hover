@@ -1,0 +1,4 @@
+/* The Vite demo's styles. Tailwind skips git-ignored folders when it looks for classes, and src/ is a copy
+   that git ignores here, so name it. */
+@import "../src/index.css";
+@source "../src";

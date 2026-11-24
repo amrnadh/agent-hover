@@ -5,15 +5,18 @@
   "description": "Can't describe it? Point at it. Click any element in your running React app and your coding agent gets the exact file, line and styles.",
   "workspaces": [
     "packages/*",
-    "demo"
+    "demo",
+    "demo-next"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=demo",
     "dev:demo": "npm run dev --workspace=demo -- --force",
-    "build": "npm run build:core && npm run build:overlay && npm run build:vite && npm run build:mcp && npm run build:cli",
+    "build": "npm run build:core && npm run build:overlay && npm run build:bridge && npm run build:vite && npm run build:next && npm run build:mcp && npm run build:cli",
     "build:core": "npm run build --workspace=@agent-hover/core",
     "build:overlay": "npm run build --workspace=@agent-hover/overlay",
+    "build:bridge": "npm run build --workspace=@agent-hover/bridge",
     "build:vite": "npm run build --workspace=@agent-hover/vite",
+    "build:next": "npm run build --workspace=@agent-hover/next",
     "build:mcp": "npm run build --workspace=@agent-hover/mcp",
     "build:cli": "npm run build --workspace=agent-hover",
     "test": "vitest run",
@@ -28,7 +31,8 @@
     "test:e2e:isolated": "node scripts/e2e-isolated.mjs",
     "record:demo": "node scripts/record-demo.mjs",
     "site:build": "node scripts/build-site.mjs",
-    "screenshots": "node scripts/e2e-isolated.mjs --screenshots e2e/v02-main-flow.spec.ts e2e/v02-verify.spec.ts e2e/v02-dock-sidebar.spec.ts e2e/v02-screenshots-update.spec.ts && node scripts/e2e-isolated.mjs --screenshots --workers=1 e2e/media.spec.ts && node docs/brand/make-logo.mjs"
+    "screenshots": "node scripts/e2e-isolated.mjs --screenshots e2e/v02-main-flow.spec.ts e2e/v02-verify.spec.ts e2e/v02-dock-sidebar.spec.ts e2e/v02-screenshots-update.spec.ts && node scripts/e2e-isolated.mjs --screenshots --workers=1 e2e/media.spec.ts && node docs/brand/make-logo.mjs",
+    "dev:next": "npm run dev --workspace=agent-hover-demo-next"
   },
   "keywords": [
     "agent-hover",

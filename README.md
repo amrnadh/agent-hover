@@ -28,13 +28,13 @@ Works with Claude Code, Cursor, Codex, OpenCode and any other MCP agent, or with
 
 ## Quick start
 
-In your Vite + React project:
+In your Vite + React or Next.js project:
 
 ```bash
 npx agent-hover init
 ```
 
-It installs `@agent-hover/vite`, adds it to your Vite config, connects your agent (MCP config and a short rules note), and keeps local data out of git. It shows every change and asks first; `--dry-run` only shows them.
+It installs `@agent-hover/vite` (or `@agent-hover/next` in a Next.js app) and adds it to your app, connects your agent (MCP config and a short rules note), and keeps local data out of git. It shows every change and asks first; `--dry-run` only shows them.
 
 Then:
 
@@ -46,7 +46,7 @@ Then:
 Something not working? `npx agent-hover doctor` checks the plugin, the dev server, the token and the agent connection, and tells you what to fix.
 
 <details>
-<summary>Manual setup</summary>
+<summary>Manual setup: Vite</summary>
 
 ```bash
 npm install -D @agent-hover/vite
@@ -70,6 +70,46 @@ claude mcp add agent-hover -- npx -y @agent-hover/mcp
 ```
 
 `npx agent-hover mcp <agent>` prints the config for `cursor`, `codex`, `opencode`, `windsurf`, `antigravity` and `claude-desktop`.
+</details>
+
+<details>
+<summary>Manual setup: Next.js</summary>
+
+```bash
+npm install -D @agent-hover/next
+```
+
+Three small additions. `init` makes all of them.
+
+```ts
+// next.config.ts
+import { withAgentHover } from '@agent-hover/next';
+
+export default withAgentHover(nextConfig);
+```
+
+```ts
+// instrumentation.ts (src/instrumentation.ts if your app is in src/)
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {
+    await (await import('@agent-hover/next/register')).register();
+  }
+}
+```
+
+```tsx
+// app/layout.tsx: at the end of <body>
+import { AgentHover } from '@agent-hover/next/script';
+
+<body>
+  {children}
+  <AgentHover />
+</body>
+```
+
+With the Pages Router, put it in `pages/_document.tsx` after `<NextScript />`, imported from `@agent-hover/next/document`.
+
+`withAgentHover` and `<AgentHover />` only do something under `next dev`; production builds stay as they were. Then register the MCP server with your agent, as above.
 </details>
 
 ## How it works
@@ -177,12 +217,12 @@ Letter shortcuts only work while Agent Hover is in use, so they never take over 
 
 ## Requirements
 
-- Node 20 or newer, Vite 5 or newer (tested up to Vite 8), React 18 or 19.
+- Node 20 or newer, and React 18 or 19 with Vite 5 or newer (tested up to Vite 8), or Next.js 15 or newer with React 19 (App Router or Pages Router, Turbopack or webpack).
 - macOS, Linux and Windows 10/11.
 - Chrome, Edge, Firefox and Safari.
-- Dev only: the plugin runs with `vite dev` and adds nothing to production builds.
+- Dev only: it runs with `vite dev` or `next dev` and adds nothing to production builds.
 - Compare and Undo need a git repository; everything else works without one.
-- Next.js support is next on the roadmap.
+- Next.js: clicking an element gives the exact file and line in Client Components and Server Components. An element whose line can't be read from the dev build is found by its component's name.
 
 ## Privacy and security
 
@@ -200,7 +240,9 @@ Details: [SECURITY.md](SECURITY.md) and the [bridge API](docs/bridge-api.md).
 | Package | |
 |---------|--|
 | [`agent-hover`](packages/cli) | `npx agent-hover`: init, doctor, MCP config per agent |
-| [`@agent-hover/vite`](packages/vite) | Vite plugin and local bridge (task queue, checkpoints) |
+| [`@agent-hover/vite`](packages/vite) | Vite plugin |
+| [`@agent-hover/next`](packages/next) | Next.js: config wrapper, instrumentation hook, `<AgentHover />` |
+| [`@agent-hover/bridge`](packages/bridge) | The local bridge both use (task queue, checkpoints, source lookup) |
 | [`@agent-hover/mcp`](packages/mcp) | MCP server your agent talks to |
 | [`@agent-hover/overlay`](packages/overlay) | The in-page UI (shadow DOM) |
 | [`@agent-hover/core`](packages/core) | Context engine: source parsing, prompt formatting, token counts |

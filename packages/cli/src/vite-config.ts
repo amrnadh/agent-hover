@@ -6,7 +6,7 @@ const IMPORT_LINE = `import agentHover from '${VITE_PACKAGE}';`;
 const CALL = 'agentHover()';
 
 /** Index just after the string/comment starting at `i`, or -1 when `i` does not start one. */
-function skipLiteral(src: string, i: number): number {
+export function skipLiteral(src: string, i: number): number {
   const c = src[i];
   if (c === '/' && src[i + 1] === '/') {
     const end = src.indexOf('\n', i);
@@ -65,7 +65,7 @@ function findPluginArrays(src: string): number[] {
 }
 
 /** End index of the last top-level import statement, or -1. */
-function lastImportEnd(src: string): number {
+export function lastImportEnd(src: string): number {
   let end = -1;
   const re = /^import\b[^;]*?(?:from\s*)?['"][^'"\n]+['"][ \t]*;?/gm;
   for (let m = re.exec(src); m; m = re.exec(src)) end = m.index + m[0].length;

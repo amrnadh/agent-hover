@@ -1,11 +1,28 @@
-import type { APIRequestContext, Page } from '@playwright/test';
+import { test, type APIRequestContext, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+
+/**
+ * The folder of the app under test: the project's `metadata.demoDir` (the Vite demo or the Next.js demo, see
+ * playwright.config.ts). Call it inside a test or hook.
+ */
+export function demoDir(): string {
+  try {
+    const dir = test.info().project.metadata?.demoDir;
+    if (typeof dir === 'string' && dir) return dir;
+  } catch { /* outside a test */ }
+  return path.resolve(process.env.AH_DEMO_DIR || 'demo');
+}
+
+/** Whether the app under test is the Next.js demo. */
+export function isNext(): boolean {
+  try { return test.info().project.metadata?.framework === 'next'; } catch { return false; }
+}
 
 /** Bridge session written by the demo dev server (port + token). */
 export function readDemoSession(): { port: number; token: string } | null {
   try {
-    const sessionFile = path.resolve(process.env.AH_DEMO_DIR || 'demo', '.agent-hover/session.json');
+    const sessionFile = path.resolve(demoDir(), '.agent-hover/session.json');
     if (fs.existsSync(sessionFile)) {
       return JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
     }
